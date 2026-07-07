@@ -1,15 +1,16 @@
 import "./globals.css";
 import { Montserrat, Noto_Sans_JP } from "next/font/google";
 
-// 💡 Google FontsをNext.js最適化モードで読み込み
+// 💡 Montserratフォントの設定
 const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["300", "400", "700", "900"],
   variable: "--font-montserrat",
 });
 
-const noto= Noto_Sans_JP({
-  subsets: ["ja"],
+// 💡 Noto Sans JPの設定（エラー回避のため subsets は "latin" に指定）
+const noto = Noto_Sans_JP({
+  subsets: ["latin"],
   weight: ["400", "500", "700", "900"],
   variable: "--font-noto",
 });

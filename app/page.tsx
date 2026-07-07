@@ -1,157 +1,92 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function PortalPage() {
+export default function LoginPage() {
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  
-  const [userId, setUserId] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const MASTER_ID = "pa1style";
-  const MASTER_PW = "pal001";
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) return <div className="min-h-screen bg-[#050a18]"></div>;
-
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (userId === MASTER_ID && password === MASTER_PW) {
-      setError("");
+    if (username === "pa1style" && password === "pal001") {
       router.push("/budget");
     } else {
-      setError("IDまたはパスワードが正しくありません。");
+      setError("AUTHENTICATION FAILED. INVALID CREDENTIALS.");
     }
   };
 
   return (
-    <div translate="no" className="relative min-h-screen bg-[#050a18] overflow-hidden flex items-center justify-center text-white select-none var(--font-noto)">
+    <div translate="no" className="relative min-h-screen bg-[#f0f2f5] text-zinc-800 flex items-center justify-center font-noto overflow-hidden select-none">
       
       <style dangerouslySetInnerHTML={{ __html: `
-        .font-montserrat { font-family: var(--font-montserrat), sans-serif; }
-        .font-noto { font-family: var(--font-noto), sans-serif; }
-        
-        @keyframes agv-move { 0% { transform: translateX(-100vw); } 100% { transform: translateX(100vw); } }
-        @keyframes bg-pan { 0% { transform: scale(1.1) translateX(2%); } 100% { transform: scale(1.1) translateX(-2%); } }
-        @keyframes fade-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        .font-noto { font-family: 'Noto Sans JP', sans-serif; }
+        @keyframes scan-line {
+          0% { transform: translateY(-100vh); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(100vh); opacity: 0; }
+        }
+        @keyframes agv-path {
+          0% { left: -5%; top: 20%; }
+          20% { left: 30%; top: 20%; }
+          30% { left: 30%; top: 80%; }
+          70% { left: 80%; top: 80%; }
+          80% { left: 80%; top: 30%; }
+          100% { left: 105%; top: 30%; }
+        }
       `}} />
 
-      {/* 🚚 背景：リアル自動リフト（AGV）画像の透過 ＆ ゆっくりスライド移動 */}
-      <div 
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-25 pointer-events-none"
-        style={{ 
-          backgroundImage: "url('/agv-bg.jpg')",
-          animation: "bg-pan 40s alternate ease-in-out infinite" 
-        }} 
-      />
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#050a18] via-[#050a18]/85 to-[#050a18]/95 pointer-events-none" />
-      
-      {/* 🤖 AGVの走る軌跡（ネオンライン） */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-         <div 
-           className="absolute h-[2px] w-[30vw] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_20px_#22d3ee] top-1/4 left-0 opacity-60" 
-           style={{ animation: "agv-move 7s linear infinite" }}
-         />
-         <div 
-           className="absolute h-[1px] w-[20vw] bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_15px_#3b82f6] top-3/4 left-0 opacity-40" 
-           style={{ animation: "agv-move 10s linear infinite 2.5s" }}
-         />
+      {/* 🌐 背景サイバーグリッドとアニメーション */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(26,54,110,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(26,54,110,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="absolute w-3 h-3 bg-blue-800 rounded-sm shadow-[0_0_15px_rgba(29,78,216,0.6)] animate-[agv-path_15s_linear_infinite] flex items-center justify-center z-0">
+        <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
       </div>
+      <div className="absolute left-0 w-full h-[2px] bg-gradient-to-r from-blue-900 via-blue-500 to-blue-900 shadow-[0_0_15px_rgba(29,78,216,0.5)] animate-[scan-line_7s_ease-in-out_infinite] z-0" />
 
-      {/* 🪟 メインパネル（磨き上げた美しいすりガラス） */}
-      <div className="relative z-10 w-full max-w-lg mx-4 p-10 md:p-14 rounded-[32px] bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.6)] text-center flex flex-col items-center">
+      {/* 🔮 メインログインボックス */}
+      <div className="w-full max-w-md p-10 rounded-[32px] bg-white border border-white shadow-[0_20px_60px_rgba(0,0,0,0.05)] relative z-10">
         
-        {/* 🏢 PAL リアルロゴ画像表示エリア */}
-        <div className="mb-10 flex flex-col items-center w-full">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src="/logo.png" 
-            alt="PAL Logo" 
-            className="h-14 w-auto object-contain max-w-[85%]" 
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              const fallback = document.getElementById('logo-fallback');
-              if (fallback) fallback.style.display = 'block';
-            }}
-          />
-          <div id="logo-fallback" style={{ display: 'none' }}>
-            <h1 className="text-6xl font-black tracking-tighter text-white font-montserrat">PAL</h1>
-          </div>
-
-          <div className="mt-5 flex items-center gap-4">
-            <div className="h-[1px] w-8 bg-cyan-400/40"></div>
-            <span className="text-[11px] font-light tracking-[0.6em] text-cyan-400 font-montserrat uppercase">
-              CORE Solutions
-            </span>
-            <div className="h-[1px] w-8 bg-cyan-400/40"></div>
+        <div className="text-center mb-10 relative">
+          {/* 💡 ロゴの貼り付け感を消すためのCSS (mix-blend-multiply と opacity-90) を追加 */}
+          <img src="/logo.png" alt="PAL LOGO" className="h-14 object-contain mx-auto mix-blend-multiply opacity-90" />
+          
+          <div className="mt-7 border-t border-zinc-100 pt-5 relative">
+            <div className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-blue-600"></div>
+            
+            {/* スローガン */}
+            <h1 className="text-[14px] font-bold font-noto tracking-tight text-zinc-900 leading-relaxed">
+              フィジカルを超え、<br />PAL COREソリューションで未来を創る。
+            </h1>
+            <p className="text-[9px] font-medium text-blue-600 font-montserrat tracking-[0.05em] uppercase mt-2 leading-relaxed">
+              Beyond Physical. Creating the Future with PAL CORE Solutions.
+            </p>
           </div>
         </div>
 
-        {/* 📝 スローガン */}
-        <div className="mb-10 w-full">
-          <h2 className="text-xl md:text-2xl font-bold text-white tracking-wider leading-relaxed font-noto">
-            フィジカルを超え、<br />PAL COREソリューションで未来を創る。
-          </h2>
-          <p className="text-[10px] md:text-xs text-slate-500 tracking-[0.2em] font-montserrat mt-4 uppercase">
-            Beyond Physical. Creating the Future with PAL CORE Solutions.
-          </p>
-        </div>
+        {/* フォーム */}
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-bold text-zinc-400 ml-1 font-montserrat tracking-widest uppercase">Account ID</label>
+            {/* 💡 placeholderを完全に削除 */}
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-[#f8f9fb] border border-zinc-100 rounded-2xl p-4 text-sm text-zinc-900 outline-none focus:border-blue-600 focus:bg-white transition-all font-mono shadow-inner shadow-zinc-100/50" required />
+          </div>
+          
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-bold text-zinc-400 ml-1 font-montserrat tracking-widest uppercase">Password</label>
+            {/* 💡 placeholderを完全に削除 */}
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#f8f9fb] border border-zinc-100 rounded-2xl p-4 text-sm text-zinc-900 outline-none focus:border-blue-600 focus:bg-white transition-all font-mono shadow-inner shadow-zinc-100/50" required />
+          </div>
 
-        {/* 🚀 アクションエリア */}
-        <div className="w-full min-h-[220px] flex flex-col justify-center">
-          {!showLogin ? (
-            <button 
-              onClick={() => setShowLogin(true)}
-              className="w-full flex items-center justify-center gap-3 py-5 rounded-full text-sm font-bold tracking-[0.2em] text-white border border-cyan-500/50 hover:bg-cyan-500/10 hover:border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.1)] hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] active:scale-95 transition-all duration-300 font-montserrat"
-            >
-              DASHBOARD ➔
-            </button>
-          ) : (
-            <form onSubmit={handleLogin} className="text-left w-full" style={{ animation: "fade-in 0.4s ease-out" }}>
-              <div className="mb-5">
-                <label className="block text-[10px] font-bold text-cyan-400 mb-2 tracking-[0.2em] uppercase font-montserrat">User ID</label>
-                <input 
-                  type="text" 
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  placeholder="IDを入力"
-                  required
-                  className="w-full bg-[#050a18]/80 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-cyan-500 transition-colors font-montserrat"
-                />
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-[10px] font-bold text-cyan-400 mb-2 tracking-[0.2em] uppercase font-montserrat">Password</label>
-                <input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full bg-[#050a18]/80 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-cyan-500 transition-colors font-montserrat"
-                />
-              </div>
-
-              {error && (
-                <p className="text-red-400 text-xs font-bold mb-5 text-center tracking-wider font-noto">{error}</p>
-              )}
-
-              <button 
-                type="submit"
-                className="w-full flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-bold tracking-[0.2em] text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_4px_20px_rgba(14,165,233,0.3)] hover:scale-[1.02] active:scale-95 transition-all font-montserrat"
-              >
-                ENTER ➔
-              </button>
-            </form>
-          )}
-        </div>
-        
+          {error && <p className="text-[11px] font-mono font-bold text-rose-500 bg-rose-50 p-4 rounded-xl border border-rose-100 text-center animate-pulse">{error}</p>}
+          
+          <button type="submit" className="w-full py-4 mt-2 bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white font-bold text-xs rounded-2xl transition-all duration-150 active:scale-[0.98] shadow-lg shadow-blue-900/20 font-montserrat tracking-[0.2em]">
+            INITIALIZE SYSTEM ➔
+          </button>
+        </form>
       </div>
     </div>
   );
