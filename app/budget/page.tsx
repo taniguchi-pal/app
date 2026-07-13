@@ -1,260 +1,311 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+'use client';
 
-const AREA_ORDER = ["全体", "関東", "中部", "関西", "大阪支店"];
-const AREA_TABS = ["すべて", "関東", "中部", "関西", "大阪支店"];
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge } from './_ui';
+import { MONTHS, MonthKey, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, yen, BACKLOG_STACKUP_MONTHLY_TARGET } from './_data';
 
-const ALL_MONTHS = [
-  { key: "4", label: "4月実績" }, { key: "5", label: "5月実績" }, { key: "6", label: "6月進捗" },
-  { key: "7", label: "7月計画" }, { key: "8", label: "8月計画" }, { key: "9", label: "9月計画" },
-  { key: "10", label: "10月計画" }, { key: "11", label: "11月計画" }, { key: "12", label: "12月計画" },
-  { key: "1", label: "1月計画" }, { key: "2", label: "2月計画" }, { key: "3", label: "3月計画" }
-];
+const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
-// 💡 取得したあなたのAPI URL
-const API_URL = "https://script.google.com/macros/s/AKfycbwPJCkRmjjnJdoj4Ndruec-6d8Fp3izBJAFCc6mp-pqtzFAUfRVqKgxW-WaLiWj7xilBA/exec";
-
-function yen(n: number) { return `¥${Math.round(n || 0).toLocaleString()}`; }
-function GapBadge({ gap }: { gap: number }) { 
-  const pos = gap >= 0; 
-  return (<span className={`text-[12px] font-montserrat font-bold px-2 py-0.5 rounded ${pos ? "text-emerald-700 bg-emerald-100/50" : "text-rose-700 bg-rose-100/50"}`}>{pos ? "+" : ""}{(gap || 0).toLocaleString()}</span>); 
-}
+interface ScheduleTask { id: string; title: string; period: string; status: string; note: string; createdAt: string }
 
 export default function GlobalDashboard() {
-  const router = useRouter(); 
-  const [isMounted, setIsMounted] = useState(false);
-  const [monthKey, setMonthKey] = useState("4"); // デフォルト4月
-  const [selectedArea, setSelectedArea] = useState("すべて");
+  const [activeMonth, setActiveMonth] = useState<MonthKey>('6月進捗');
+  const monthIndex = MONTHS.indexOf(activeMonth);
+  const activeQuarter = Math.floor(monthIndex / 3);
 
-  // 📦 APIから取得したデータを格納する箱
-  const [apiData, setApiData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // 🔄 画面を開いた時＆5分ごとにデータを自動取得（ポーリング）
-  useEffect(() => { 
-    setIsMounted(true);
-    const fetchData = async () => {
-      try {
-        const response = await fetch(API_URL);
-        const data = await response.json();
-        setApiData(data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("API Fetch Error:", error);
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-    const interval = setInterval(fetchData, 5 * 60 * 1000); // 5分ポーリング
-    return () => clearInterval(interval);
+  // ── 7月以降の月次実績・予算はSheetsの値があれば上書き ──
+  const [monthlyOverrides, setMonthlyOverrides] = useState<Record<string, any>>({});
+  useEffect(() => {
+    fetch('/api/monthly-data').then((r) => r.json()).then((data) => { if (!data?.error) setMonthlyOverrides(data); }).catch(() => {});
   }, []);
 
-  if (!isMounted) return <div className="min-h-screen bg-[#f4f7fb]"></div>;
-  if (isLoading) return <div className="min-h-screen bg-[#f4f7fb] flex items-center justify-center font-montserrat font-black text-blue-900 tracking-widest">LOADING LIVE DATA...</div>;
+  const base = COMPANY_MONTHLY[activeMonth];
+  const ov = monthlyOverrides[`company__${activeMonth}`];
+  const current = ov
+    ? {
+        ...base,
+        salesBudget: numOrNull(ov.salesBudget) ?? base.salesBudget,
+        salesActual: numOrNull(ov.salesActual),
+        gpBudget: numOrNull(ov.gpBudget) ?? base.gpBudget,
+        gpActual: numOrNull(ov.gpActual),
+        opBudget: numOrNull(ov.opBudget) ?? base.opBudget,
+        opActual: numOrNull(ov.opActual),
+        activeStaff: numOrNull(ov.activeStaff),
+        avgHours: numOrNull(ov.avgHours),
+        joined: numOrNull(ov.joined),
+        resigned: numOrNull(ov.resigned),
+      }
+    : base;
 
-  // --- 🧠 ここから「スプレッドシートのデータ」を自動計算する脳みそ ---
-  const master = apiData?.master || [];
-  const pl = apiData?.pl || [];
-  const kpi = apiData?.kpi || [];
-  const topics = apiData?.topics || [];
+  const salesRate = current.salesActual != null ? (current.salesActual / current.salesBudget) * 100 : null;
+  const salesGap = current.salesActual != null ? current.salesActual - current.salesBudget : null;
+  const yoyPct = current.salesActual != null && current.yoyLastYear != null ? ((current.salesActual - current.yoyLastYear) / current.yoyLastYear) * 100 : null;
 
-  // 選ばれた月の文字（例：2026/04）を作る
-  const targetMonth = `2026/${monthKey.padStart(2, '0')}`;
+  // ── エリア別 気象注意報（小さく点滅表示） ──
+  const weatherAlerts = AREAS
+    .map((a) => ({ area: a, heat: AREA_MONTHLY[a.id]?.[activeMonth]?.heat }))
+    .filter((x) => x.heat);
 
-  // エリアごとの計算結果をまとめる関数
-  const calculateAreaStats = (areaName: string) => {
-    // このエリアに属する現場IDのリストを取得
-    const areaSiteIds = master.filter((m: any) => areaName === "全体" || m['エリア'] === areaName).map((m: any) => m['現場ID']);
-    
-    // 選ばれた月のPLデータから、このエリアの現場のものだけを抽出
-    const targetPL = pl.filter((p: any) => p['年月'] === targetMonth && areaSiteIds.includes(p['現場ID']));
-    
-    // 選ばれた月のKPIデータから抽出
-    const targetKPI = kpi.filter((k: any) => k['年月'] === targetMonth && areaSiteIds.includes(k['現場ID']));
+  // ── 年間スケジュール・タスク（Sheets連携） ──
+  const [tasks, setTasks] = useState<ScheduleTask[]>([]);
+  const [taskApiStatus, setTaskApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
+  const [newTask, setNewTask] = useState({ title: '', period: '', note: '' });
+  const [adding, setAdding] = useState(false);
 
-    // 合計を計算
-    const salesBudget = targetPL.reduce((sum: number, row: any) => sum + (Number(row['売上予算']) || 0), 0);
-    const salesResult = targetPL.reduce((sum: number, row: any) => sum + (Number(row['売上実績']) || 0), 0);
-    const cost = targetPL.reduce((sum: number, row: any) => sum + (Number(row['労務費実績']) || 0) + (Number(row['有給実績']) || 0) + (Number(row['法定福利費実績']) || 0), 0);
-    const marginResult = salesResult - cost; // 粗利②
-    const marginBudget = salesBudget * 0.15; // 予算の粗利は仮で15%として算出
+  const loadTasks = () => {
+    fetch('/api/schedule').then((r) => r.json()).then((data) => {
+      if (data?.error) { setTaskApiStatus('unconfigured'); return; }
+      setTasks(Array.isArray(data) ? data : []);
+      setTaskApiStatus('ready');
+    }).catch(() => setTaskApiStatus('error'));
+  };
+  useEffect(() => { loadTasks(); }, []);
 
-    const activeStaff = targetKPI.reduce((sum: number, row: any) => sum + (Number(row['当月末稼働人数']) || 0), 0);
-    const totalHours = targetKPI.reduce((sum: number, row: any) => sum + (Number(row['当月総工数(h)']) || 0), 0);
-    const activeSites = targetPL.length; // その月にPLデータが存在する現場数
-
-    return {
-      area: areaName,
-      salesBudget, salesResult, salesGap: salesResult - salesBudget, salesRate: salesBudget ? (salesResult / salesBudget) * 100 : 0,
-      marginBudget, marginResult, marginGap: marginResult - marginBudget,
-      activeStaff, totalHours, activeSites
-    };
+  const handleAddTask = async () => {
+    if (!newTask.title.trim()) return;
+    setAdding(true);
+    try {
+      await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTask.title, period: newTask.period, status: '未着手', note: newTask.note }),
+      });
+      setNewTask({ title: '', period: '', note: '' });
+      loadTasks();
+    } finally {
+      setAdding(false);
+    }
   };
 
-  const areaStats = AREA_ORDER.map(area => calculateAreaStats(area));
-  const totalRow = areaStats.find(a => a.area === "全体") || calculateAreaStats("全体");
-
-  // KPIマトリクス用のデータ生成
-  const kpiRows = [
-    { m: "稼働人数", u: "名", n: "実績合算", v: areaStats.map(a => a.activeStaff) },
-    { m: "稼働現場数", u: "現場", n: "実績合算", v: areaStats.map(a => a.activeSites) },
-    { m: "総工数", u: "h", n: "実績合算", v: areaStats.map(a => a.totalHours) },
-    { m: "1人当たり工数", u: "h", n: "工数÷人数", v: areaStats.map(a => a.activeStaff ? Math.round(a.totalHours / a.activeStaff) : 0) },
-    { m: "1人当たり売上", u: "円", n: "売上÷人数", v: areaStats.map(a => a.activeStaff ? Math.round(a.salesResult / a.activeStaff) : 0) },
-  ];
-
-  // トピックのフィルタリング
-  const filteredTopics = topics.filter((t: any) => selectedArea === "すべて" || t['紐付け現場ID'] === "全体");
-
-  // スプレッドシートからの年間スケジュール（マスタに紐づかないタスク等）
-  // ※ここでは固定のタスクとして表示するか、Topicから「PJ」を抜く等も可能。
-  // 今回はTopicから「カテゴリ」が「プロジェクト」のものを引っ張ってきます。
-  const projectTopics = topics.filter((t: any) => t['カテゴリ'] === "プロジェクト");
-
-  const currentMonthLabel = ALL_MONTHS.find(m => m.key === monthKey)?.label || "選択月";
+  const cycleStatus = async (t: ScheduleTask) => {
+    const next = t.status === '未着手' ? '進行中' : t.status === '進行中' ? '完了' : '未着手';
+    setTasks((prev) => prev.map((x) => (x.id === t.id ? { ...x, status: next } : x)));
+    await fetch('/api/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...t, status: next }),
+    });
+  };
 
   return (
-    <div translate="no" className="min-h-screen bg-gradient-to-br from-[#f4f7fb] via-[#f8fafc] to-[#e2e8f0] text-zinc-800 p-4 md:p-8 font-noto pb-24 relative overflow-hidden">
-      <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Noto+Sans+JP:wght@500;700;800;900&display=swap'); .font-montserrat { font-family: 'Montserrat', sans-serif; } .font-noto { font-family: 'Noto Sans JP', sans-serif; }`}} />
-      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-blue-300/20 rounded-full blur-[120px] pointer-events-none"></div>
-
-      {/* 🚀 ヘッダー */}
-      <div className="max-w-[1400px] mx-auto flex justify-between items-center mb-8 border-b border-zinc-300/60 pb-6 relative z-10">
+    <Shell>
+      {/* ── ヘッダー ─────────────────────────────────── */}
+      <header className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 md:px-10 py-5 bg-white border-b border-zinc-100 overflow-hidden">
+        <AGVLine />
         <div>
-          <span className="text-[11px] font-bold text-blue-800 font-montserrat tracking-[0.15em] uppercase">STAFFING MANAGEMENT BRAIN</span>
-          <h1 className="text-3xl font-black tracking-tight mt-1 text-zinc-900 font-noto">人材ソリューション事業部 ダッシュボード</h1>
+          <Eyebrow>Staffing Management Brain</Eyebrow>
+          <h1 className="mt-1 text-xl md:text-2xl font-black text-zinc-900 tracking-tight">27期 人材ソリューション事業部 経営ダッシュボード</h1>
         </div>
-        <div className="flex items-center gap-4 bg-white/80 backdrop-blur-md px-6 py-2.5 rounded-full shadow-sm border border-zinc-200">
-          <img src="/logo.png" alt="PAL" className="h-6 object-contain mix-blend-multiply opacity-90" />
-          <div className="w-px h-5 bg-zinc-300"></div>
-          <button onClick={() => router.push("/")} className="text-xs font-bold text-zinc-500 hover:text-blue-600 tracking-widest transition-colors">LOGOUT</button>
+        <div className="flex items-center gap-3 self-start sm:self-center">
+          <span className="text-[9px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase">Powered by</span>
+          <img src="/logo.png" alt="PAL Logo" className="h-7 object-contain mix-blend-multiply opacity-90" />
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-[1400px] mx-auto space-y-6 relative z-10">
-        
-        {/* 🏢 サマリー */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="p-8 rounded-[24px] bg-[#1e3a8a] text-white shadow-lg relative overflow-hidden flex flex-col justify-center">
-            <div className="relative z-10">
-              <span className="text-sm font-bold text-blue-200 block mb-3">ライブAPI同期中</span>
-              <span className="text-[44px] font-montserrat font-black drop-shadow-sm leading-tight text-emerald-400">ACTIVE</span>
-              <p className="text-xs text-blue-200 mt-2 font-bold">スプレッドシートと完全連動</p>
-            </div>
+      <main className="px-4 md:px-10 mt-5 space-y-5">
+
+        {/* ── エリア気象注意報（点滅） ─────────────── */}
+        {weatherAlerts.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase">Weather</span>
+            {weatherAlerts.map(({ area, heat }) => (
+              <WeatherBadge key={area.id} text={`${area.title}: ${heat}`} />
+            ))}
           </div>
-          <div className="p-8 rounded-[24px] bg-white/90 backdrop-blur-sm border border-zinc-200/80 shadow-sm flex flex-col justify-center">
-            <span className="text-sm font-bold text-zinc-400 block mb-5">選択月 事業部合計 ({currentMonthLabel})</span>
-            <div className="grid grid-cols-2 gap-4">
-              <div><span className="text-xs text-zinc-400 font-bold block mb-1">売上実績</span><p className="text-[28px] font-montserrat font-black text-[#1e40af] tabular-nums">{yen(totalRow.salesResult)}</p></div>
-              <div><span className="text-xs text-zinc-400 font-bold block mb-1">粗利②</span><p className="text-[28px] font-montserrat font-black text-cyan-600 tabular-nums">{yen(totalRow.marginResult)}</p></div>
-            </div>
-          </div>
-          <div className="p-8 rounded-[24px] bg-white/90 backdrop-blur-sm border border-zinc-200/80 shadow-sm flex flex-col justify-center">
-            <span className="text-sm font-bold text-zinc-400 block mb-5">事業部運営インフラ ({currentMonthLabel})</span>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div className="bg-zinc-50/80 p-5 rounded-2xl border border-zinc-100 flex flex-col justify-center"><span className="block text-xs font-bold text-zinc-500 mb-1">稼働現場数</span><p className="text-3xl font-montserrat font-black text-zinc-800 tabular-nums">{totalRow.activeSites}</p></div>
-              <div className="bg-white p-5 rounded-2xl border border-zinc-300 flex flex-col justify-center shadow-sm"><span className="block text-xs font-bold text-zinc-600 mb-1">稼働スタッフ</span><span className="text-3xl font-montserrat font-black text-zinc-800 tabular-nums">{totalRow.activeStaff}</span></div>
-            </div>
-          </div>
+        )}
+
+        {/* ── 事業部の管理数値 ドン ─────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <HeroStat
+            eyebrow={`予実管理 (${activeMonth})`}
+            value={current.salesActual == null ? `${yen(current.salesBudget)}（予算）` : yen(current.salesActual)}
+            sub={
+              <div className="flex justify-between">
+                <span>予算 {yen(current.salesBudget)}</span>
+                <span className={salesGap == null ? '' : salesGap >= 0 ? 'text-emerald-300' : 'text-rose-300'}>
+                  {salesGap == null ? '実績未確定' : `${salesGap > 0 ? '+' : ''}${salesGap.toLocaleString()} (${salesRate!.toFixed(1)}%)`}
+                </span>
+              </div>
+            }
+          />
+          <HeroStat
+            eyebrow="KPI進捗（稼働人数）"
+            value={current.activeStaff == null ? '—' : `${current.activeStaff} / ${current.targetStaff}名`}
+            sub={
+              <div className="flex justify-between">
+                <span>平均工数 {current.avgHours == null ? '—' : `${current.avgHours}h`}（基準120h）</span>
+                <span className={current.orderBacklog != null && current.orderBacklog >= 20 ? 'text-rose-300' : ''}>受注残 {current.orderBacklog ?? '—'}名</span>
+              </div>
+            }
+          />
+          <HeroStat
+            eyebrow="当月 入職 / 退職"
+            value={
+              <span>
+                <span className="text-emerald-300">入職 {current.joined ?? '—'}名</span>
+                <span className="text-blue-300 mx-2">/</span>
+                <span className="text-rose-300">退職 {current.resigned ?? '—'}名</span>
+              </span>
+            }
+            sub={yoyPct == null ? '前年同月比データ未登録' : <span>前年同月比 <span className={yoyPct >= 0 ? 'text-emerald-300' : 'text-rose-300'}>{yoyPct >= 0 ? '+' : ''}{yoyPct.toFixed(1)}%</span></span>}
+          />
         </div>
 
-        {/* 🗺️ フィルター */}
-        <div className="bg-white/80 backdrop-blur-md p-6 rounded-[24px] border border-zinc-200/80 shadow-sm space-y-5">
-          <div className="flex flex-col xl:flex-row xl:items-center gap-4 border-b border-zinc-200/80 pb-5">
-            <span className="text-xs font-bold text-zinc-500 w-32 uppercase tracking-widest shrink-0">Timeline Select:</span>
+        {/* ── タイムライン & エリア選択（横並びで省スペース） ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card eyebrow="Timeline" title="月次フィルター">
+            <TabRow items={[...MONTHS]} active={activeMonth} onSelect={(m) => setActiveMonth(m as MonthKey)} />
+            {monthIndex >= 3 && !ov && (
+              <p className="text-[10px] text-zinc-400 mt-2">※ この月の実績はまだSheetsに未入力のため、予算のプレースホルダー値を表示しています</p>
+            )}
+          </Card>
+          <Card eyebrow="Area" title="エリア別に見る">
             <div className="flex flex-wrap gap-2">
-              {ALL_MONTHS.map(m => (
-                <button key={m.key} onClick={() => setMonthKey(m.key)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${monthKey === m.key ? "bg-[#1e40af] text-white shadow-md" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
-                  {m.label}
-                </button>
+              <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-blue-900 text-white shadow-sm">事業部全体</span>
+              {AREAS.map((a) => (
+                <Link key={a.id} href={`/budget/area/${a.id}`} className="px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-100 text-zinc-500 hover:bg-blue-50 hover:text-blue-700 transition">
+                  {a.title} ➔
+                </Link>
               ))}
             </div>
+          </Card>
+        </div>
+
+        {/* ── KPIの詳細 ────────────────────────────── */}
+        <Card eyebrow="KPI Detail" title="全社 予実管理・KPI詳細">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-3">
+              {[
+                { name: '売上高', budget: current.salesBudget, actual: current.salesActual },
+                { name: '売上総利益', budget: current.gpBudget, actual: current.gpActual },
+                { name: '営業利益', budget: current.opBudget, actual: current.opActual },
+              ].map((item, idx) => {
+                const hasActual = item.actual != null && item.budget != null;
+                const rate = hasActual ? (item.actual! / item.budget!) * 100 : null;
+                const gap = hasActual ? item.actual! - item.budget! : null;
+                const barColor = rate == null ? 'bg-zinc-200' : rate >= 100 ? 'bg-emerald-500' : rate >= 90 ? 'bg-blue-500' : 'bg-rose-500';
+                return (
+                  <div key={idx}>
+                    <div className="flex justify-between items-end mb-1">
+                      <span className="text-xs font-bold text-zinc-600">{item.name}</span>
+                      <div className="text-right font-mono">
+                        <span className="text-sm font-black text-zinc-800">{hasActual ? yen(item.actual) : '計画中'}</span>
+                        <span className="text-[10px] text-zinc-400 ml-2">予算 {yen(item.budget)}</span>
+                      </div>
+                    </div>
+                    <ProgressBar rate={rate} color={barColor} />
+                    <div className="flex justify-between mt-1 text-[10px] font-bold font-mono">
+                      <span className={gap == null ? 'text-zinc-400' : gap >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                        {gap == null ? '実績未確定' : `${gap > 0 ? '+' : ''}¥${gap.toLocaleString()}`}
+                      </span>
+                      <span className="text-zinc-400">{rate == null ? '—' : `${rate.toFixed(1)}%`}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-2 gap-3 content-start">
+              <MiniStat label="現在稼働人数" value={current.activeStaff ?? '—'} unit="名" sub={`目標 ${current.targetStaff}名`} />
+              <MiniStat
+                label="受注残（未充足）"
+                value={current.orderBacklog ?? '—'}
+                unit="名"
+                sub={current.orderBacklog != null && current.orderBacklog >= 20 ? '早急な採用補填が必要' : current.orderBacklog == null ? '実績未確定' : '正常範囲'}
+                danger={current.orderBacklog != null && current.orderBacklog >= 20}
+              />
+              <MiniStat
+                label="受注残 積上可能金額"
+                value={current.backlogStackupPotential != null ? yen(current.backlogStackupPotential) : '—'}
+                sub={current.backlogStackupPotential != null
+                  ? `2Q目標 ${yen(BACKLOG_STACKUP_MONTHLY_TARGET)}/月 ${current.backlogStackupPotential >= BACKLOG_STACKUP_MONTHLY_TARGET ? '達成' : `残り${yen(BACKLOG_STACKUP_MONTHLY_TARGET - current.backlogStackupPotential)}`}`
+                  : `2Q目標 ${yen(BACKLOG_STACKUP_MONTHLY_TARGET)}/月`}
+              />
+              <MiniStat label="1人あたり平均工数" value={current.avgHours ?? '—'} unit="h" sub="基準値 120h" />
+              <MiniStat label="入職 / 退職" value={<span><span className="text-emerald-600">入職{current.joined ?? '—'}名</span> / <span className="text-rose-600">退職{current.resigned ?? '—'}名</span></span>} />
+            </div>
           </div>
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <span className="text-xs font-bold text-zinc-500 w-32 uppercase tracking-widest shrink-0">Area Filter:</span>
-            <div className="flex flex-wrap gap-2">
-              {AREA_TABS.map(tab => (
-                <button key={tab} onClick={() => setSelectedArea(tab)} className={`px-6 py-2 rounded-full text-xs font-bold border transition-all ${selectedArea === tab ? "bg-zinc-800 text-white border-zinc-800 shadow-md" : "bg-white text-zinc-600 border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50"}`}>
-                  {tab}
-                </button>
+        </Card>
+
+        {/* ── 年間スケジュール ─────────────────────── */}
+        <Card eyebrow="Roadmap" title="第27期 年間スケジュール・コミットメント">
+          <p className="text-xs text-zinc-500 -mt-2 mb-3">通期目標: 売上 {yen(ANNUAL_GOAL.sales)} ／ 粗利②目標 {ANNUAL_GOAL.gpRate}% ／ 営業利益率 {ANNUAL_GOAL.opRate}%</p>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            {ANNUAL_SCHEDULE.map((q, idx) => (
+              <div key={idx} className={`p-3 rounded-xl border relative overflow-hidden ${idx === activeQuarter ? 'bg-blue-50 border-blue-200' : 'bg-zinc-50 border-zinc-100'}`}>
+                <span className={`absolute top-0 right-0 text-[9px] font-black px-2 py-1 rounded-bl-lg ${idx === activeQuarter ? 'bg-blue-600 text-white' : 'bg-zinc-200 text-zinc-600'}`}>{q.period}</span>
+                <p className="text-[10px] text-zinc-400 font-mono mt-1">{q.range}</p>
+                <p className="text-xs font-black text-blue-900 mt-1">{q.title}</p>
+                <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">{q.desc}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* ── タスク管理（追加・ステータス変更） ────── */}
+        <Card eyebrow="Tasks" title="スケジュール・タスク管理">
+          {taskApiStatus === 'unconfigured' && (
+            <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 -mt-1 mb-3">
+              共有保存基盤（Google Sheets連携）が未設定のため、タスクの追加・保存はまだできません。docs/site-overrides-setup.md をご参照ください。
+            </p>
+          )}
+          <div className="flex flex-col sm:flex-row gap-2 mb-3">
+            <input
+              value={newTask.title}
+              onChange={(e) => setNewTask((t) => ({ ...t, title: e.target.value }))}
+              placeholder="タスク名（例: 関西エリア価格交渉フォロー）"
+              className="flex-1 px-2 py-1.5 text-sm bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            />
+            <input
+              value={newTask.period}
+              onChange={(e) => setNewTask((t) => ({ ...t, period: e.target.value }))}
+              placeholder="期限（例: 7月末）"
+              className="sm:w-40 px-2 py-1.5 text-sm bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            />
+            <button
+              onClick={handleAddTask}
+              disabled={taskApiStatus !== 'ready' || adding || !newTask.title.trim()}
+              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition shrink-0"
+            >
+              {adding ? '追加中…' : '+ タスク追加'}
+            </button>
+          </div>
+          {tasks.length === 0 ? (
+            <p className="text-xs text-zinc-400">登録されているタスクはありません</p>
+          ) : (
+            <ul className="space-y-2">
+              {tasks.map((t) => (
+                <li key={t.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
+                  <button
+                    onClick={() => cycleStatus(t)}
+                    className={`text-[10px] font-bold px-2 py-1 rounded border shrink-0 transition ${
+                      t.status === '完了' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                      : t.status === '進行中' ? 'text-amber-700 bg-amber-50 border-amber-200'
+                      : 'text-zinc-500 bg-zinc-100 border-zinc-200'
+                    }`}
+                  >
+                    {t.status || '未着手'}
+                  </button>
+                  <span className={`text-sm font-bold flex-1 ${t.status === '完了' ? 'text-zinc-400 line-through' : 'text-zinc-700'}`}>{t.title}</span>
+                  {t.period && <span className="text-[10px] text-zinc-400 font-mono shrink-0">{t.period}</span>}
+                </li>
               ))}
-            </div>
-          </div>
-        </div>
+            </ul>
+          )}
+        </Card>
 
-        {/* 🏢 エリア別予実GAPカード */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
-          {AREA_ORDER.map(areaName => {
-            const row = areaStats.find(r => r.area === areaName) || calculateAreaStats(areaName);
-            const isTotal = areaName === "全体";
-
-            return (
-              <button key={areaName} onClick={() => !isTotal ? router.push(`/budget/area/${encodeURIComponent(areaName)}`) : null} className={`text-left p-6 rounded-[24px] bg-white/95 backdrop-blur-sm border cursor-pointer transition-transform hover:-translate-y-1 hover:shadow-lg focus:outline-none ${isTotal ? "border-blue-300 shadow-sm" : "border-zinc-200/80 shadow-sm hover:border-blue-500"}`}>
-                <div className="flex justify-between items-center border-b-2 border-zinc-100 pb-4 mb-5">
-                  <span className={`text-lg font-black ${isTotal ? "text-[#1e40af]" : "text-zinc-800"}`}>{areaName} {!isTotal && "➔"}</span>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md ${row.salesRate >= 95 ? "bg-blue-100 text-blue-700" : "bg-rose-100 text-rose-700"}`}>達成率 {row.salesRate.toFixed(1)}%</span>
-                </div>
-                <div className="space-y-5">
-                  <div>
-                    <span className="text-xs font-bold text-zinc-400 block mb-2">売上 (Budget / Actual)</span>
-                    <div className="flex justify-between items-end mb-1"><span className="font-montserrat font-bold text-zinc-400 text-[13px] tabular-nums">{yen(row.salesBudget)}</span><span className="font-montserrat font-black text-[#1e40af] text-xl tabular-nums">{yen(row.salesResult)}</span></div>
-                    <div className="flex justify-between items-center"><span className="text-[10px] text-zinc-400 font-bold uppercase">Gap</span><GapBadge gap={row.salesGap} /></div>
-                  </div>
-                  <div className="pt-4 border-t-2 border-dashed border-zinc-100">
-                    <span className="text-xs font-bold text-zinc-400 block mb-2">粗利② (Budget / Actual)</span>
-                    <div className="flex justify-between items-end mb-1"><span className="font-montserrat font-bold text-zinc-400 text-[13px] tabular-nums">{yen(row.marginBudget)}</span><span className="font-montserrat font-black text-zinc-800 text-xl tabular-nums">{yen(row.marginResult)}</span></div>
-                    <div className="flex justify-between items-center"><span className="text-[10px] text-zinc-400 font-bold uppercase">Gap</span><GapBadge gap={row.marginGap} /></div>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* 📊 KPI マトリクス */}
-        <div className="space-y-6 mt-6">
-          <div className="bg-white/90 backdrop-blur-sm rounded-[24px] border border-zinc-200/80 shadow-sm overflow-hidden">
-            <div className="px-6 py-5 border-b border-zinc-100 flex justify-between"><span className="text-sm font-black text-zinc-800">事業部コアKPI ＆ マトリクス ({currentMonthLabel})</span></div>
-            <div className="p-2 w-full">
-              <table className="w-full text-left text-sm table-fixed">
-                <thead><tr className="border-b border-zinc-100"><th className="p-4 text-xs font-bold text-zinc-400 w-1/4">KPI項目</th>{AREA_ORDER.map(a => (<th key={a} className={`p-4 text-xs font-bold text-right ${a==="全体"?"text-[#1e40af]":"text-zinc-400"}`}>{a}</th>))}</tr></thead>
-                <tbody className="divide-y divide-zinc-50">
-                  {kpiRows.map(k => (
-                    <tr key={k.m} className="hover:bg-blue-50/40">
-                      <td className="p-4 font-bold text-zinc-800 truncate">{k.m} <span className="text-[9px] font-bold text-zinc-400 ml-1 bg-zinc-100 px-1.5 py-0.5 rounded">{k.n}</span></td>
-                      {AREA_ORDER.map(a => (<td key={a} className={`p-4 text-right font-montserrat font-black text-base tabular-nums ${a==="全体"?"text-[#1e40af]":"text-zinc-700"}`}>{k.v[AREA_ORDER.indexOf(a)].toLocaleString()}<span className="text-[10px] ml-1 font-bold text-zinc-400">{k.u}</span></td>))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* 📝 スプレッドシート連携 共有ボード */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-[24px] border border-zinc-200/80 shadow-sm overflow-hidden mt-6">
-          <div className="px-6 py-5 border-b border-zinc-100 flex justify-between items-center">
-            <span className="text-sm font-black text-zinc-800">全社共有トピック・プロジェクト進捗 (スプレッドシート連動)</span>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredTopics.map((topic: any, idx: number) => (
-                <div key={idx} className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-sm relative">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-md">{topic['カテゴリ']}</span>
-                    <span className="text-[10px] font-mono font-bold text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded">{topic['投稿日']} | 投稿者: {topic['投稿者']}</span>
-                  </div>
-                  <h4 className="text-sm font-black text-zinc-800 mb-2">{topic['トピック・PJ名']}</h4>
-                  <p className="text-xs text-zinc-600 leading-relaxed font-semibold">{topic['共有内容・進捗状況']}</p>
-                </div>
-              ))}
-              {filteredTopics.length === 0 && <div className="col-span-2 text-center py-6 font-bold text-zinc-400 text-sm">共有トピックはまだありません</div>}
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
+        {/* ── トピックス ───────────────────────────── */}
+        <Card eyebrow="Topics" title={`${activeMonth} 事業部トピックス`}>
+          <ul className="text-sm text-zinc-600 space-y-1.5 list-disc list-inside font-medium">
+            {current.topics.map((t, i) => <li key={i}>{t}</li>)}
+          </ul>
+          <div className="h-px bg-zinc-100 my-3" />
+          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">重要スケジュール / コミット</p>
+          <ul className="text-sm text-zinc-600 space-y-1.5 font-medium">
+            {current.schedule.map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        </Card>
+      </main>
+    </Shell>
   );
 }

@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* next/font/google 変数(--font-montserrat / --font-noto)をユーティリティクラスとして
+   どのページからでも使えるようにする（app/layout.tsx で <html> に付与済み） */
+.font-montserrat { font-family: var(--font-montserrat), sans-serif; }
+.font-noto { font-family: var(--font-noto), sans-serif; }
