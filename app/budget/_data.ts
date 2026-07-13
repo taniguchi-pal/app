@@ -13,7 +13,7 @@ export const ANNUAL_GOAL = { sales: 620000000, gpRate: 14.51, opRate: 6.87 };
 
 export const ANNUAL_SCHEDULE = [
   { period: 'Q1', range: '4–6月', title: '基盤構築期', desc: '関西の稼働密度維持と関東・中部の工数引き上げ。新規立ち上げ4案件の完遂。' },
-  { period: 'Q2', range: '7–9月', title: '利益体質転換期', desc: '受注残35名の完全充足。総稼働225名・平均工数120hの同時達成。' },
+  { period: 'Q2', range: '7–9月', title: '利益体質転換期', desc: '受注残35名の完全充足。総稼働235名・平均工数120hの同時達成。' },
   { period: 'Q3', range: '10–12月', title: '価格交渉・拡大期', desc: '全エリアでの価格交渉実行（+30円/h目標）。新規大型案件の受注獲得。' },
   { period: 'Q4', range: '1–3月', title: '通期目標達成期', desc: '年間売上6.2億円、営業利益率6.87%の必達。次期に向けたリーダー育成。' },
 ];
@@ -57,7 +57,7 @@ function plannedCompany(budget: number, quarterDesc: string, backlog?: { orderBa
     status: 'planned', salesBudget: budget, salesActual: null, yoyLastYear: null,
     gpBudget: Math.round(budget * (ANNUAL_GOAL.gpRate / 100)), gpActual: null,
     opBudget: Math.round(budget * (ANNUAL_GOAL.opRate / 100)), opActual: null,
-    activeStaff: null, targetStaff: 225, joined: null, resigned: null, avgHours: null,
+    activeStaff: null, targetStaff: 235, joined: null, resigned: null, avgHours: null,
     orderBacklog: backlog?.orderBacklog ?? null,
     backlogStackupPotential: backlog?.stackupPotential ?? null,
     topics: ['月次実績データは未登録です（月末確定後に反映されます）'],
@@ -79,7 +79,7 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
   '4月実績': {
     status: 'actual', salesBudget: 46302000, salesActual: 49652000, yoyLastYear: 45200000,
     gpBudget: 6178000, gpActual: 8806000, opBudget: 3900000, opActual: 4170000,
-    activeStaff: 200, targetStaff: 225, joined: 12, resigned: 10, avgHours: 119.0, orderBacklog: 18,
+    activeStaff: 200, targetStaff: 235, joined: 12, resigned: 10, avgHours: 119.0, orderBacklog: 18,
     topics: [
       '売上実績 4,988万円 (予算比+8.8%) の好スタート！',
       '営業利益 417万円 (利益率8.4%) を記録。関西が大きく牽引',
@@ -95,7 +95,7 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
   '5月実績': {
     status: 'actual', salesBudget: 44534000, salesActual: 43174500, yoyLastYear: 39800000,
     gpBudget: 6266000, gpActual: 4995000, opBudget: 3800000, opActual: 1450000,
-    activeStaff: 193, targetStaff: 225, joined: 4, resigned: 19, avgHours: 107.26, orderBacklog: 35,
+    activeStaff: 193, targetStaff: 235, joined: 4, resigned: 19, avgHours: 107.26, orderBacklog: 35,
     topics: [
       '売上実績 4,348万円、利益率3.8%へ低下 (有給費+64万などの一時要因)',
       '退職19名の損失(月次241万減)と受注残35名(月次901万減)の解消が急務',
@@ -105,20 +105,20 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
     schedule: [
       '■ 6月20日: 退職19名の入替採用の媒体掲載完了',
       '■ 6月末: 6月立ち上げ4案件の稼働確認完了',
-      '■ 7月末: 稼働225名水準への回復 / 関東・中部工数改善(120h目標)',
+      '■ 7月末: 稼働235名水準への回復 / 関東・中部工数改善(120h目標)',
     ],
   },
   '6月進捗': {
     status: 'inprogress', salesBudget: 53500000, salesActual: 47213000, yoyLastYear: 44800000,
     gpBudget: 9501000, gpActual: 5108000, opBudget: 4500000, opActual: 2100000,
-    activeStaff: 204, targetStaff: 225, joined: 15, resigned: 2, avgHours: 110.43, orderBacklog: 20,
+    activeStaff: 204, targetStaff: 235, joined: 15, resigned: 2, avgHours: 110.43, orderBacklog: 20,
     topics: [
       '6月予算 ¥5,350万 ➔ 見込み ¥4,978万 (GAP ▲372万)',
       '将来スプレッドシートやAPIからここへ直接数字を流し込むソースパターンとして設計済',
     ],
     schedule: [
       '■ 6月末: 受注残35名のうち15名充足',
-      '■ 7月末: 稼働225名水準への回復',
+      '■ 7月末: 稼働235名水準への回復',
     ],
   },
   '7月予定': plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 31, stackupPotential: 6625700 }),

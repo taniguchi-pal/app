@@ -61,7 +61,7 @@ const ANNUAL_GOAL = { sales: 620000000, gpRate: 14.51, opRate: 6.87 };
 
 const ANNUAL_SCHEDULE = [
   { period: 'Q1', range: '4–6月', title: '基盤構築期', desc: '関西の稼働密度維持と関東・中部の工数引き上げ。新規立ち上げ4案件の完遂。' },
-  { period: 'Q2', range: '7–9月', title: '利益体質転換期', desc: '受注残35名の完全充足。総稼働225名・平均工数120hの同時達成。' },
+  { period: 'Q2', range: '7–9月', title: '利益体質転換期', desc: '受注残35名の完全充足。総稼働235名・平均工数120hの同時達成。' },
   { period: 'Q3', range: '10–12月', title: '価格交渉・拡大期', desc: '全エリアでの価格交渉実行（+30円/h目標）。新規大型案件の受注獲得。' },
   { period: 'Q4', range: '1–3月', title: '通期目標達成期', desc: '年間売上6.2億円、営業利益率6.87%の必達。次期に向けたリーダー育成。' },
 ];
@@ -100,7 +100,7 @@ function plannedMonth(quarterDesc: string, totalBudget: number): MonthlyData {
     schedule: [`■ 今四半期方針: ${quarterDesc}`],
     monthSales: { actual: null, budget: totalBudget, yoyLastYear: null },
     infra: { sites: 39, staff: 225 },
-    kpiSummary: { activeStaff: null, targetStaff: 225, joined: null, resigned: null, avgHours: null, orderBacklog: null },
+    kpiSummary: { activeStaff: null, targetStaff: 235, joined: null, resigned: null, avgHours: null, orderBacklog: null },
     funnel: null,
     alerts: [],
     budgetVsActual: { opProfit: { budget: Math.round(totalBudget * 0.0687), actual: null } },
@@ -124,7 +124,7 @@ const MONTHLY_DATA: Record<string, MonthlyData> = {
     ],
     monthSales: { actual: 49883158, budget: 46302000, yoyLastYear: 45200000 },
     infra: { sites: 39, staff: 200 },
-    kpiSummary: { activeStaff: 200, targetStaff: 225, joined: 12, resigned: 10, avgHours: 110.0, orderBacklog: 18 },
+    kpiSummary: { activeStaff: 200, targetStaff: 235, joined: 12, resigned: 10, avgHours: 110.0, orderBacklog: 18 },
     funnel: { meetings: 13, proposals: 9, estimates: 6, orders: 5 },
     alerts: [],
     budgetVsActual: { opProfit: { budget: 3900000, actual: 4170000 } },
@@ -147,11 +147,11 @@ const MONTHLY_DATA: Record<string, MonthlyData> = {
     schedule: [
       '■ 6月20日: 退職19名の入替採用の媒体掲載完了',
       '■ 6月末: 6月立ち上げ4案件の稼働確認完了',
-      '■ 7月末: 稼働225名水準への回復 / 関東・中部工数改善(120h目標)',
+      '■ 7月末: 稼働235名水準への回復 / 関東・中部工数改善(120h目標)',
     ],
     monthSales: { actual: 43478011, budget: 44534000, yoyLastYear: 39800000 },
     infra: { sites: 38, staff: 193 },
-    kpiSummary: { activeStaff: 193, targetStaff: 225, joined: 4, resigned: 19, avgHours: 101.2, orderBacklog: 35 },
+    kpiSummary: { activeStaff: 193, targetStaff: 235, joined: 4, resigned: 19, avgHours: 101.2, orderBacklog: 35 },
     funnel: { meetings: 11, proposals: 8, estimates: 5, orders: 4 },
     alerts: [
       { level: 'critical', text: '営業利益の進捗が90％未満です' },
@@ -175,11 +175,11 @@ const MONTHLY_DATA: Record<string, MonthlyData> = {
     ],
     schedule: [
       '■ 6月末: 受注残35名のうち15名充足',
-      '■ 7月末: 稼働225名水準への回復',
+      '■ 7月末: 稼働235名水準への回復',
     ],
     monthSales: { actual: 49780000, budget: 53500000, yoyLastYear: 44800000 },
     infra: { sites: 38, staff: 193 },
-    kpiSummary: { activeStaff: 193, targetStaff: 225, joined: 15, resigned: 2, avgHours: 104.5, orderBacklog: 20 },
+    kpiSummary: { activeStaff: 193, targetStaff: 235, joined: 15, resigned: 2, avgHours: 104.5, orderBacklog: 20 },
     funnel: { meetings: 16, proposals: 10, estimates: 4, orders: 2 },
     alerts: [
       { level: 'critical', text: '売上見込みが予算に対し▲372万のギャップが生じています' },
