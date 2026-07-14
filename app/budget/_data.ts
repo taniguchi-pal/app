@@ -263,9 +263,19 @@ export const PL_ACCOUNTS: PLAccountDef[] = [
   { label: '当期純利益', section: 'tax', isSubtotal: true },
 ];
 
+// 事業所内の役割単位（リフト/軽作業/日勤/夜勤など）。損益は事業所（現場)単位で
+// 一本化されるが、採用状況・コンタクト履歴はこの役割単位でも細分化管理する。
+export interface SiteRole {
+  code: string; label: string; isNew?: boolean;
+  salesRep?: string | null; soRep?: string | null;
+  recruiting?: { active: boolean; costSpent?: number; costBudget?: number; postingPeriod?: string } | null;
+  actionLog?: ActionLogEntry[];
+}
+
 export interface SiteData {
   id: string; name: string; areaId: string; prefecture: string | null;
   active: boolean; lifecycle?: string;
+  roles?: SiteRole[]; // 事業所内の役割別内訳（案件番号つき）
   sales?: SiteFinancial; cost?: SiteFinancial; paidLeave?: SiteFinancial; opProfit?: SiteFinancial;
   plDetail?: Record<string, Partial<SiteFinancial>>; // PL_ACCOUNTSのlabelをキーとした明細（実データ提供後に充実予定）
   staffCount?: number; totalHours?: number; avgHours?: number;
@@ -274,19 +284,29 @@ export interface SiteData {
   backlogCount?: number; // 受注残（未充足人数）
   expectedImpact?: number; // 充足/交渉成立時に期待できるインパクト額（円）
   negotiationStatus?: NegotiationStatus;
-  actionLog?: ActionLogEntry[]; // 価格交渉・コンタクト・横展開・課題の統合アクションログ
+  actionLog?: ActionLogEntry[]; // 価格交渉・コンタクト・横展開・課題の統合アクションログ（事業所全体）
   // 手入力運用項目（チーム共有の保存基盤が必要 — 現状は静的プレースホルダー）
   salesRep?: string | null; soRep?: string | null;
   recruiting?: { active: boolean; costSpent?: number; costBudget?: number; postingPeriod?: string } | null;
 }
 
-function placeholderSite(id: string, name: string, areaId: string, opts?: { active?: boolean; lifecycle?: string }): SiteData {
-  return { id, name, areaId, prefecture: null, active: opts?.active ?? true, lifecycle: opts?.lifecycle };
+function placeholderSite(id: string, name: string, areaId: string, opts?: { active?: boolean; lifecycle?: string; roles?: SiteRole[] }): SiteData {
+  return { id, name, areaId, prefecture: null, active: opts?.active ?? true, lifecycle: opts?.lifecycle, roles: opts?.roles };
+}
+
+function role(code: string, label: string, isNew?: boolean): SiteRole {
+  return { code, label, isNew };
 }
 
 export const POSTING_PERIOD_OPTIONS = ['1週間', '2週間', '1ヶ月', '2ヶ月', '3ヶ月以上'] as const;
 
 export const SITES: Record<string, SiteData> = {
+  // ── 関東 ──────────────────────────────────────────────
+  '811-1': placeholderSite('811-1', '福山通運 八千代支店 メニコン', 'kanto'),
+  '116-1': placeholderSite('116-1', 'PCS 関東（重工田町ビル）', 'kanto'),
+  '115-1': placeholderSite('115-1', 'PCS 関東（重工相模原）', 'kanto', { lifecycle: '7月より非稼働予定' }),
+  '657-1': placeholderSite('657-1', 'PCS 関東（重工丸の内）', 'kanto'),
+  '715-1': placeholderSite('715-1', 'PCS 関東（豊洲）', 'kanto'),
   '648-1': {
     active: true,
     id: '648-1', name: 'ネオヴィア・ロジ 相模原部品センター', areaId: 'kanto', prefecture: '神奈川県',
@@ -302,23 +322,10 @@ export const SITES: Record<string, SiteData> = {
       { date: '2025-09', type: '価格交渉', text: '部品センター専属化に伴う単価改定 +25円/h 合意' },
     ],
   },
-  '790-1': {
-    active: true,
-    id: '790-1', name: '昭和冷蔵 小牧センター', areaId: 'chubu', prefecture: '愛知県',
-    sales: { actual: 4200000, budget: 4100000, yoy: 3800000, mom: 4050000 },
-    cost: { actual: 3350000, budget: 3280000, yoy: 3050000, mom: 3230000 },
-    paidLeave: { actual: 90000, budget: 50000, yoy: 45000, mom: 60000 },
-    opProfit: { actual: 508000, budget: 490000, yoy: 450000, mom: 480000 },
-    staffCount: 18, totalHours: 1818, avgHours: 101.0,
-    liftUnitPrice: 1400, workerUnitPrice: 1200, minimumWage: 1077, marketHourlyWage: 1150,
-    backlogCount: 3, expectedImpact: 620000, negotiationStatus: '交渉中',
-    salesRep: null, soRep: null, recruiting: { active: true, costSpent: 85000, costBudget: 150000, postingPeriod: '1ヶ月' },
-    actionLog: [
-      { date: '2025-12', type: '価格交渉', text: '冷蔵倉庫手当 新設 +40円/h 合意' },
-      { date: '2026-04', type: '価格交渉', text: '最低賃金改定に伴うベース単価見直し予定' },
-      { date: '2026-06', type: 'コンタクト', text: '現場責任者と定例MTG。夜間帯の人員不足を確認' },
-    ],
-  },
+  '835-1': placeholderSite('835-1', '有限会社黒岩運輸', 'kanto', { lifecycle: '新規現場' }),
+
+  // ── 中部 ──────────────────────────────────────────────
+  '142-3': placeholderSite('142-3', '福山通運 名古屋南流通センター', 'chubu'),
   '548-1': {
     active: true,
     id: '548-1', name: '福山通運 東海支店（セリア）', areaId: 'chubu', prefecture: '愛知県',
@@ -334,9 +341,41 @@ export const SITES: Record<string, SiteData> = {
       { date: '2025-10', type: '価格交渉', text: '契約更新に伴う単価据え置き' },
     ],
   },
+  '505-1': placeholderSite('505-1', '岐阜アグリフーズ 本社・工場（食鳥部鶏肉加工課）', 'chubu'),
+  '675-1': placeholderSite('675-1', 'AFS中部センター', 'chubu'),
+  '510-2': placeholderSite('510-2', 'afs 中部XD（派遣）', 'chubu'),
+  '790-1': {
+    active: true,
+    id: '790-1', name: '昭和冷蔵 小牧センター', areaId: 'chubu', prefecture: '愛知県',
+    roles: [role('790-1', 'リフト'), role('790-2', '倉庫内仕分け作業')],
+    sales: { actual: 4200000, budget: 4100000, yoy: 3800000, mom: 4050000 },
+    cost: { actual: 3350000, budget: 3280000, yoy: 3050000, mom: 3230000 },
+    paidLeave: { actual: 90000, budget: 50000, yoy: 45000, mom: 60000 },
+    opProfit: { actual: 508000, budget: 490000, yoy: 450000, mom: 480000 },
+    staffCount: 18, totalHours: 1818, avgHours: 101.0,
+    liftUnitPrice: 1400, workerUnitPrice: 1200, minimumWage: 1077, marketHourlyWage: 1150,
+    backlogCount: 3, expectedImpact: 620000, negotiationStatus: '交渉中',
+    salesRep: null, soRep: null, recruiting: { active: true, costSpent: 85000, costBudget: 150000, postingPeriod: '1ヶ月' },
+    actionLog: [
+      { date: '2025-12', type: '価格交渉', text: '冷蔵倉庫手当 新設 +40円/h 合意' },
+      { date: '2026-04', type: '価格交渉', text: '最低賃金改定に伴うベース単価見直し予定' },
+      { date: '2026-06', type: 'コンタクト', text: '現場責任者と定例MTG。夜間帯の人員不足を確認' },
+    ],
+  },
+  '833-1': placeholderSite('833-1', '摂津倉庫株式会社 春日井営業所', 'chubu', {
+    lifecycle: '新規現場',
+    roles: [role('833-1', 'リフト', true), role('833-2', '作業員', true), role('833-3', '事務員', true)],
+  }),
+  '834-1': placeholderSite('834-1', '昭和冷蔵 犬山ドライセンター', 'chubu', { lifecycle: '新規現場' }),
+
+  // ── 関西 ──────────────────────────────────────────────
+  '543-3': placeholderSite('543-3', 'フェリシモ エスパス［軽作業］', 'kansai'),
+  '595-1': placeholderSite('595-1', '岡山県貨物運送 南港支店［リフト］', 'kansai', { active: false, lifecycle: '2026年6月末で契約終了' }),
+  '136-1': placeholderSite('136-1', '日生トーム 高槻事業所（軽作業）', 'kansai'),
   '533-1': {
     active: true,
     id: '533-1', name: '任天堂販売 京都物流センター', areaId: 'kansai', prefecture: '京都府',
+    roles: [role('533-1', 'リフト'), role('533-2', '軽作業')],
     sales: { actual: 3800000, budget: 3700000, yoy: 3400000, mom: 3650000 },
     cost: { actual: 2900000, budget: 2830000, yoy: 2600000, mom: 2790000 },
     paidLeave: { actual: 100000, budget: 60000, yoy: 55000, mom: 75000 },
@@ -350,9 +389,40 @@ export const SITES: Record<string, SiteData> = {
       { date: '2026-05', type: '横展開', text: '任天堂販売の他拠点にも同条件の増員提案を横展開検討' },
     ],
   },
+  '570-1': placeholderSite('570-1', '加茂商事［軽作業］', 'kansai'),
+  '530-1': placeholderSite('530-1', 'PCS 関西（神戸）［配達作業員］', 'kansai'),
+  '723-1': placeholderSite('723-1', '阪菱企業 茨木', 'kansai', { roles: [role('723-1', 'リフト'), role('723-2', '軽作業')] }),
+  '815-1': placeholderSite('815-1', '阪菱企業 西神［軽作業］', 'kansai'),
+  '753-1': placeholderSite('753-1', 'ハウス物流サービス株式会社 伊丹［リフト］', 'kansai', { active: false, lifecycle: '2026年6月末で契約終了' }),
+  '801-1': placeholderSite('801-1', 'コーナン商事 貝塚センター［リフト］', 'kansai'),
+  '633-1': placeholderSite('633-1', '尾家産業 阪南支店（派遣）（ドライバー）', 'kansai'),
+  '782-1': placeholderSite('782-1', 'SHUUEI物流 高槻センター［リフト］', 'kansai'),
+  '606-3': placeholderSite('606-3', 'SHUUEI物流 枚方センター［リフト］短期', 'kansai'),
+  '808-1': placeholderSite('808-1', '西鉄運輸株式会社 枚方センター', 'kansai', { roles: [role('808-1', '軽作業'), role('808-2', '軽作業（短期）')] }),
+  '805-1': placeholderSite('805-1', 'YSOロジ［リフト］', 'kansai'),
+  '720-1': placeholderSite('720-1', 'HMKロジサービス 西神戸センター［軽作業］', 'kansai'),
+  '828-1': placeholderSite('828-1', '摂津倉庫 京田辺', 'kansai', { roles: [role('828-1', '軽作業'), role('828-2', 'リフト')] }),
+  '830-1': placeholderSite('830-1', 'エヌエス物流 関西［軽作業］', 'kansai'),
+  '831-1': placeholderSite('831-1', 'エヌエス物流 滋賀［軽作業］', 'kansai'),
+  '832-1': placeholderSite('832-1', '西鉄運輸 加古川支店', 'kansai', {
+    roles: [
+      role('832-1', '軽作業'), role('832-2', '事務'), role('832-3', 'リフト'),
+      role('832-4a', 'ドライバー', true), role('832-4b', '短期作業員', true),
+    ],
+  }),
+  '836-1': placeholderSite('836-1', 'HMKロジサービス 南港（レッドウッド南港）', 'kansai', {
+    lifecycle: '新規現場', roles: [role('836-1', '軽作業', true), role('836-2', 'リフト', true)],
+  }),
+  '836-3': placeholderSite('836-3', 'HMKロジサービス 南港（GLP大阪）', 'kansai', {
+    lifecycle: '新規現場', roles: [role('836-3', 'リフト', true), role('836-4', '軽作業（短期）', true)],
+  }),
+  '837-1': placeholderSite('837-1', 'SHUUEI物流株式会社 尼崎センター（ロジポート尼崎）［軽作業］', 'kansai', { lifecycle: '新規現場' }),
+
+  // ── 大阪支店 ──────────────────────────────────────────
   '133-1': {
     active: true,
-    id: '133-1', name: '福山通運 大阪支店 (日勤/夜勤合計)', areaId: 'osaka', prefecture: '大阪府',
+    id: '133-1', name: '福山通運 大阪支店', areaId: 'osaka', prefecture: '大阪府',
+    roles: [role('133-1', '日勤'), role('133-2', '夜勤')],
     sales: { actual: 20329795, budget: 20550000, yoy: 18200000, mom: 19800000 },
     cost: { actual: 15721065, budget: 16100000, yoy: 14200000, mom: 15100000 },
     paidLeave: { actual: 650000, budget: 350000, yoy: 210000, mom: 150000 },
@@ -367,47 +437,6 @@ export const SITES: Record<string, SiteData> = {
       { date: '2026-05', type: 'コンタクト', text: '本部担当者と次期契約条件を協議' },
     ],
   },
-
-  // ── 以下、現場一覧のみ反映（損益書ご提供後に財務データを追加予定） ──
-  'kanto-p1': placeholderSite('kanto-p1', 'PCS 関東（重工相模原）', 'kanto', { lifecycle: '7月より非稼働予定' }),
-  'kanto-p2': placeholderSite('kanto-p2', 'PCS 関東（重工丸の内）', 'kanto'),
-  'kanto-p3': placeholderSite('kanto-p3', 'PCS 関東（豊洲）', 'kanto'),
-  'kanto-p4': placeholderSite('kanto-p4', 'メニコン 千葉八千代支店', 'kanto'),
-  'kanto-p5': placeholderSite('kanto-p5', 'PCS 関東（田町タワー）', 'kanto'),
-  'kanto-p6': placeholderSite('kanto-p6', '福山通運 藤沢支店', 'kanto', { active: false, lifecycle: '2026年3月末で契約終了（損益は6月頃まで諸経費計上継続）' }),
-
-  'chubu-p1': placeholderSite('chubu-p1', 'afs 中部XD（派遣）', 'chubu'),
-  'chubu-p2': placeholderSite('chubu-p2', '福山通運 名古屋南流通センター', 'chubu'),
-  'chubu-p3': placeholderSite('chubu-p3', '株式会社Rian Japan 中部物流センター', 'chubu', { active: false, lifecycle: '2026年5月末で契約終了' }),
-  'chubu-p4': placeholderSite('chubu-p4', '岐阜アグリフーズ 本社・工場（食鳥部鶏肉加工課）', 'chubu'),
-  'chubu-p5': placeholderSite('chubu-p5', '昭和冷蔵 名古屋センター', 'chubu'),
-  'chubu-p6': placeholderSite('chubu-p6', '昭和冷蔵 犬山ドライセンター', 'chubu', { lifecycle: '2026年4月新規稼働' }),
-
-  'kansai-p1': placeholderSite('kansai-p1', '日生トーム 高槻事業所', 'kansai'),
-  'kansai-p2': placeholderSite('kansai-p2', '岡山県貨物運送 南港支店', 'kansai', { active: false, lifecycle: '2026年6月末で契約終了' }),
-  'kansai-p3': placeholderSite('kansai-p3', '株式会社加茂商事', 'kansai'),
-  'kansai-p4': placeholderSite('kansai-p4', '尾家産業 阪南支店（派遣）', 'kansai'),
-  'kansai-p5': placeholderSite('kansai-p5', 'コーナン商事 貝塚センター', 'kansai'),
-  'kansai-p6': placeholderSite('kansai-p6', 'フェリシモ エスパス（選別作業）', 'kansai'),
-  'kansai-p7': placeholderSite('kansai-p7', 'PCS 関西（BPOソリューション事業本部）', 'kansai'),
-  'kansai-p8': placeholderSite('kansai-p8', '阪菱企業 第三（12号倉庫）', 'kansai'),
-  'kansai-p9': placeholderSite('kansai-p9', '阪菱企業 第二 5号配送センター', 'kansai'),
-  'kansai-p10': placeholderSite('kansai-p10', 'HMKロジサービス 西神戸センター', 'kansai'),
-  'kansai-p11': placeholderSite('kansai-p11', 'ハウス物流サービス株式会社', 'kansai', { active: false, lifecycle: '2026年6月末で契約終了' }),
-  'kansai-p12': placeholderSite('kansai-p12', '阪菱企業 第一 1号配送センター', 'kansai'),
-  'kansai-p13': placeholderSite('kansai-p13', '阪菱企業 第一 2号配送センター', 'kansai'),
-  'kansai-p14': placeholderSite('kansai-p14', '阪菱企業 第一 11号倉庫', 'kansai'),
-  'kansai-p15': placeholderSite('kansai-p15', 'YSO Logi株式会社 神戸営業所', 'kansai'),
-  'kansai-p16': placeholderSite('kansai-p16', '西鉄運輸 枚方物流センター', 'kansai'),
-  'kansai-p17': placeholderSite('kansai-p17', 'フェリシモ エスパス（伝票管理業務）', 'kansai'),
-  'kansai-p18': placeholderSite('kansai-p18', '阪菱企業 西神現業所', 'kansai'),
-  'kansai-p19': placeholderSite('kansai-p19', 'フェリシモ エスパス（検品・箱入作業）', 'kansai'),
-  'kansai-p20': placeholderSite('kansai-p20', '摂津倉庫 京田辺センター', 'kansai'),
-  'kansai-p21': placeholderSite('kansai-p21', 'エヌエス物流 関西物流センター', 'kansai'),
-  'kansai-p22': placeholderSite('kansai-p22', 'エヌエス物流 滋賀物流センター', 'kansai'),
-  'kansai-p23': placeholderSite('kansai-p23', '西鉄運輸 加古川支店', 'kansai'),
-  'kansai-p24': placeholderSite('kansai-p24', 'HMKロジサービス 南港センター（レッドウッド南港）', 'kansai', { lifecycle: '2026年6月新規稼働' }),
-  'kansai-p25': placeholderSite('kansai-p25', 'HMKロジサービス 南港センター（GLP大阪）', 'kansai', { lifecycle: '2026年6月新規稼働' }),
 };
 
 export function sitesOfArea(areaId: string): SiteData[] {

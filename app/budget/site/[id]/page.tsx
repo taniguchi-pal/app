@@ -277,6 +277,24 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           </Card>
         </div>
 
+        {/* ── 役割別内訳（案件番号） ────────────────── */}
+        {site.roles && site.roles.length > 0 && (
+          <Card eyebrow="Roles" title="役割別内訳（採用状況・コンタクト履歴の細分化管理用）">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {site.roles.map((r) => (
+                <div key={r.code} className="p-3 rounded-xl bg-zinc-50 border border-zinc-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-zinc-700">{r.label}</span>
+                    {r.isNew && <span className="text-[9px] font-black text-white bg-emerald-500 px-1.5 py-0.5 rounded">新規</span>}
+                  </div>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">案件コード: {r.code}</p>
+                  <p className="text-[10px] text-zinc-400 mt-1">採用状況・コンタクト履歴は今後この単位で入力予定</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {/* ── 担当者・募集状況（手入力・チーム共有） ── */}
         <Card eyebrow="Assignment" title="担当者・募集状況">
           {apiStatus === 'unconfigured' && (
