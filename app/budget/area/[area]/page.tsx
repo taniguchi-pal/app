@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AchieveBadge, BackLink, Breadcrumb, WeatherBadge } from '../../_ui';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME } from '../../_ui';
 import { MONTHS, MonthKey, AREA_MONTHLY, AREAS, sitesOfArea, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
@@ -11,7 +12,6 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   const { area: areaId } = React.use(params);
   const area = AREAS.find((a) => a.id === areaId) ?? AREAS[0];
   const [activeMonth, setActiveMonth] = useState<MonthKey>('6月進捗');
-  const [compareMode, setCompareMode] = useState<'budget' | 'yoy'>('budget');
   const monthIndex = MONTHS.indexOf(activeMonth);
 
   // ── 7月以降の実績はSheetsの値があれば上書き ──
@@ -44,9 +44,13 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   const gap = current.salesActual != null ? current.salesActual - current.salesBudget : null;
   const yoyPct = current.salesActual != null && current.yoyLastYear != null ? ((current.salesActual - current.yoyLastYear) / current.yoyLastYear) * 100 : null;
 
-  const compareTarget = compareMode === 'budget' ? current.salesBudget : current.yoyLastYear;
-  const compareLabel = compareMode === 'budget' ? '予算' : '前年同月';
-  const maxVal = Math.max(current.salesActual ?? 0, compareTarget ?? 0, 1);
+  const prevMonthActual = monthIndex > 0 ? monthly[MONTHS[monthIndex - 1]]?.salesActual ?? null : null;
+  const salesChartData = [
+    { name: '前年同月', 売上高: current.yoyLastYear },
+    { name: '先月', 売上高: prevMonthActual },
+    { name: '当月実績', 売上高: current.salesActual },
+    { name: '予算', 売上高: current.salesBudget },
+  ];
 
   const topics: { text: string; tone: 'default' | 'alert' | 'notice' }[] = [];
   if (rate != null && gap != null) topics.push({ text: `売上 予算比 ${rate.toFixed(1)}%（GAP ${gap > 0 ? '+' : ''}¥${gap.toLocaleString()}）`, tone: 'default' });
@@ -60,7 +64,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   if (monthIndex >= 3 && !ov) topics.push({ text: 'この月の実績はまだSheetsに未入力です（予算のみ表示）', tone: 'default' });
 
   return (
-    <Shell>
+    <Shell agvColor={(AREA_THEME[areaId] || AREA_THEME.kanto).from}>
       <header className="px-4 md:px-10 pt-6 pb-4">
         <BackLink href="/budget" label="事業部ダッシュボードへ戻る" />
         <Breadcrumb items={[{ label: '事業部ダッシュボード', href: '/budget' }, { label: `${area.title}エリア` }]} />
@@ -107,74 +111,67 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* ── 行動アクションの可視化 ──────────────── */}
-          <Card eyebrow="Action" title="行動アクションの可視化（営業パイプライン）">
+          {/* ── 営業パイプライン（ファネル型・転換率つき） ── */}
+          <Card eyebrow="Pipeline" title="営業パイプライン（商談→受注）">
             {current.funnel == null ? (
               <div className="h-40 border-2 border-dashed border-zinc-100 rounded-2xl flex items-center justify-center">
                 <p className="text-xs font-bold text-zinc-400">パイプラインデータ未登録</p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {[
-                  { label: '1. 新規商談', val: current.funnel.meetings },
-                  { label: '2. 提案', val: current.funnel.proposals },
-                  { label: '3. 見積', val: current.funnel.estimates },
-                ].map((item, i) => (
-                  <div key={i}>
-                    <div className="flex justify-between items-end mb-1">
-                      <span className="text-xs font-bold text-zinc-500">{item.label}</span>
-                      <span className="text-sm font-black text-blue-700 font-mono">{item.val}件</span>
-                    </div>
-                    <ProgressBar rate={(item.val / Math.max(current.funnel!.meetings, 1)) * 100} />
-                  </div>
-                ))}
-                <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl flex justify-between items-center">
-                  <span className="text-xs font-black text-blue-900">4. 新規成約（受注）</span>
-                  <span className="text-xl font-black text-blue-800 font-mono">{current.funnel.orders}件</span>
+            ) : (() => {
+              const stages = [
+                { label: '新規商談', val: current.funnel.meetings },
+                { label: '提案', val: current.funnel.proposals },
+                { label: '見積', val: current.funnel.estimates },
+                { label: '受注', val: current.funnel.orders },
+              ];
+              const base = Math.max(stages[0].val, 1);
+              const stageTheme = (AREA_THEME[areaId] || AREA_THEME.kanto);
+              return (
+                <div className="space-y-1">
+                  {stages.map((s, i) => {
+                    const widthPct = Math.max((s.val / base) * 100, 14);
+                    const prev = i > 0 ? stages[i - 1].val : null;
+                    const convRate = prev != null && prev > 0 ? (s.val / prev) * 100 : null;
+                    return (
+                      <div key={s.label}>
+                        {i > 0 && (
+                          <div className="flex items-center justify-center py-0.5">
+                            <span className="text-[9px] font-bold text-zinc-400">↓ 転換率 {convRate != null ? `${convRate.toFixed(0)}%` : '—'}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-center">
+                          <div
+                            className="flex items-center justify-between px-3 py-2 rounded-lg text-white text-xs font-bold transition-all duration-500"
+                            style={{ width: `${widthPct}%`, minWidth: '40%', backgroundImage: `linear-gradient(135deg, ${stageTheme.from}, ${stageTheme.to})`, opacity: 0.55 + (i / stages.length) * 0.45 }}
+                          >
+                            <span>{s.label}</span>
+                            <span className="font-mono">{s.val}件</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </Card>
 
-          {/* ── 予算対比・前年対比グラフ ─────────────── */}
-          <Card
-            eyebrow="Analysis"
-            title="売上高 対比グラフ"
-            right={
-              <div className="flex bg-zinc-100 p-1 rounded-lg text-[10px] font-bold">
-                <button onClick={() => setCompareMode('budget')} className={`px-2.5 py-1 rounded transition ${compareMode === 'budget' ? 'bg-white text-blue-700 shadow-sm' : 'text-zinc-500'}`}>vs 予算</button>
-                <button onClick={() => setCompareMode('yoy')} className={`px-2.5 py-1 rounded transition ${compareMode === 'yoy' ? 'bg-white text-blue-700 shadow-sm' : 'text-zinc-500'}`}>vs 前年</button>
-              </div>
-            }
-          >
+          {/* ── 売上高 前年・先月・予算 対比（折れ線） ── */}
+          <Card eyebrow="Analysis" title="売上高 前年・先月・予算 対比推移">
             {current.salesActual == null ? (
               <div className="h-40 border-2 border-dashed border-zinc-100 rounded-2xl flex items-center justify-center">
                 <p className="text-xs font-bold text-zinc-400">実績データ未登録（計画月）</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-14 text-[10px] text-zinc-400 shrink-0">当月実績</span>
-                  <div className="flex-1 bg-zinc-100 rounded-full h-4">
-                    <div className="bg-blue-600 h-4 rounded-full flex items-center justify-end pr-2" style={{ width: `${((current.salesActual / maxVal) * 100).toFixed(1)}%` }}>
-                      <span className="text-[9px] font-bold text-white font-mono">{yen(current.salesActual)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-14 text-[10px] text-zinc-400 shrink-0">{compareLabel}</span>
-                  <div className="flex-1 bg-zinc-100 rounded-full h-4">
-                    <div className="bg-zinc-300 h-4 rounded-full flex items-center justify-end pr-2" style={{ width: `${compareTarget ? ((compareTarget / maxVal) * 100).toFixed(1) : 0}%` }}>
-                      <span className="text-[9px] font-bold text-zinc-700 font-mono">{yen(compareTarget)}</span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-[10px] text-zinc-400 pt-1">
-                  {compareLabel}比 <span className={`font-bold font-mono ${compareTarget && current.salesActual >= compareTarget ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {compareTarget ? `${(((current.salesActual - compareTarget) / compareTarget) * 100).toFixed(1)}%` : '—'}
-                  </span>
-                </p>
-              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={salesChartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#a1a1aa" />
+                  <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
+                  <Tooltip formatter={(v) => yen(typeof v === 'number' ? v : Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                  <Line type="monotone" dataKey="売上高" stroke={(AREA_THEME[areaId] || AREA_THEME.kanto).from} strokeWidth={2.5} connectNulls dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
             )}
           </Card>
         </div>

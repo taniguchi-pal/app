@@ -4,10 +4,11 @@
 import React from 'react';
 import Link from 'next/link';
 
-export function Shell({ children }: { children: React.ReactNode }) {
+export function Shell({ children, agvColor }: { children: React.ReactNode; agvColor?: string }) {
   return (
     <div className="relative min-h-screen bg-[#f0f2f5] text-zinc-800 font-noto pb-10">
       <div className="absolute inset-0 bg-[linear-gradient(rgba(26,54,110,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(26,54,110,0.04)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
+      {agvColor && <AGVLineVertical color={agvColor} />}
       <div className="relative z-10">{children}</div>
     </div>
   );

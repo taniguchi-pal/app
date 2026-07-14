@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge } from './_ui';
+import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
 import { MONTHS, MonthKey, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, yen, BACKLOG_STACKUP_MONTHLY_TARGET } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
@@ -89,11 +89,12 @@ export default function GlobalDashboard() {
   };
 
   return (
-    <Shell>
+    <Shell agvColor="#1e40af">
       {/* ── ヘッダー ─────────────────────────────────── */}
       <header className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 md:px-10 py-5 bg-white border-b border-zinc-100 overflow-hidden">
         <AGVLine />
         <div>
+          <BackLink href="/" label="ログイン画面へ戻る" />
           <Eyebrow>Staffing Management Brain</Eyebrow>
           <h1 className="mt-1 text-xl md:text-2xl font-black text-zinc-900 tracking-tight">27期 人材ソリューション事業部 経営ダッシュボード</h1>
         </div>
