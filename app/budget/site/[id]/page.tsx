@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, BackLink, Breadcrumb, AREA_THEME } from '../../_ui';
 import { SITES, AREAS, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef } from '../../_data';
 
@@ -182,7 +182,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           </Card>
         </div>
 
-        {/* ── 前年・先月・予算 対比（折れ線グラフ） ── */}
+        {/* ── 前年・先月・予算 対比（指標ごとに折れ線グラフを分離） ── */}
         <Card eyebrow="P&L Analysis" title="前年・先月・予算 対比推移（主要指標）">
           {!hasFinancials ? (
             <div className="h-40 border-2 border-dashed border-zinc-200 rounded-2xl flex flex-col items-center justify-center gap-1">
@@ -190,19 +190,22 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
               <p className="text-[10px] text-zinc-400">現場ごとの損益書をご提供いただき次第、反映します</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#a1a1aa" />
-                <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#2563eb' }} stroke="#2563eb" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#a1a1aa' }} stroke="#a1a1aa" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
-                <Tooltip formatter={(v) => yen(typeof v === 'number' ? v : Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                {CHART_METRICS.map((m) => (
-                  <Line key={m.account.label} yAxisId={m.axis} type="monotone" dataKey={m.account.label} stroke={m.color} strokeWidth={2} connectNulls dot={{ r: 3 }} />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {CHART_METRICS.map((m) => (
+                <div key={m.account.label}>
+                  <p className="text-xs font-bold text-zinc-600 mb-1 text-center">{m.account.label}</p>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#a1a1aa" />
+                      <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
+                      <Tooltip formatter={(v) => yen(typeof v === 'number' ? v : Number(v))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                      <Line type="monotone" dataKey={m.account.label} stroke={m.color} strokeWidth={2} connectNulls dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ))}
+            </div>
           )}
         </Card>
 
