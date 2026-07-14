@@ -12,15 +12,18 @@ const ACTION_COLOR: Record<ActionType, string> = {
   課題: 'text-rose-700 bg-rose-50 border-rose-100',
 };
 
-const CHART_METRIC_LABELS: { label: string; color: string }[] = [
-  { label: '売上高', color: '#2563eb' },
-  { label: '売上総利益', color: '#059669' },
-  { label: '営業利益', color: '#d97706' },
+// 売上高は金額規模が大きく、売上総利益/営業利益と同じ軸だと後者が潰れて見えるため、
+// 売上高=左軸、粗利・営業利益=右軸の2軸グラフにする。
+const CHART_METRIC_LABELS: { label: string; color: string; axis: 'left' | 'right' }[] = [
+  { label: '売上高', color: '#2563eb', axis: 'left' },
+  { label: '売上総利益', color: '#059669', axis: 'right' },
+  { label: '営業利益', color: '#d97706', axis: 'right' },
 ];
-// 売上高/売上総利益/営業利益はいずれもPL_ACCOUNTS内で一意なので、対応するPLAccountDefを引く
-const CHART_METRICS: { account: PLAccountDef; color: string }[] = CHART_METRIC_LABELS.map(({ label, color }) => ({
+// PL_ACCOUNTS内で一意なラベルなので、対応するPLAccountDefを引く
+const CHART_METRICS: { account: PLAccountDef; color: string; axis: 'left' | 'right' }[] = CHART_METRIC_LABELS.map(({ label, color, axis }) => ({
   account: PL_ACCOUNTS.find((a) => a.label === label)!,
   color,
+  axis,
 }));
 
 const NEGOTIATION_OPTIONS: NegotiationStatus[] = ['未着手', '交渉中', '合意済', '見送り'];
@@ -191,11 +194,12 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
               <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#a1a1aa" />
-                <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
+                <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#2563eb' }} stroke="#2563eb" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#a1a1aa' }} stroke="#a1a1aa" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
                 <Tooltip formatter={(v) => yen(typeof v === 'number' ? v : Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 {CHART_METRICS.map((m) => (
-                  <Line key={m.account.label} type="monotone" dataKey={m.account.label} stroke={m.color} strokeWidth={2} connectNulls dot={{ r: 3 }} />
+                  <Line key={m.account.label} yAxisId={m.axis} type="monotone" dataKey={m.account.label} stroke={m.color} strokeWidth={2} connectNulls dot={{ r: 3 }} />
                 ))}
               </LineChart>
             </ResponsiveContainer>
