@@ -42,6 +42,23 @@ export interface CompanyMonth {
 // 2Q目標: 受注残の積上げによる単月売上インパクト ¥500万/月
 export const BACKLOG_STACKUP_MONTHLY_TARGET = 5000000;
 
+// SO（採用オペレーション）管理KPI。件数は入力値、率は件数から自動計算。
+export interface SOMetrics {
+  recruitingCost?: number; // 募集費
+  applicantUnitCost?: number; // 応募単価
+  validResourceUnitCost?: number; // 有効リソース単価
+  hireUnitCost?: number; // 入職単価
+  totalApplicants?: number; // 総応募者数
+  validApplicants?: number; // 有効応募数
+  validResources?: number; // 有効リソース数
+  candidates?: number; // 候補者数
+  hires?: number; // 入職者数
+  midMonthResignations?: number; // 月内退職者数
+  endMonthResignations?: number; // 月末退職者数
+  overtimeExcessCount?: number; // 残業超過人数（基準工数を超えたスタッフ数）
+  dailyAbsenceRate?: number; // 当日欠勤率（%、入力値）
+}
+
 export interface AreaMonth {
   salesBudget: number; salesActual: number | null; yoyLastYear: number | null;
   gpBudget: number | null; gpActual: number | null;
@@ -50,6 +67,7 @@ export interface AreaMonth {
   heat: string | null;
   siteCount?: number | null;
   funnel: { meetings: number; proposals: number; estimates: number; orders: number } | null;
+  soMetrics?: SOMetrics;
 }
 
 function plannedCompany(budget: number, quarterDesc: string, backlog?: { orderBacklog: number; stackupPotential: number }): CompanyMonth {

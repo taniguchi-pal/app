@@ -20,6 +20,13 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
     fetch('/api/monthly-data').then((r) => r.json()).then((data) => { if (!data?.error) setMonthlyOverrides(data); }).catch(() => {});
   }, []);
 
+  // ── 担当Sales/SOの絞り込み用に現場ごとの手入力情報を取得 ──
+  const [siteOverrides, setSiteOverrides] = useState<Record<string, any>>({});
+  useEffect(() => {
+    fetch('/api/site-overrides').then((r) => r.json()).then((data) => { if (!data?.error) setSiteOverrides(data); }).catch(() => {});
+  }, []);
+  const [repFilter, setRepFilter] = useState<string>('');
+
   const monthly = AREA_MONTHLY[areaId] ?? AREA_MONTHLY.kanto;
   const base = monthly[activeMonth];
   const ov = monthlyOverrides[`${areaId}__${activeMonth}`];
@@ -163,18 +170,51 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                 <p className="text-xs font-bold text-zinc-400">実績データ未登録（計画月）</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={salesChartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#a1a1aa" />
-                  <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
-                  <Tooltip formatter={(v) => yen(typeof v === 'number' ? v : Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                  <Line type="monotone" dataKey="売上高" stroke={(AREA_THEME[areaId] || AREA_THEME.kanto).from} strokeWidth={2.5} connectNulls dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <>
+                <p className="text-3xl font-black text-center font-mono" style={{ color: (AREA_THEME[areaId] || AREA_THEME.kanto).from }}>
+                  {yen(current.salesActual)}
+                </p>
+                <p className="text-[10px] text-zinc-400 text-center mb-2">当月実績</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={salesChartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#a1a1aa" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
+                    <Tooltip formatter={(v) => yen(typeof v === 'number' ? v : Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                    <Line type="monotone" dataKey="売上高" stroke={(AREA_THEME[areaId] || AREA_THEME.kanto).from} strokeWidth={2.5} connectNulls dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </>
             )}
           </Card>
         </div>
+
+        {/* ── SO管理KPI（採用・稼働管理） ─────────── */}
+        {(() => {
+          const so = current.soMetrics;
+          const rate = (a?: number, b?: number) => (a != null && b) ? `${((a / b) * 100).toFixed(1)}%` : '—';
+          const num = (v?: number, unit = '') => (v != null ? `${v.toLocaleString()}${unit}` : 'データ未登録');
+          const yenv = (v?: number) => (v != null ? yen(v) : 'データ未登録');
+          return (
+            <Card eyebrow="SO Management" title="SO管理KPI（採用・稼働管理）">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <MiniStat label="残業超過人数" value={num(so?.overtimeExcessCount, '名')} />
+                <MiniStat label="当日欠勤率" value={so?.dailyAbsenceRate != null ? `${so.dailyAbsenceRate.toFixed(1)}%` : 'データ未登録'} />
+                <MiniStat label="募集費" value={yenv(so?.recruitingCost)} />
+                <MiniStat label="応募単価" value={yenv(so?.applicantUnitCost)} />
+                <MiniStat label="有効リソース単価" value={yenv(so?.validResourceUnitCost)} />
+                <MiniStat label="入職単価" value={yenv(so?.hireUnitCost)} />
+                <MiniStat label="総応募者数" value={num(so?.totalApplicants, '名')} />
+                <MiniStat label="有効応募数" value={num(so?.validApplicants, '名')} sub={`有効応募率 ${rate(so?.validApplicants, so?.totalApplicants)}`} />
+                <MiniStat label="有効リソース数" value={num(so?.validResources, '名')} sub={`有効リソース率 ${rate(so?.validResources, so?.validApplicants)}`} />
+                <MiniStat label="候補者数" value={num(so?.candidates, '名')} />
+                <MiniStat label="入職者数" value={num(so?.hires, '名')} sub={`入職率 ${rate(so?.hires, so?.totalApplicants)} ／ 候補入職率 ${rate(so?.hires, so?.candidates)}`} />
+                <MiniStat label="月内退職者数" value={num(so?.midMonthResignations, '名')} />
+                <MiniStat label="月末退職者数" value={num(so?.endMonthResignations, '名')} />
+              </div>
+            </Card>
+          );
+        })()}
 
         {/* ── トピックス ───────────────────────────── */}
         <Card eyebrow="Topics" title={`${activeMonth} ${area.title}エリア トピックス`}>
@@ -195,9 +235,37 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
         </Card>
 
         {/* ── 管轄現場一覧 ─────────────────────────── */}
-        <p id="sites" className="text-[10px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase pt-2 scroll-mt-4">管轄現場の個別収益一覧（{sites.length}現場）</p>
+        {(() => {
+          const effectiveRep = (site: (typeof sites)[number]) => {
+            const ov = siteOverrides[site.id];
+            return { salesRep: (ov?.salesRep || site.salesRep) ?? null, soRep: (ov?.soRep || site.soRep) ?? null };
+          };
+          const repOptions = Array.from(new Set(
+            sites.flatMap((s) => { const r = effectiveRep(s); return [r.salesRep, r.soRep].filter(Boolean) as string[]; })
+          ));
+          const filteredSites = repFilter
+            ? sites.filter((s) => { const r = effectiveRep(s); return r.salesRep === repFilter || r.soRep === repFilter; })
+            : sites;
+          return (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                <p id="sites" className="text-[10px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase scroll-mt-4">管轄現場の個別収益一覧（{filteredSites.length}/{sites.length}現場）</p>
+                {repOptions.length > 0 && (
+                  <select
+                    value={repFilter}
+                    onChange={(e) => setRepFilter(e.target.value)}
+                    className="text-xs font-bold px-2 py-1.5 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+                  >
+                    <option value="">担当Sales/SOで絞り込み（全員）</option>
+                    {repOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                )}
+              </div>
+              {filteredSites.length === 0 && (
+                <p className="text-xs text-zinc-400 py-4 text-center">該当する現場がありません</p>
+              )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sites.map((site) => {
+          {filteredSites.map((site) => {
             const hasFinancials = site.sales != null;
             const siteRate = hasFinancials ? (site.sales!.actual / site.sales!.budget) * 100 : null;
             return (
@@ -252,6 +320,9 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
             );
           })}
         </div>
+            </>
+          );
+        })()}
       </main>
     </Shell>
   );
