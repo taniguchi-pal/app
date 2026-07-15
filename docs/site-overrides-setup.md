@@ -6,10 +6,11 @@
 1. **SiteOverrides**: 現場カルテの手入力項目（担当Sales/SO・価格交渉ステータス・募集状況）
 2. **MonthlyData**: 7月以降の月次実績・予算・稼働人数など（4〜6月は確定値なのでアプリ内に固定値のまま）
 3. **Schedule**: 年間スケジュール・タスクの追加/管理
+4. **AttackList**: 営業アタックリスト（テレアポ・コンタクト履歴、Sales専用の営業活動管理）
 
 ## 1. スプレッドシートを作成
 
-新しいGoogleスプレッドシートを1つ作成し、以下の3枚のシートを作ってください（シート名は正確に）。
+新しいGoogleスプレッドシートを1つ作成し、以下の4枚のシートを作ってください（シート名は正確に）。
 
 ### シート `SiteOverrides`（1行目ヘッダー）
 ```
@@ -30,15 +31,23 @@ id	title	period	status	note	createdAt
 ```
 - `status` は `未着手` / `進行中` / `完了` を想定
 
+### シート `AttackList`（1行目ヘッダー）
+```
+id	company	area	status	salesRep	nextVisitDate	lastContactDate	telAppoCount	notes	contactLogJson	createdAt	updatedAt
+```
+- `status` は `未接触` / `アプローチ中` / `商談化` / `見送り` を想定
+- `contactLogJson` はテレアポ・訪問・メール等のコンタクト履歴を `[{"date":"2026-07-01","type":"テレアポ","note":"..."}]` のようなJSON文字列でそのまま保存（アプリ側でパースします）
+
 ## 2. Apps Scriptを設置
 
 スプレッドシートのメニューから「拡張機能」→「Apps Script」を開き、`Code.gs` の中身を全部消して以下を貼り付けてください。
 
 ```javascript
 const SHEETS = {
-  overrides: { name: 'SiteOverrides', key: 'siteId', headers: ['siteId', 'salesRep', 'soRep', 'negotiationStatus', 'recruitingActive', 'recruitingCostSpent', 'recruitingCostBudget', 'postingPeriod', 'updatedAt'] },
-  monthly:   { name: 'MonthlyData',   key: 'compositeKey', headers: ['scope', 'month', 'salesBudget', 'salesActual', 'gpBudget', 'gpActual', 'opBudget', 'opActual', 'activeStaff', 'avgHours', 'joined', 'resigned', 'siteCount', 'heat', 'updatedAt'] },
-  schedule:  { name: 'Schedule',      key: 'id',       headers: ['id', 'title', 'period', 'status', 'note', 'createdAt'] },
+  overrides:  { name: 'SiteOverrides', key: 'siteId', headers: ['siteId', 'salesRep', 'soRep', 'negotiationStatus', 'recruitingActive', 'recruitingCostSpent', 'recruitingCostBudget', 'postingPeriod', 'updatedAt'] },
+  monthly:    { name: 'MonthlyData',   key: 'compositeKey', headers: ['scope', 'month', 'salesBudget', 'salesActual', 'gpBudget', 'gpActual', 'opBudget', 'opActual', 'activeStaff', 'avgHours', 'joined', 'resigned', 'siteCount', 'heat', 'updatedAt'] },
+  schedule:   { name: 'Schedule',      key: 'id',       headers: ['id', 'title', 'period', 'status', 'note', 'createdAt'] },
+  attacklist: { name: 'AttackList',    key: 'id',       headers: ['id', 'company', 'area', 'status', 'salesRep', 'nextVisitDate', 'lastContactDate', 'telAppoCount', 'notes', 'contactLogJson', 'createdAt', 'updatedAt'] },
 };
 
 function getSheetConfig(key) {
@@ -51,8 +60,8 @@ function doGet(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(cfg.name);
   const rows = sheet.getDataRange().getValues();
 
-  if (which === 'schedule') {
-    // Scheduleは配列で返す（一覧表示のため）
+  if (which === 'schedule' || which === 'attacklist') {
+    // Schedule/AttackListは配列で返す（一覧表示のため）
     const list = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
@@ -93,6 +102,9 @@ function doPost(e) {
     rowKey = (r) => r[0] === body.scope && r[1] === body.month;
   } else if (which === 'schedule') {
     if (!body.id) body.id = 'task_' + new Date().getTime();
+    rowKey = (r) => r[0] === body.id;
+  } else if (which === 'attacklist') {
+    if (!body.id) body.id = 'attack_' + new Date().getTime();
     rowKey = (r) => r[0] === body.id;
   } else {
     if (!body.siteId) {

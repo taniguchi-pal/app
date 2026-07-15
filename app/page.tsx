@@ -1,21 +1,8 @@
 "use client";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (username === "pa1style" && password === "pal001") {
-      router.push("/budget");
-    } else {
-      setError("AUTHENTICATION FAILED. INVALID CREDENTIALS.");
-    }
-  };
 
   return (
     <div translate="no" className="relative min-h-screen bg-[#f0f2f5] text-zinc-800 flex items-center justify-center font-noto overflow-hidden select-none">
@@ -67,26 +54,22 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* フォーム */}
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div className="space-y-1.5">
-            <label className="block text-[10px] font-bold text-zinc-400 ml-1 font-montserrat tracking-widest uppercase">Account ID</label>
-            {/* 💡 placeholderを完全に削除 */}
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-[#f8f9fb] border border-zinc-100 rounded-2xl p-4 text-sm text-zinc-900 outline-none focus:border-blue-600 focus:bg-white transition-all font-mono shadow-inner shadow-zinc-100/50" required />
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-[10px] font-bold text-zinc-400 ml-1 font-montserrat tracking-widest uppercase">Password</label>
-            {/* 💡 placeholderを完全に削除 */}
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#f8f9fb] border border-zinc-100 rounded-2xl p-4 text-sm text-zinc-900 outline-none focus:border-blue-600 focus:bg-white transition-all font-mono shadow-inner shadow-zinc-100/50" required />
-          </div>
-
-          {error && <p className="text-[11px] font-mono font-bold text-rose-500 bg-rose-50 p-4 rounded-xl border border-rose-100 text-center animate-pulse">{error}</p>}
-          
-          <button type="submit" className="w-full py-4 mt-2 bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white font-bold text-xs rounded-2xl transition-all duration-150 active:scale-[0.98] shadow-lg shadow-blue-900/20 font-montserrat tracking-[0.2em]">
-            INITIALIZE SYSTEM ➔
+        {/* 入り口ボタン */}
+        <div className="space-y-4">
+          <button
+            onClick={() => router.push("/budget")}
+            className="w-full py-4 bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white font-bold text-xs rounded-2xl transition-all duration-150 active:scale-[0.98] shadow-lg shadow-blue-900/20 font-montserrat tracking-[0.2em]"
+          >
+            DASHBOARD ➔
           </button>
-        </form>
+
+          <button
+            onClick={() => router.push("/attack-list")}
+            className="w-full py-4 bg-white hover:bg-zinc-50 text-blue-900 font-bold text-xs rounded-2xl transition-all duration-150 active:scale-[0.98] border border-blue-100 font-montserrat tracking-[0.2em]"
+          >
+            アタックリスト ➔
+          </button>
+        </div>
       </div>
     </div>
   );
