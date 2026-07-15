@@ -34,10 +34,14 @@ id	title	period	status	note	area	site	assignee	createdAt
 
 ### シート `AttackList`（1行目ヘッダー）
 ```
-id	company	area	status	salesRep	nextVisitDate	lastContactDate	telAppoCount	notes	contactLogJson	createdAt	updatedAt
+id	company	area	status	probability	salesRep	repContact	nextVisitDate	lastContactDate	telAppoCount	quoteUrl	notebookLmUrl	asanaUrl	minutesUrl	needsIssues	escalatedTo	notes	contactLogJson	createdAt	updatedAt
 ```
-- `status` は `未接触` / `アプローチ中` / `商談化` / `見送り` を想定
-- `contactLogJson` はテレアポ・訪問・メール等のコンタクト履歴を `[{"date":"2026-07-01","type":"テレアポ","note":"..."}]` のようなJSON文字列でそのまま保存（アプリ側でパースします）
+- `status` は `初商談` / `ニーズなし定期タッチ` / `見積提示` / `成約` / `稼働中` / `非稼働中` を想定
+- `probability`（商談確度）は `A` / `B` / `C` / `D` を想定
+- `repContact` は先方担当者名・連絡先（電話番号やメールなど自由記述）
+- `quoteUrl` / `notebookLmUrl` / `asanaUrl` / `minutesUrl` はそれぞれ見積書・NotebookLM・Asana・議事録へのリンクURL
+- `needsIssues` は先方の課題・ニーズの自由記述、`escalatedTo` はどこ（誰）へ連携したかの自由記述
+- `contactLogJson` は訪問・TEL・メールのコンタクト履歴を `[{"datetime":"2026-07-01T10:30","method":"TEL","content":"..."}]` のようなJSON文字列でそのまま保存（アプリ側でパースします）
 
 ## 2. Apps Scriptを設置
 
@@ -48,7 +52,7 @@ const SHEETS = {
   overrides:  { name: 'SiteOverrides', key: 'siteId', headers: ['siteId', 'salesRep', 'soRep', 'negotiationStatus', 'recruitingActive', 'recruitingCostSpent', 'recruitingCostBudget', 'postingPeriod', 'updatedAt'] },
   monthly:    { name: 'MonthlyData',   key: 'compositeKey', headers: ['scope', 'month', 'salesBudget', 'salesActual', 'gpBudget', 'gpActual', 'opBudget', 'opActual', 'activeStaff', 'avgHours', 'joined', 'resigned', 'siteCount', 'heat', 'updatedAt'] },
   schedule:   { name: 'Schedule',      key: 'id',       headers: ['id', 'title', 'period', 'status', 'note', 'area', 'site', 'assignee', 'createdAt'] },
-  attacklist: { name: 'AttackList',    key: 'id',       headers: ['id', 'company', 'area', 'status', 'salesRep', 'nextVisitDate', 'lastContactDate', 'telAppoCount', 'notes', 'contactLogJson', 'createdAt', 'updatedAt'] },
+  attacklist: { name: 'AttackList',    key: 'id',       headers: ['id', 'company', 'area', 'status', 'probability', 'salesRep', 'repContact', 'nextVisitDate', 'lastContactDate', 'telAppoCount', 'quoteUrl', 'notebookLmUrl', 'asanaUrl', 'minutesUrl', 'needsIssues', 'escalatedTo', 'notes', 'contactLogJson', 'createdAt', 'updatedAt'] },
 };
 
 function getSheetConfig(key) {
