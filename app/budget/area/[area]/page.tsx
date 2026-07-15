@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, sumSitesActual, yen } from '../../_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, sumSitesActual, sumAreaStaff, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -36,11 +36,16 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
 
   const monthly = AREA_MONTHLY[areaId] ?? AREA_MONTHLY.kanto;
   const isAutoAggregated = (AUTO_AGGREGATE_AREAS as readonly string[]).includes(areaId);
+  const staffSums = sumAreaStaff(areaId, siteOverrides);
   const mergeOverride = (m: MonthKey) => {
     let b = monthly[m];
     if (isAutoAggregated && m === CURRENT_ACTUAL_MONTH) {
       const sums = sumSitesActual(areaId);
       b = { ...b, salesActual: sums.salesActual, salesBudget: sums.salesBudget || b.salesBudget, gpActual: sums.opProfitActual };
+    }
+    // 配置人数はエリア側に実確定値が無い月（現状7月のみ）に限り、現場カルテで入力されたSO反映値を集計して表示する。
+    if (m === CURRENT_ACTUAL_MONTH && b.activeStaff == null && staffSums.filled > 0) {
+      b = { ...b, activeStaff: staffSums.sum };
     }
     const o = monthlyOverrides[`${areaId}__${m}`];
     if (!o) return b;
@@ -130,7 +135,13 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
             areaId={areaId}
             eyebrow="KPI（稼働人数・工数）"
             value={current.activeStaff == null ? '—' : `${current.activeStaff}名`}
-            sub={<span>平均工数 {current.avgHours == null ? '—' : `${current.avgHours}h`}（基準120h）</span>}
+            sub={
+              activeMonth === CURRENT_ACTUAL_MONTH && monthly[activeMonth].activeStaff == null && staffSums.filled > 0 ? (
+                <span>現場入力 {staffSums.filled}/{staffSums.total}件から集計中</span>
+              ) : (
+                <span>平均工数 {current.avgHours == null ? '—' : `${current.avgHours}h`}（基準120h）</span>
+              )
+            }
           />
           <HeroStat
             areaId={areaId}

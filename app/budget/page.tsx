@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, sumSitesActual } from './_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, sumSitesActual, sumAreaStaff } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -26,6 +26,19 @@ export default function GlobalDashboard() {
     fetch('/api/monthly-data').then((r) => r.json()).then((data) => { if (!data?.error) setMonthlyOverrides(data); }).catch(() => {});
   }, []);
 
+  // ── 現場カルテで入力された配置人数（SOが入職・退職を反映）を全社集計するため取得 ──
+  const [siteOverrides, setSiteOverrides] = useState<Record<string, any>>({});
+  useEffect(() => {
+    fetch('/api/site-overrides').then((r) => r.json()).then((data) => { if (!data?.error) setSiteOverrides(data); }).catch(() => {});
+  }, []);
+  const staffSums = AREAS.reduce(
+    (acc, a) => {
+      const s = sumAreaStaff(a.id, siteOverrides);
+      return { sum: acc.sum + s.sum, filled: acc.filled + s.filled, total: acc.total + s.total };
+    },
+    { sum: 0, filled: 0, total: 0 }
+  );
+
   // 7月は関東・中部（現場実績を自動集計）＋関西（自社システム部門合計から大阪支店分を控除した実数値）の
   // 合算で全社実績を算出する。大阪支店は別枠管理のためこの合計には含めない（従来と同じ扱い）。
   const base = (() => {
@@ -40,6 +53,7 @@ export default function GlobalDashboard() {
       salesBudget: kanto.salesBudget + chubu.salesBudget + kansaiMonth.salesBudget,
       salesActual: kanto.salesActual + chubu.salesActual + (kansaiMonth.salesActual ?? 0),
       opActual: kanto.opProfitActual + chubu.opProfitActual + (kansaiMonth.gpActual ?? 0),
+      activeStaff: b.activeStaff == null && staffSums.filled > 0 ? staffSums.sum : b.activeStaff,
       topics: ['関東・中部・関西の管轄現場実績を自動集計した全社速報値です（大阪支店は別枠管理のため含みません）'],
     };
   })();
@@ -164,10 +178,17 @@ export default function GlobalDashboard() {
             eyebrow="KPI進捗（稼働人数）"
             value={current.activeStaff == null ? '—' : `${current.activeStaff} / ${current.targetStaff}名`}
             sub={
-              <div className="flex justify-between">
-                <span>平均工数 {current.avgHours == null ? '—' : `${current.avgHours}h`}（基準120h）</span>
-                <span className={current.orderBacklog != null && current.orderBacklog >= 20 ? 'text-rose-300' : ''}>受注残 {current.orderBacklog ?? '—'}名</span>
-              </div>
+              activeMonth === CURRENT_ACTUAL_MONTH && COMPANY_MONTHLY[activeMonth].activeStaff == null && staffSums.filled > 0 ? (
+                <div className="flex justify-between">
+                  <span>現場入力 {staffSums.filled}/{staffSums.total}件から集計中</span>
+                  <span className={current.orderBacklog != null && current.orderBacklog >= 20 ? 'text-rose-300' : ''}>受注残 {current.orderBacklog ?? '—'}名</span>
+                </div>
+              ) : (
+                <div className="flex justify-between">
+                  <span>平均工数 {current.avgHours == null ? '—' : `${current.avgHours}h`}（基準120h）</span>
+                  <span className={current.orderBacklog != null && current.orderBacklog >= 20 ? 'text-rose-300' : ''}>受注残 {current.orderBacklog ?? '—'}名</span>
+                </div>
+              )
             }
           />
           <HeroStat

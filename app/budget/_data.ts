@@ -788,6 +788,25 @@ export function sumSitesActual(areaId: string): { salesActual: number; salesBudg
   return { salesActual, salesBudget, opProfitActual, siteCount };
 }
 
+// SOが現場カルテ（またはSiteOverridesシート）に入力した配置人数を積み上げる。
+// 7月時点では現場・エリアいずれにも実配置人数の確定値が無いため、部分入力でも「集計中」として
+// そのまま表示する（未入力=0件のときのみnullを返し、既存の「データ未登録」表示にフォールバックする）。
+export function effectiveStaffCount(site: SiteData, overrides: Record<string, any>): number | null {
+  const ov = overrides?.[site.id];
+  const raw = ov?.staffCount != null && ov.staffCount !== '' ? ov.staffCount : site.staffCount;
+  const n = raw != null ? Number(raw) : NaN;
+  return Number.isFinite(n) ? n : null;
+}
+export function sumAreaStaff(areaId: string, overrides: Record<string, any>): { sum: number; filled: number; total: number } {
+  const sites = sitesOfArea(areaId);
+  let sum = 0, filled = 0;
+  for (const s of sites) {
+    const v = effectiveStaffCount(s, overrides);
+    if (v != null) { sum += v; filled++; }
+  }
+  return { sum, filled, total: sites.length };
+}
+
 // lifecycle文言（例:「2026年6月末で契約終了」「2026年7月より非稼働」）から年月を読み取り、
 // 表示中の月に契約終了・非稼働化する現場をトピックスに出すための判定。
 const LIFECYCLE_CHANGE_RE = /(\d{4})年(\d{1,2})月.*?(契約終了|非稼働)/;
