@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
-import { MONTHS, MonthKey, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea } from './_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, MONTH_SHORT_LABELS, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -157,7 +157,7 @@ export default function GlobalDashboard() {
         {/* ── タイムライン & エリア選択（横並びで省スペース） ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card eyebrow="Timeline" title="月次フィルター">
-            <TabRow items={[...MONTHS]} active={activeMonth} onSelect={(m) => setActiveMonth(m as MonthKey)} />
+            <TabRow items={VISIBLE_MONTHS} active={activeMonth} onSelect={(m) => setActiveMonth(m as MonthKey)} labels={MONTH_SHORT_LABELS} />
             {monthIndex >= 3 && !ov && (
               <p className="text-[10px] text-zinc-400 mt-2">※ この月の実績はまだSheetsに未入力のため、予算のプレースホルダー値を表示しています</p>
             )}
@@ -308,6 +308,7 @@ export default function GlobalDashboard() {
               {tasks.map((t) => {
                 const taskArea = AREAS.find((a) => a.id === t.area);
                 const taskSite = t.site ? sitesOfArea(t.area).find((s) => s.id === t.site) : null;
+                const createdLabel = t.createdAt ? new Date(t.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
                 return (
                   <li key={t.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
                     <button
@@ -322,9 +323,9 @@ export default function GlobalDashboard() {
                     </button>
                     <div className="flex-1 min-w-0">
                       <span className={`text-sm font-bold ${t.status === '完了' ? 'text-zinc-400 line-through' : 'text-zinc-700'}`}>{t.title}</span>
-                      {(taskArea || taskSite || t.assignee) && (
+                      {(taskArea || taskSite || t.assignee || createdLabel) && (
                         <p className="text-[10px] text-zinc-400 mt-0.5 truncate">
-                          {[taskArea?.title, taskSite?.name, t.assignee && `担当: ${t.assignee}`].filter(Boolean).join(' ・ ')}
+                          {[taskArea?.title, taskSite?.name, t.assignee && `担当: ${t.assignee}`, createdLabel && `登録: ${createdLabel}`].filter(Boolean).join(' ・ ')}
                         </p>
                       )}
                     </div>

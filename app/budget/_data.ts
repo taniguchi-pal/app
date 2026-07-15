@@ -9,6 +9,10 @@ export const MONTHS = [
 
 export type MonthKey = typeof MONTHS[number];
 
+// 実データがある4-6月のみをタイムラインに表示する（7月以降は実データ投入後に再度有効化）
+export const VISIBLE_MONTHS: MonthKey[] = ['4月実績', '5月実績', '6月進捗'];
+export const MONTH_SHORT_LABELS: Record<string, string> = { '4月実績': '4月', '5月実績': '5月', '6月進捗': '6月' };
+
 export const ANNUAL_GOAL = { sales: 620000000, gpRate: 14.51, opRate: 6.87 };
 
 export const ANNUAL_SCHEDULE = [

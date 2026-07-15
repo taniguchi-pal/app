@@ -134,7 +134,7 @@ export function WeatherBadge({ text }: { text: string }) {
   );
 }
 
-export function TabRow({ items, active, onSelect }: { items: string[]; active: string; onSelect: (v: string) => void }) {
+export function TabRow({ items, active, onSelect, labels }: { items: string[]; active: string; onSelect: (v: string) => void; labels?: Record<string, string> }) {
   return (
     <div className="flex gap-2 overflow-x-auto pb-1">
       {items.map((m) => (
@@ -145,7 +145,7 @@ export function TabRow({ items, active, onSelect }: { items: string[]; active: s
             active === m ? 'bg-blue-900 text-white shadow-sm' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
           }`}
         >
-          {m}
+          {labels?.[m] ?? m}
         </button>
       ))}
     </div>
