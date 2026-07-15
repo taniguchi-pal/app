@@ -118,17 +118,37 @@ export function HeroStat({ eyebrow, value, sub, areaId }: { eyebrow: string; val
   );
 }
 
-// エリアの気象注意報を控えめに点滅表示するチップ（太陽/警戒アイコン）
-export function WeatherBadge({ text }: { text: string }) {
-  const icon = text.includes('厳重') ? '☀️' : text.includes('台風') ? '🌀' : '⚠️';
+// WMO weather_code（Open-Meteo）を可愛い天気アイコンに変換
+export function weatherIcon(code: number): string {
+  if (code === 0) return '☀️';
+  if (code === 1) return '🌤️';
+  if (code === 2) return '⛅';
+  if (code === 3) return '☁️';
+  if (code === 45 || code === 48) return '🌫️';
+  if ([51, 53, 55, 56, 57, 80, 81, 82].includes(code)) return '🌦️';
+  if ([61, 63, 65, 66, 67].includes(code)) return '🌧️';
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return '🌨️';
+  if ([95, 96, 99].includes(code)) return '⛈️';
+  return '🌡️';
+}
+
+// エリアの実際の気象情報（気温・天気アイコン）を表示するチップ。
+// 熱中症の危険がある気温（34℃以上）では赤く点滅して警告する。
+export function WeatherBadge({ areaTitle, tempC, weatherCode }: { areaTitle: string; tempC: number; weatherCode: number }) {
+  const icon = weatherIcon(weatherCode);
+  const danger = tempC >= 34;
+  const caution = !danger && tempC >= 31;
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `@keyframes weather-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }` }} />
       <span
-        className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5"
-        style={{ animation: 'weather-blink 1.8s ease-in-out infinite' }}
+        className={`inline-flex items-center gap-1 text-[9px] font-bold rounded-full px-1.5 py-0.5 border ${
+          danger ? 'text-white bg-rose-600 border-rose-600' : caution ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-zinc-500 bg-zinc-50 border-zinc-200'
+        }`}
+        style={danger ? { animation: 'weather-blink 1.2s ease-in-out infinite' } : undefined}
       >
-        <span aria-hidden>{icon}</span>{text}
+        <span aria-hidden>{icon}</span>{areaTitle} {Math.round(tempC)}℃
+        {danger && <span aria-hidden> ⚠熱中症厳重警戒</span>}
       </span>
     </>
   );

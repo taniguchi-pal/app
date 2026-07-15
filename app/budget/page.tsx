@@ -4,11 +4,13 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth } from './_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
 interface ScheduleTask { id: string; title: string; period: string; status: string; note: string; area: string; site: string; assignee: string; createdAt: string }
+
+const QUARTER_MONTHS = [[4, 5, 6], [7, 8, 9], [10, 11, 12], [1, 2, 3]];
 
 export default function GlobalDashboard() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function GlobalDashboard() {
   const monthIndex = MONTHS.indexOf(activeMonth);
   const activeQuarter = Math.floor(monthIndex / 3);
   const siteList = Object.values(SITES).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  const [expandedQuarter, setExpandedQuarter] = useState<number | null>(null);
 
   // ── 7月以降の月次実績・予算はSheetsの値があれば上書き ──
   const [monthlyOverrides, setMonthlyOverrides] = useState<Record<string, any>>({});
@@ -45,10 +48,14 @@ export default function GlobalDashboard() {
   const salesGap = current.salesActual != null ? current.salesActual - current.salesBudget : null;
   const yoyPct = current.salesActual != null && current.yoyLastYear != null ? ((current.salesActual - current.yoyLastYear) / current.yoyLastYear) * 100 : null;
 
-  // ── エリア別 気象注意報（小さく点滅表示） ──
+  // ── エリア別 実際の気象情報（当日分をOpen-Meteoから取得） ──
+  const [weather, setWeather] = useState<Record<string, { tempC: number; humidity: number; weatherCode: number } | null>>({});
+  useEffect(() => {
+    fetch('/api/weather').then((r) => r.json()).then((data) => { if (!data?.error) setWeather(data); }).catch(() => {});
+  }, []);
   const weatherAlerts = AREAS
-    .map((a) => ({ area: a, heat: AREA_MONTHLY[a.id]?.[activeMonth]?.heat }))
-    .filter((x) => x.heat);
+    .map((a) => ({ area: a, w: weather[a.id] }))
+    .filter((x): x is { area: typeof x.area; w: NonNullable<typeof x.w> } => x.w != null);
 
   // ── この月に契約終了・非稼働化する現場（全社） ──
   const changingSites = sitesChangingInMonth(activeMonth);
@@ -117,8 +124,8 @@ export default function GlobalDashboard() {
         {weatherAlerts.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase">Weather</span>
-            {weatherAlerts.map(({ area, heat }) => (
-              <WeatherBadge key={area.id} text={`${area.title}: ${heat}`} />
+            {weatherAlerts.map(({ area, w }) => (
+              <WeatherBadge key={area.id} areaTitle={area.title} tempC={w.tempC} weatherCode={w.weatherCode} />
             ))}
           </div>
         )}
@@ -191,6 +198,7 @@ export default function GlobalDashboard() {
                 </optgroup>
               ))}
             </select>
+            <p className="text-[9px] text-zinc-400 mt-2">現場ごとの最低賃金・時給相場・マージン率は{ratesUpdatedLabel()}</p>
           </Card>
         </div>
 
@@ -254,14 +262,50 @@ export default function GlobalDashboard() {
           <p className="text-xs text-zinc-500 -mt-2 mb-3">通期目標: 売上 {yen(ANNUAL_GOAL.sales)} ／ 粗利②目標 {ANNUAL_GOAL.gpRate}% ／ 営業利益率 {ANNUAL_GOAL.opRate}%</p>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             {ANNUAL_SCHEDULE.map((q, idx) => (
-              <div key={idx} className={`p-3 rounded-xl border relative overflow-hidden ${idx === activeQuarter ? 'bg-blue-50 border-blue-200' : 'bg-zinc-50 border-zinc-100'}`}>
+              <button
+                key={idx}
+                onClick={() => setExpandedQuarter(expandedQuarter === idx ? null : idx)}
+                className={`text-left p-3 rounded-xl border relative overflow-hidden transition ${idx === activeQuarter ? 'bg-blue-50 border-blue-200' : 'bg-zinc-50 border-zinc-100'} ${expandedQuarter === idx ? 'ring-2 ring-blue-400' : 'hover:border-blue-200'}`}
+              >
                 <span className={`absolute top-0 right-0 text-[9px] font-black px-2 py-1 rounded-bl-lg ${idx === activeQuarter ? 'bg-blue-600 text-white' : 'bg-zinc-200 text-zinc-600'}`}>{q.period}</span>
                 <p className="text-[10px] text-zinc-400 font-mono mt-1">{q.range}</p>
                 <p className="text-xs font-black text-blue-900 mt-1">{q.title}</p>
                 <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">{q.desc}</p>
-              </div>
+                <p className="text-[9px] font-bold text-blue-500 mt-2">{expandedQuarter === idx ? '閉じる ▲' : '月別詳細を見る ▼'}</p>
+              </button>
             ))}
           </div>
+
+          {expandedQuarter != null && (
+            <div className="mt-3 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+              <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-2">
+                {ANNUAL_SCHEDULE[expandedQuarter].period}（{ANNUAL_SCHEDULE[expandedQuarter].range}）の月別スケジュール
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {QUARTER_MONTHS[expandedQuarter].map((m) => {
+                  const monthTasks = tasks.filter((t) => parseInt((t.period.match(/(\d{1,2})月/) || [])[1] || '', 10) === m);
+                  return (
+                    <div key={m} className="p-2.5 rounded-lg bg-white border border-zinc-100">
+                      <p className="text-xs font-black text-zinc-700">{m}月</p>
+                      {monthTasks.length === 0 ? (
+                        <p className="text-[10px] text-zinc-400 mt-1">登録タスクなし</p>
+                      ) : (
+                        <ul className="mt-1 space-y-1">
+                          {monthTasks.map((t) => (
+                            <li key={t.id} className="text-[10px] text-zinc-600">
+                              <span className={`font-bold ${t.status === '完了' ? 'text-emerald-600' : 'text-zinc-700'}`}>{t.title}</span>
+                              {t.assignee && <span className="text-zinc-400"> ・担当: {t.assignee}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[9px] text-zinc-400 mt-2">※ タスク管理カードで登録した項目のうち、期限（例:「7月末」）から月を判定して表示しています</p>
+            </div>
+          )}
         </Card>
 
         {/* ── タスク管理（追加・ステータス変更） ────── */}

@@ -33,6 +33,13 @@ export function monthLabels(keys: readonly MonthKey[], now: Date = new Date()): 
   return Object.fromEntries(keys.map((k) => [k, monthLabel(k, now)]));
 }
 
+// 最低賃金・時給相場・マージン率は週次で確認・更新する運用。最終更新日をダッシュボード各所に小さく表示する。
+export const RATES_UPDATED_AT = '2026-07-13';
+export function ratesUpdatedLabel(): string {
+  const d = new Date(RATES_UPDATED_AT);
+  return `最終更新 ${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}（週次更新）`;
+}
+
 export const ANNUAL_GOAL = { sales: 620000000, gpRate: 14.51, opRate: 6.87 };
 
 export const ANNUAL_SCHEDULE = [

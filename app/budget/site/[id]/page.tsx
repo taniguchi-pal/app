@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, BackLink, Breadcrumb, AREA_THEME } from '../../_ui';
-import { SITES, AREAS, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef } from '../../_data';
+import { SITES, AREAS, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef, ratesUpdatedLabel } from '../../_data';
 
 const ACTION_COLOR: Record<ActionType, string> = {
   価格交渉: 'text-blue-700 bg-blue-50 border-blue-100',
@@ -287,11 +287,11 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           <Card eyebrow="Profit" title="営業利益（当月実績）">
             <p className="text-2xl font-black text-zinc-800 font-mono">{opProfitRow?.actual != null ? yen(opProfitRow.actual) : 'データ未登録'}</p>
           </Card>
-          <Card eyebrow="Margin" title="営業利益率">
+          <Card eyebrow="Margin" title="営業利益率（マージン率）">
             <p className={`text-2xl font-black font-mono ${opMarginRate != null && opMarginRate < 0 ? 'text-rose-600' : 'text-zinc-800'}`}>
               {opMarginRate != null ? `${opMarginRate.toFixed(1)}%` : 'データ未登録'}
             </p>
-            <p className="text-[10px] text-zinc-400 mt-1">営業利益 ÷ 売上高</p>
+            <p className="text-[10px] text-zinc-400 mt-1">営業利益 ÷ 売上高 ・ {ratesUpdatedLabel()}</p>
           </Card>
         </div>
 
@@ -305,13 +305,13 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
             <p className="text-2xl font-black text-zinc-800 font-mono">{site.workerUnitPrice != null ? `¥${site.workerUnitPrice.toLocaleString()}` : 'データ未登録'}{site.workerUnitPrice != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
             <p className="text-[10px] text-zinc-400 mt-1">一般作業員 請求単価</p>
           </Card>
-          <Card eyebrow="Reference" title="時給相場">
+          <Card eyebrow="Reference" title="時給相場（エリア相場）">
             <p className="text-2xl font-black text-zinc-800 font-mono">{site.marketHourlyWage != null ? `¥${site.marketHourlyWage.toLocaleString()}` : 'データ未登録'}{site.marketHourlyWage != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
-            <p className="text-[10px] text-zinc-400 mt-1">同職種・同エリアの支払相場（参考値）</p>
+            <p className="text-[10px] text-zinc-400 mt-1">同職種・同エリアの支払相場（参考値） ・ {ratesUpdatedLabel()}</p>
           </Card>
           <Card eyebrow="Reference" title="地域別最低賃金">
             <p className="text-2xl font-black text-zinc-800 font-mono">{site.minimumWage != null ? `¥${site.minimumWage.toLocaleString()}` : 'データ未登録'}{site.minimumWage != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
-            <p className="text-[10px] text-zinc-400 mt-1">{site.prefecture ?? '所在地未登録'} 最低賃金（参考値）</p>
+            <p className="text-[10px] text-zinc-400 mt-1">{site.prefecture ?? '所在地未登録'} 最低賃金（参考値） ・ {ratesUpdatedLabel()}</p>
           </Card>
         </div>
 

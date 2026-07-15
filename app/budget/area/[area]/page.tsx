@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, yen } from '../../_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -26,6 +26,13 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
     fetch('/api/site-overrides').then((r) => r.json()).then((data) => { if (!data?.error) setSiteOverrides(data); }).catch(() => {});
   }, []);
   const [repFilter, setRepFilter] = useState<string>('');
+
+  // ── 実際の気象情報（当日分をOpen-Meteoから取得） ──
+  const [weather, setWeather] = useState<Record<string, { tempC: number; humidity: number; weatherCode: number } | null>>({});
+  useEffect(() => {
+    fetch('/api/weather').then((r) => r.json()).then((data) => { if (!data?.error) setWeather(data); }).catch(() => {});
+  }, []);
+  const areaWeather = weather[areaId];
 
   const monthly = AREA_MONTHLY[areaId] ?? AREA_MONTHLY.kanto;
   const mergeOverride = (m: MonthKey) => {
@@ -92,7 +99,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
             <h1 className="mt-1 text-xl md:text-2xl font-black text-zinc-900 tracking-tight">{area.title}エリア 管轄分析</h1>
           </div>
           <div className="flex items-center gap-2">
-            {current.heat && <WeatherBadge text={`現場環境警報: ${current.heat}`} />}
+            {areaWeather && <WeatherBadge areaTitle={area.title} tempC={areaWeather.tempC} weatherCode={areaWeather.weatherCode} />}
             <a href="#sites" className="inline-flex items-center gap-1 text-xs font-bold text-white bg-blue-800 hover:bg-blue-900 rounded-full px-4 py-2 shadow-sm transition shrink-0">
               現場ごとに見る（{sites.length}件） ↓
             </a>
@@ -256,7 +263,10 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
           return (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                <p id="sites" className="text-[10px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase scroll-mt-4">管轄現場の個別収益一覧（{filteredSites.length}/{sites.length}現場）</p>
+                <div>
+                  <p id="sites" className="text-[10px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase scroll-mt-4">管轄現場の個別収益一覧（{filteredSites.length}/{sites.length}現場）</p>
+                  <p className="text-[9px] text-zinc-400 mt-0.5">現場ごとの最低賃金・時給相場・マージン率は{ratesUpdatedLabel()}</p>
+                </div>
                 {repOptions.length > 0 && (
                   <select
                     value={repFilter}
