@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, MONTH_SHORT_LABELS, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea } from './_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -157,7 +157,7 @@ export default function GlobalDashboard() {
         {/* ── タイムライン & エリア選択（横並びで省スペース） ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card eyebrow="Timeline" title="月次フィルター">
-            <TabRow items={VISIBLE_MONTHS} active={activeMonth} onSelect={(m) => setActiveMonth(m as MonthKey)} labels={MONTH_SHORT_LABELS} />
+            <TabRow items={VISIBLE_MONTHS} active={activeMonth} onSelect={(m) => setActiveMonth(m as MonthKey)} labels={monthLabels(VISIBLE_MONTHS)} />
             {monthIndex >= 3 && !ov && (
               <p className="text-[10px] text-zinc-400 mt-2">※ この月の実績はまだSheetsに未入力のため、予算のプレースホルダー値を表示しています</p>
             )}

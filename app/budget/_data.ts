@@ -11,7 +11,27 @@ export type MonthKey = typeof MONTHS[number];
 
 // 実データがある月のみをタイムラインに表示する（8月以降は実データ投入後に再度有効化）
 export const VISIBLE_MONTHS: MonthKey[] = ['4月実績', '5月実績', '6月進捗', '7月進捗'];
-export const MONTH_SHORT_LABELS: Record<string, string> = { '4月実績': '4月', '5月実績': '5月', '6月進捗': '6月', '7月進捗': '7月' };
+
+// 27期は2026年4月始まり。ボタンの表示ラベル（◯月実績／◯月進捗／◯月予定）は
+// 固定文字列ではなく「今日」との前後関係から動的に算出する（過去=実績／当月=進捗／未来=予定）。
+const FISCAL_YEAR_START_CALENDAR_YEAR = 2026;
+export function monthCalendar(key: MonthKey): { year: number; month: number } {
+  const idx = MONTHS.indexOf(key);
+  const month = ((idx + 3) % 12) + 1; // idx0(4月)→4 ... idx8(12月)→12, idx9(1月)→1 ...
+  const year = idx <= 8 ? FISCAL_YEAR_START_CALENDAR_YEAR : FISCAL_YEAR_START_CALENDAR_YEAR + 1;
+  return { year, month };
+}
+export function monthLabel(key: MonthKey, now: Date = new Date()): string {
+  const { year, month } = monthCalendar(key);
+  const nowY = now.getFullYear(), nowM = now.getMonth() + 1;
+  const isPast = year < nowY || (year === nowY && month < nowM);
+  const isCurrent = year === nowY && month === nowM;
+  const suffix = isPast ? '実績' : isCurrent ? '進捗' : '予定';
+  return `${month}月${suffix}`;
+}
+export function monthLabels(keys: readonly MonthKey[], now: Date = new Date()): Record<string, string> {
+  return Object.fromEntries(keys.map((k) => [k, monthLabel(k, now)]));
+}
 
 export const ANNUAL_GOAL = { sales: 620000000, gpRate: 14.51, opRate: 6.87 };
 
@@ -169,7 +189,14 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '4月実績': { salesBudget: 7452000, salesActual: 7480000, yoyLastYear: 15494000, gpBudget: 999747, gpActual: 1232567, activeStaff: 36, avgHours: 104.43, joined: 0, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '5月実績': { salesBudget: 7100000, salesActual: 6878370, yoyLastYear: 13848000, gpBudget: 1174255, gpActual: 1015258, activeStaff: 36, avgHours: 94.42, joined: 0, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7490000, salesActual: 7500000, yoyLastYear: 13701000, gpBudget: 1232684, gpActual: 1079448, activeStaff: 36, avgHours: 101.71, joined: 3, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
-    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kanto) / 1000) * 1000)])),
+    // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 所属部署: 人ソ（関東））より反映。
+    '7月進捗': {
+      salesBudget: 7632000, salesActual: 7799828, yoyLastYear: null,
+      gpBudget: null, gpActual: 1329319,
+      activeStaff: null, avgHours: null, joined: null, resigned: null,
+      heat: null, siteCount: 6, funnel: null,
+    },
+    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kanto) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
   chubu: {
     '4月実績': { salesBudget: 6770000, salesActual: 7735000, yoyLastYear: 9131000, gpBudget: 1071695, gpActual: 1211200, activeStaff: 33, avgHours: 108.52, joined: 0, resigned: 0, heat: null, siteCount: 8, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
@@ -191,13 +218,28 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '4月実績': { salesBudget: 30856000, salesActual: 34436000, yoyLastYear: 40202000, gpBudget: 4107000, gpActual: 6362000, activeStaff: 130, avgHours: 126.26, joined: 12, resigned: 10, heat: null, siteCount: 25, funnel: { meetings: 4, proposals: 3, estimates: 2, orders: 2 } },
     '5月実績': { salesBudget: 29624000, salesActual: 29324000, yoyLastYear: 37920000, gpBudget: 4020000, gpActual: 2822000, activeStaff: 124, avgHours: 113.33, joined: 2, resigned: 16, heat: null, siteCount: 25, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 49616000, salesActual: 32475000, yoyLastYear: 38577000, gpBudget: 7047000, gpActual: 2855000, activeStaff: 135, avgHours: 115.24, joined: 6, resigned: 1, heat: '厳重警戒', siteCount: 27, funnel: { meetings: 5, proposals: 3, estimates: 1, orders: 1 } },
-    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kansai) / 1000) * 1000)])),
+    // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西）の部門合計から
+    // 大阪支店（福山通運大阪支店、osakaエリアで別管理）の分を差し引いた関西のみの実数値。
+    '7月進捗': {
+      salesBudget: 17720000, salesActual: 12293534, yoyLastYear: null,
+      gpBudget: null, gpActual: 2013358,
+      activeStaff: null, avgHours: null, joined: null, resigned: null,
+      heat: null, siteCount: 26, funnel: null,
+    },
+    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kansai) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
   osaka: {
     '4月実績': { salesBudget: 21060000, salesActual: 23423983, yoyLastYear: 21300000, gpBudget: 3086758, gpActual: 3552490, activeStaff: 122, avgHours: 111.5, joined: 0, resigned: 0, heat: null, funnel: { meetings: 5, proposals: 4, estimates: 2, orders: 1 } },
     '5月実績': { salesBudget: 20500000, salesActual: 20329795, yoyLastYear: 18700000, gpBudget: 2557300, gpActual: 2478432, activeStaff: 123, avgHours: 112.5, joined: 0, resigned: 0, heat: null, funnel: { meetings: 4, proposals: 3, estimates: 2, orders: 1 } },
     '6月進捗': { salesBudget: 20550000, salesActual: 20220000, yoyLastYear: 18400000, gpBudget: 2543060, gpActual: 2459806, activeStaff: 124, avgHours: 113.3, joined: 3, resigned: 1, heat: '厳重警戒', funnel: { meetings: 5, proposals: 4, estimates: 2, orders: 1 } },
-    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.osaka) / 1000) * 1000)])),
+    // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西内の福山通運大阪支店行）より反映。
+    '7月進捗': {
+      salesBudget: 21570000, salesActual: 17669531, yoyLastYear: null,
+      gpBudget: null, gpActual: 2883072,
+      activeStaff: null, avgHours: null, joined: null, resigned: null,
+      heat: null, siteCount: 1, funnel: null,
+    },
+    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.osaka) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
 };
 
@@ -335,25 +377,55 @@ export const POSTING_PERIOD_OPTIONS = ['1週間', '2週間', '1ヶ月', '2ヶ月
 
 export const SITES: Record<string, SiteData> = {
   // ── 関東 ──────────────────────────────────────────────
-  '811-1': placeholderSite('811-1', '福山通運 八千代支店 メニコン', 'kanto'),
-  '116-1': placeholderSite('116-1', 'PCS 関東（重工田町ビル）', 'kanto'),
-  '115-1': placeholderSite('115-1', 'PCS 関東（重工相模原）', 'kanto', { lifecycle: '7月より非稼働予定' }),
-  '657-1': placeholderSite('657-1', 'PCS 関東（重工丸の内）', 'kanto'),
-  '715-1': placeholderSite('715-1', 'PCS 関東（豊洲）', 'kanto'),
+  // 7月実績は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関東）より反映。
+  // budgetは月次予算表（現場名で突合）の7月列。
+  '811-1': {
+    active: true,
+    id: '811-1', name: '福山通運 八千代支店 メニコン', areaId: 'kanto', prefecture: '千葉県',
+    sales: { actual: 4167141, budget: 3952000 },
+    cost: { actual: 3049701 },
+    paidLeave: { actual: 87770 },
+    opProfit: { actual: 619170 },
+  },
+  '116-1': {
+    active: true,
+    id: '116-1', name: 'PCS 関東（重工田町ビル）', areaId: 'kanto', prefecture: '東京都',
+    sales: { actual: 683088, budget: 580000 },
+    cost: { actual: 446880 },
+    paidLeave: { actual: 10640 },
+    opProfit: { actual: 151926 },
+  },
+  '115-1': {
+    active: false,
+    id: '115-1', name: 'PCS 関東（重工相模原）', areaId: 'kanto', prefecture: '神奈川県', lifecycle: '2026年7月より非稼働',
+    sales: { actual: 0, budget: 350000 },
+    cost: { actual: 0 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: 0 },
+  },
+  '657-1': {
+    active: true,
+    id: '657-1', name: 'PCS 関東（重工丸の内）', areaId: 'kanto', prefecture: '東京都',
+    sales: { actual: 665840, budget: 560000 },
+    cost: { actual: 446220 },
+    paidLeave: { actual: 10720 },
+    opProfit: { actual: 141371 },
+  },
+  '715-1': {
+    active: true,
+    id: '715-1', name: 'PCS 関東（豊洲）', areaId: 'kanto', prefecture: '東京都',
+    sales: { actual: 1478196, budget: 1190000 },
+    cost: { actual: 1033164 },
+    paidLeave: { actual: 30400 },
+    opProfit: { actual: 262319 },
+  },
   '648-1': {
     active: true,
     id: '648-1', name: 'ネオヴィア・ロジ 相模原部品センター', areaId: 'kanto', prefecture: '神奈川県',
-    sales: { actual: 2850000, budget: 2800000, yoy: 2500000, mom: 2780000 },
-    cost: { actual: 2050000, budget: 2020000, yoy: 1850000, mom: 2000000 },
-    paidLeave: { actual: 40000, budget: 25000, yoy: 20000, mom: 30000 },
-    opProfit: { actual: 670000, budget: 650000, yoy: 580000, mom: 640000 },
-    staffCount: 12, totalHours: 1194, avgHours: 99.5,
-    liftUnitPrice: 1480, workerUnitPrice: 1230, minimumWage: 1198, marketHourlyWage: 1250,
-    backlogCount: 2, expectedImpact: 480000, negotiationStatus: '合意済',
-    salesRep: null, soRep: null, recruiting: { active: false },
-    actionLog: [
-      { date: '2025-09', type: '価格交渉', text: '部品センター専属化に伴う単価改定 +25円/h 合意' },
-    ],
+    sales: { actual: 739593, budget: 1000000 },
+    cost: { actual: 532827 },
+    paidLeave: { actual: 10800 },
+    opProfit: { actual: 154533 },
   },
   '835-1': placeholderSite('835-1', '有限会社黒岩運輸', 'kanto', { lifecycle: '新規現場' }),
 
@@ -432,47 +504,142 @@ export const SITES: Record<string, SiteData> = {
   },
 
   // ── 関西 ──────────────────────────────────────────────
-  '543-3': placeholderSite('543-3', 'フェリシモ エスパス［軽作業］', 'kansai'),
-  '595-1': placeholderSite('595-1', '岡山県貨物運送 南港支店［リフト］', 'kansai', { active: false, lifecycle: '2026年6月末で契約終了' }),
-  '136-1': placeholderSite('136-1', '日生トーム 高槻事業所（軽作業）', 'kansai'),
+  // 7月実績は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西）より反映。
+  // budgetは月次予算表（現場名で突合）の7月列。
+  '543-3': {
+    active: true,
+    id: '543-3', name: 'フェリシモ エスパス（選別作業）', areaId: 'kansai', prefecture: '兵庫県',
+    sales: { actual: 2751260, budget: 3000000 },
+    cost: { actual: 1854110 },
+    paidLeave: { actual: 74400 },
+    opProfit: { actual: 542279 },
+  },
+  '543-4': {
+    active: true,
+    id: '543-4', name: 'フェリシモ エスパス（検品・箱入作業業務）', areaId: 'kansai', prefecture: '兵庫県',
+    sales: { actual: 0, budget: 190000 },
+    cost: { actual: 0 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: 0 },
+  },
+  '595-1': {
+    active: false,
+    id: '595-1', name: '岡山県貨物運送 南港支店［リフト］', areaId: 'kansai', prefecture: null, lifecycle: '2026年6月末で契約終了',
+    sales: { actual: 0, budget: 380000 },
+    cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
+  },
+  '136-1': {
+    active: true,
+    id: '136-1', name: '日生トーム 高槻事業所（軽作業）', areaId: 'kansai', prefecture: '大阪府',
+    sales: { actual: 533260, budget: 380000 },
+    cost: { actual: 357460 },
+    paidLeave: { actual: 16470 },
+    opProfit: { actual: 105277 },
+  },
   '533-1': {
     active: true,
     id: '533-1', name: '任天堂販売 京都物流センター', areaId: 'kansai', prefecture: '京都府',
     roles: [role('533-1', 'リフト'), role('533-2', '軽作業')],
-    sales: { actual: 3800000, budget: 3700000, yoy: 3400000, mom: 3650000 },
-    cost: { actual: 2900000, budget: 2830000, yoy: 2600000, mom: 2790000 },
-    paidLeave: { actual: 100000, budget: 60000, yoy: 55000, mom: 75000 },
-    opProfit: { actual: 695000, budget: 670000, yoy: 620000, mom: 660000 },
-    staffCount: 35, totalHours: 3850, avgHours: 110.0,
-    liftUnitPrice: 1500, workerUnitPrice: 1280, minimumWage: 1058, marketHourlyWage: 1200,
-    backlogCount: 5, expectedImpact: 1250000, negotiationStatus: '交渉中',
-    salesRep: null, soRep: null, recruiting: { active: true, costSpent: 210000, costBudget: 300000, postingPeriod: '2ヶ月' },
-    actionLog: [
-      { date: '2025-11', type: '価格交渉', text: '新棟稼働に伴う増員・単価改定 +20円/h 合意' },
-      { date: '2026-05', type: '横展開', text: '任天堂販売の他拠点にも同条件の増員提案を横展開検討' },
-    ],
+    sales: { actual: 867375, budget: 320000 },
+    cost: { actual: 602325 },
+    paidLeave: { actual: 15120 },
+    opProfit: { actual: 179725 },
   },
-  '570-1': placeholderSite('570-1', '加茂商事［軽作業］', 'kansai'),
-  '530-1': placeholderSite('530-1', 'PCS 関西（神戸）［配達作業員］', 'kansai'),
+  '570-1': {
+    active: true,
+    id: '570-1', name: '加茂商事［軽作業］（株式会社マラカナ・加茂商事）', areaId: 'kansai', prefecture: null,
+    sales: { actual: 628562, budget: 600000 },
+    cost: { actual: 443334 },
+    paidLeave: { actual: 21600 },
+    opProfit: { actual: 78065 },
+  },
+  // budgetは「PCS関西（神戸富士ゼロックス）」、実績システムでは「PCS関西（BPOソリューション事業本部）」表記。同一現場として突合。
+  '530-1': {
+    active: true,
+    id: '530-1', name: 'PCS 関西（神戸）［配達作業員］', areaId: 'kansai', prefecture: null,
+    sales: { actual: 201600, budget: 250000 },
+    cost: { actual: 122880 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: 48271 },
+  },
   '723-1': placeholderSite('723-1', '阪菱企業 茨木', 'kansai', { roles: [role('723-1', 'リフト'), role('723-2', '軽作業')] }),
-  '815-1': placeholderSite('815-1', '阪菱企業 西神［軽作業］', 'kansai'),
-  '753-1': placeholderSite('753-1', 'ハウス物流サービス株式会社 伊丹［リフト］', 'kansai', { active: false, lifecycle: '2026年6月末で契約終了' }),
-  '801-1': placeholderSite('801-1', 'コーナン商事 貝塚センター［リフト］', 'kansai'),
-  '633-1': placeholderSite('633-1', '尾家産業 阪南支店（派遣）（ドライバー）', 'kansai'),
+  '815-1': {
+    active: true,
+    id: '815-1', name: '阪菱企業 西神現業所［軽作業］', areaId: 'kansai', prefecture: null,
+    sales: { actual: 0, budget: 200000 },
+    cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
+  },
+  '753-1': {
+    active: false,
+    id: '753-1', name: 'ハウス物流サービス株式会社 伊丹［リフト］', areaId: 'kansai', prefecture: null, lifecycle: '2026年6月末で契約終了',
+    sales: { actual: 0, budget: 350000 },
+    cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
+  },
+  '801-1': {
+    active: true,
+    id: '801-1', name: 'コーナン商事 貝塚センター［リフト］', areaId: 'kansai', prefecture: null, lifecycle: '当月稼働ゼロ（社保等固定費のみ発生）',
+    sales: { actual: 0, budget: 350000 },
+    cost: { actual: 0 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: -42070 },
+  },
+  '633-1': {
+    active: true,
+    id: '633-1', name: '尾家産業 阪南支店（派遣）（ドライバー）', areaId: 'kansai', prefecture: null,
+    sales: { actual: 339000, budget: 300000 },
+    cost: { actual: 250862 },
+    paidLeave: { actual: 35520 },
+    opProfit: { actual: 12694 },
+  },
   '782-1': placeholderSite('782-1', 'SHUUEI物流 高槻センター［リフト］', 'kansai'),
   '606-3': placeholderSite('606-3', 'SHUUEI物流 枚方センター［リフト］短期', 'kansai'),
-  '808-1': placeholderSite('808-1', '西鉄運輸株式会社 枚方センター', 'kansai', { roles: [role('808-1', '軽作業'), role('808-2', '軽作業（短期）')] }),
-  '805-1': placeholderSite('805-1', 'YSOロジ［リフト］', 'kansai'),
+  '808-1': {
+    active: true,
+    id: '808-1', name: '西鉄運輸株式会社 枚方センター', areaId: 'kansai', prefecture: null,
+    roles: [role('808-1', '軽作業'), role('808-2', '軽作業（短期）')],
+    sales: { actual: 1534098, budget: 600000 },
+    cost: { actual: 1100100 },
+    paidLeave: { actual: 35440 },
+    opProfit: { actual: 290134 },
+  },
+  '805-1': {
+    active: true,
+    id: '805-1', name: 'YSOロジ［リフト］（YSO Logi株式会社 神戸営業所）', areaId: 'kansai', prefecture: '兵庫県',
+    sales: { actual: 426800, budget: 400000 },
+    cost: { actual: 310400 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: 55842 },
+  },
   '720-1': placeholderSite('720-1', 'HMKロジサービス 西神戸センター［軽作業］', 'kansai'),
-  '828-1': placeholderSite('828-1', '摂津倉庫 京田辺', 'kansai', { roles: [role('828-1', '軽作業'), role('828-2', 'リフト')] }),
-  '830-1': placeholderSite('830-1', 'エヌエス物流 関西［軽作業］', 'kansai'),
-  '831-1': placeholderSite('831-1', 'エヌエス物流 滋賀［軽作業］', 'kansai'),
-  '832-1': placeholderSite('832-1', '西鉄運輸 加古川支店', 'kansai', {
+  '828-1': {
+    active: true,
+    id: '828-1', name: '摂津倉庫 京田辺', areaId: 'kansai', prefecture: '京都府',
+    roles: [role('828-1', '軽作業'), role('828-2', 'リフト')],
+    sales: { actual: 693197, budget: 580000 },
+    cost: { actual: 497557 },
+  },
+  '830-1': {
+    active: true,
+    id: '830-1', name: 'エヌエス物流 関西［軽作業］', areaId: 'kansai', prefecture: null,
+    sales: { actual: 309295, budget: 270000 },
+    cost: { actual: 216506 },
+  },
+  '831-1': {
+    active: true,
+    id: '831-1', name: 'エヌエス物流 滋賀［軽作業］', areaId: 'kansai', prefecture: '滋賀県',
+    sales: { actual: 231675, budget: 850000 },
+    cost: { actual: 162835 },
+  },
+  '832-1': {
+    active: true,
+    id: '832-1', name: '西鉄運輸 加古川支店', areaId: 'kansai', prefecture: '兵庫県',
     roles: [
       role('832-1', '軽作業'), role('832-2', '事務'), role('832-3', 'リフト'),
       role('832-4a', 'ドライバー', true), role('832-4b', '短期作業員', true),
     ],
-  }),
+    sales: { actual: 713188, budget: 750000 },
+    cost: { actual: 516665 },
+  },
   '836-1': placeholderSite('836-1', 'HMKロジサービス 南港（レッドウッド南港）', 'kansai', {
     lifecycle: '新規現場', roles: [role('836-1', '軽作業', true), role('836-2', 'リフト', true)],
   }),
@@ -480,16 +647,58 @@ export const SITES: Record<string, SiteData> = {
     lifecycle: '新規現場', roles: [role('836-3', 'リフト', true), role('836-4', '軽作業（短期）', true)],
   }),
   '837-1': placeholderSite('837-1', 'SHUUEI物流株式会社 尼崎センター（ロジポート尼崎）［軽作業］', 'kansai', { lifecycle: '新規現場' }),
+  // 阪菱企業の配送センター/倉庫は損益書が個別に分かれているため、茨木(723-1)とは別現場として管理。
+  '246-1': {
+    active: true,
+    id: '246-1', name: '阪菱企業 第二 5号配送センター', areaId: 'kansai', prefecture: null,
+    sales: { actual: 274120, budget: 600000 },
+    cost: { actual: 197120 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: 49235 },
+  },
+  '285-1': {
+    active: true,
+    id: '285-1', name: '阪菱企業 第一 1号配送センター', areaId: 'kansai', prefecture: null,
+    sales: { actual: 246419, budget: 200000 },
+    cost: { actual: 177200 },
+    paidLeave: { actual: 17920 },
+    opProfit: { actual: 24939 },
+  },
+  '287-1': {
+    active: true,
+    id: '287-1', name: '阪菱企業 第一 2号配送センター', areaId: 'kansai', prefecture: null,
+    sales: { actual: 249200, budget: 200000 },
+    cost: { actual: 179200 },
+    paidLeave: { actual: 17920 },
+    opProfit: { actual: 25663 },
+  },
+  '288-1': {
+    active: true,
+    id: '288-1', name: '阪菱企業 第一 11号倉庫', areaId: 'kansai', prefecture: null,
+    sales: { actual: 262550, budget: 200000 },
+    cost: { actual: 188800 },
+    paidLeave: { actual: 8960 },
+    opProfit: { actual: 28845 },
+  },
+  '229-1': {
+    active: true,
+    id: '229-1', name: '阪菱企業 第三（12号倉庫）', areaId: 'kansai', prefecture: null,
+    sales: { actual: 330750, budget: 250000 },
+    cost: { actual: 239400 },
+    paidLeave: { actual: 11400 },
+    opProfit: { actual: 40827 },
+  },
 
   // ── 大阪支店 ──────────────────────────────────────────
   '133-1': {
     active: true,
     id: '133-1', name: '福山通運 大阪支店', areaId: 'osaka', prefecture: '大阪府',
     roles: [role('133-1', '日勤'), role('133-2', '夜勤')],
-    sales: { actual: 20329795, budget: 20550000, yoy: 18200000, mom: 19800000 },
-    cost: { actual: 15721065, budget: 16100000, yoy: 14200000, mom: 15100000 },
-    paidLeave: { actual: 650000, budget: 350000, yoy: 210000, mom: 150000 },
-    opProfit: { actual: 2478432, budget: 2543060, yoy: 2200000, mom: 2350000 },
+    // 7月実績は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西内の大阪支店行）より反映。
+    sales: { actual: 17669531, budget: 21570000 },
+    cost: { actual: 12288918 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: 2883072 },
     staffCount: 124, totalHours: 14049, avgHours: 113.3,
     liftUnitPrice: 1550, workerUnitPrice: 1320, minimumWage: 1177, marketHourlyWage: 1280,
     backlogCount: 4, expectedImpact: 2100000, negotiationStatus: '交渉中',

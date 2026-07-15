@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, MONTH_SHORT_LABELS, AREA_MONTHLY, AREAS, sitesOfArea, yen } from '../../_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabels, AREA_MONTHLY, AREAS, sitesOfArea, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -114,7 +114,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
         </div>
 
         <Card eyebrow="Timeline" title="月次フィルター">
-          <TabRow items={VISIBLE_MONTHS} active={activeMonth} onSelect={(m) => setActiveMonth(m as MonthKey)} labels={MONTH_SHORT_LABELS} />
+          <TabRow items={VISIBLE_MONTHS} active={activeMonth} onSelect={(m) => setActiveMonth(m as MonthKey)} labels={monthLabels(VISIBLE_MONTHS)} />
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
