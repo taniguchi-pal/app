@@ -2,17 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea } from './_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
 interface ScheduleTask { id: string; title: string; period: string; status: string; note: string; area: string; site: string; assignee: string; createdAt: string }
 
 export default function GlobalDashboard() {
+  const router = useRouter();
   const [activeMonth, setActiveMonth] = useState<MonthKey>('6月進捗');
   const monthIndex = MONTHS.indexOf(activeMonth);
   const activeQuarter = Math.floor(monthIndex / 3);
+  const siteList = Object.values(SITES).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
   // ── 7月以降の月次実績・予算はSheetsの値があれば上書き ──
   const [monthlyOverrides, setMonthlyOverrides] = useState<Record<string, any>>({});
@@ -46,6 +49,9 @@ export default function GlobalDashboard() {
   const weatherAlerts = AREAS
     .map((a) => ({ area: a, heat: AREA_MONTHLY[a.id]?.[activeMonth]?.heat }))
     .filter((x) => x.heat);
+
+  // ── この月に契約終了・非稼働化する現場（全社） ──
+  const changingSites = sitesChangingInMonth(activeMonth);
 
   // ── 年間スケジュール・タスク（Sheets連携） ──
   const [tasks, setTasks] = useState<ScheduleTask[]>([]);
@@ -120,7 +126,7 @@ export default function GlobalDashboard() {
         {/* ── 事業部の管理数値 ドン ─────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <HeroStat
-            eyebrow={`予実管理 (${activeMonth})`}
+            eyebrow={`予実管理 (${monthLabel(activeMonth)})`}
             value={current.salesActual == null ? `${yen(current.salesBudget)}（予算）` : yen(current.salesActual)}
             sub={
               <div className="flex justify-between">
@@ -171,6 +177,20 @@ export default function GlobalDashboard() {
                 </Link>
               ))}
             </div>
+            <select
+              defaultValue=""
+              onChange={(e) => { if (e.target.value) router.push(`/budget/site/${e.target.value}`); }}
+              className="mt-2 w-full px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            >
+              <option value="">現場名で直接検索 ➔</option>
+              {AREAS.map((a) => (
+                <optgroup key={a.id} label={a.title}>
+                  {siteList.filter((s) => s.areaId === a.id).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}（{s.id}）</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </Card>
         </div>
 
@@ -338,9 +358,12 @@ export default function GlobalDashboard() {
         </Card>
 
         {/* ── トピックス ───────────────────────────── */}
-        <Card eyebrow="Topics" title={`${activeMonth} 事業部トピックス`}>
+        <Card eyebrow="Topics" title={`${monthLabel(activeMonth)} 事業部トピックス`}>
           <ul className="text-sm text-zinc-600 space-y-1.5 list-disc list-inside font-medium">
             {current.topics.map((t, i) => <li key={i}>{t}</li>)}
+            {changingSites.length > 0 && (
+              <li className="text-amber-700">⚠ {monthLabel(activeMonth)}に契約状況が変わる現場（{changingSites.length}件）: {changingSites.map((s) => `${s.name}（${s.lifecycle}）`).join(' / ')}</li>
+            )}
           </ul>
           <div className="h-px bg-zinc-100 my-3" />
           <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">重要スケジュール / コミット</p>

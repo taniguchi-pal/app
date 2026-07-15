@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Shell, Eyebrow, Card, BackLink } from '../budget/_ui';
+import { SITES } from '../budget/_data';
 
 const STATUS_OPTIONS = ['初商談', 'ニーズなし定期タッチ', '見積提示', '成約', '稼働中', '非稼働中'] as const;
 type AttackStatus = typeof STATUS_OPTIONS[number];
@@ -36,6 +37,7 @@ interface AttackEntry {
   probability: Probability | string;
   salesRep: string;
   repContact: string;
+  linkedSiteId: string; // 既存現場に成約した場合、SITESのidを紐づけて現場カルテと連動させる
   nextVisitDate: string;
   lastContactDate: string;
   telAppoCount: number;
@@ -72,6 +74,7 @@ const LINK_FIELDS: { key: 'quoteUrl' | 'notebookLmUrl' | 'asanaUrl' | 'minutesUr
 ];
 
 export default function AttackListPage() {
+  const [view, setView] = useState<'list' | 'new'>('list');
   const [entries, setEntries] = useState<AttackEntry[]>([]);
   const [apiStatus, setApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
   const [statusFilter, setStatusFilter] = useState('');
@@ -113,6 +116,7 @@ export default function AttackListPage() {
       await save({ ...newEntry, status: '初商談', probability: 'C', telAppoCount: 0, contactLogJson: '[]' });
       setNewEntry({ company: '', area: '', salesRep: '', repContact: '', nextVisitDate: '' });
       load();
+      setView('list');
     } finally {
       setAdding(false);
     }
@@ -132,6 +136,7 @@ export default function AttackListPage() {
     setExpanded(entry.id);
     setDetailForm({
       repContact: entry.repContact || '',
+      linkedSiteId: entry.linkedSiteId || '',
       quoteUrl: entry.quoteUrl || '',
       notebookLmUrl: entry.notebookLmUrl || '',
       asanaUrl: entry.asanaUrl || '',
@@ -191,7 +196,24 @@ export default function AttackListPage() {
           </Card>
         )}
 
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView('list')}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${view === 'list' ? 'bg-blue-900 text-white shadow-sm' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
+          >
+            一覧（{entries.length}件）
+          </button>
+          <button
+            onClick={() => setView('new')}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${view === 'new' ? 'bg-blue-900 text-white shadow-sm' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
+          >
+            + 新規登録
+          </button>
+        </div>
+
+        {view === 'new' && (
         <Card eyebrow="New" title="新規アタック先を追加">
+          <p className="text-[10px] text-zinc-400 -mt-1 mb-3">既存のスプレッドシートに営業リストがある場合は、AttackListシートにそのまま行を追加すれば一覧に反映されます（このフォームは1件ずつ追加する場合用）。</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
             <input
               value={newEntry.company}
@@ -232,7 +254,10 @@ export default function AttackListPage() {
             {adding ? '追加中…' : '+ アタック先を追加'}
           </button>
         </Card>
+        )}
 
+        {view === 'list' && (
+        <>
         <Card eyebrow="Filter" title="絞り込み">
           <div className="flex flex-wrap gap-2">
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="text-xs font-bold px-2 py-1.5 bg-white border border-zinc-200 rounded-lg">
@@ -280,6 +305,11 @@ export default function AttackListPage() {
                       >
                         {PROBABILITY_OPTIONS.map((p) => <option key={p} value={p}>確度 {p}</option>)}
                       </select>
+                      {entry.linkedSiteId && SITES[entry.linkedSiteId] && (
+                        <a href={`/budget/site/${entry.linkedSiteId}`} className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-0.5 hover:bg-emerald-100">
+                          🔗 {SITES[entry.linkedSiteId].name}
+                        </a>
+                      )}
                     </div>
                     <p className="text-[11px] text-zinc-400 mt-1">
                       {entry.area || 'エリア未設定'} ・ 担当: {entry.salesRep || '未設定'}
@@ -327,6 +357,14 @@ export default function AttackListPage() {
                     <div>
                       <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">詳細情報</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <select
+                          value={detailForm.linkedSiteId ?? ''}
+                          onChange={(e) => setDetailForm((f) => ({ ...f, linkedSiteId: e.target.value }))}
+                          className="px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400 sm:col-span-2"
+                        >
+                          <option value="">成約済み現場と連動（任意・未設定なら見込み客のまま）</option>
+                          {Object.values(SITES).map((s) => <option key={s.id} value={s.id}>{s.name}（{s.id}）</option>)}
+                        </select>
                         <input
                           value={detailForm.repContact ?? ''}
                           onChange={(e) => setDetailForm((f) => ({ ...f, repContact: e.target.value }))}
@@ -432,6 +470,8 @@ export default function AttackListPage() {
             );
           })}
         </div>
+        </>
+        )}
       </main>
     </Shell>
   );

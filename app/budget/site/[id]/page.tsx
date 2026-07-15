@@ -55,6 +55,18 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
   const [apiStatus, setApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
+  // ── アタックリストで成約済み現場として紐づけられた場合、コンタクト履歴・ステータスを連動表示 ──
+  const [linkedAttack, setLinkedAttack] = useState<any>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/attack-list').then((r) => r.json()).then((data) => {
+      if (cancelled || data?.error || !Array.isArray(data)) return;
+      const match = data.find((e: any) => e.linkedSiteId === id);
+      if (match) setLinkedAttack(match);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [id]);
+
   useEffect(() => {
     let cancelled = false;
     fetch('/api/site-overrides')
@@ -115,7 +127,21 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
     });
     return point;
   });
-  const actionLog = site.actionLog ?? [];
+  const linkedContactLog: { date: string; type: ActionType; text: string }[] = (() => {
+    if (!linkedAttack?.contactLogJson) return [];
+    try {
+      const arr = JSON.parse(linkedAttack.contactLogJson);
+      if (!Array.isArray(arr)) return [];
+      return arr.map((c: any) => ({
+        date: (c.datetime || '').replace('T', ' '),
+        type: 'コンタクト' as ActionType,
+        text: `[アタックリスト連携/${c.method}] ${c.content}`,
+      }));
+    } catch {
+      return [];
+    }
+  })();
+  const actionLog = [...(site.actionLog ?? []), ...linkedContactLog];
   const opProfitAccount = PL_ACCOUNTS.find((a) => a.label === '営業利益')!;
   const salesAccount = PL_ACCOUNTS.find((a) => a.label === '売上高')!;
   const opProfitRow = getPLRow(site, opProfitAccount);
@@ -178,6 +204,11 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
               }`}>{form.negotiationStatus}</span>
             ) : (
               <p className="text-xs font-bold text-zinc-400">データ未登録</p>
+            )}
+            {linkedAttack && (
+              <p className="text-[10px] text-emerald-600 font-bold mt-2">
+                🔗 アタックリスト連携: {linkedAttack.status || '—'}（確度 {linkedAttack.probability || '—'}）
+              </p>
             )}
           </Card>
         </div>

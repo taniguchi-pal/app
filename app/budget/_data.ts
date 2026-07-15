@@ -9,8 +9,8 @@ export const MONTHS = [
 
 export type MonthKey = typeof MONTHS[number];
 
-// 実データがある月のみをタイムラインに表示する（8月以降は実データ投入後に再度有効化）
-export const VISIBLE_MONTHS: MonthKey[] = ['4月実績', '5月実績', '6月進捗', '7月進捗'];
+// 4月〜3月を通期で表示（8-9月は一部予算あり、10月以降はまだ予算未確定のため予算のみ表示）
+export const VISIBLE_MONTHS: MonthKey[] = [...MONTHS];
 
 // 27期は2026年4月始まり。ボタンの表示ラベル（◯月実績／◯月進捗／◯月予定）は
 // 固定文字列ではなく「今日」との前後関係から動的に算出する（過去=実績／当月=進捗／未来=予定）。
@@ -713,6 +713,20 @@ export const SITES: Record<string, SiteData> = {
 
 export function sitesOfArea(areaId: string): SiteData[] {
   return Object.values(SITES).filter((s) => s.areaId === areaId);
+}
+
+// lifecycle文言（例:「2026年6月末で契約終了」「2026年7月より非稼働」）から年月を読み取り、
+// 表示中の月に契約終了・非稼働化する現場をトピックスに出すための判定。
+const LIFECYCLE_CHANGE_RE = /(\d{4})年(\d{1,2})月.*?(契約終了|非稼働)/;
+export function sitesChangingInMonth(m: MonthKey, areaId?: string): SiteData[] {
+  const { year, month } = monthCalendar(m);
+  return Object.values(SITES).filter((s) => {
+    if (areaId && s.areaId !== areaId) return false;
+    if (!s.lifecycle) return false;
+    const match = s.lifecycle.match(LIFECYCLE_CHANGE_RE);
+    if (!match) return false;
+    return Number(match[1]) === year && Number(match[2]) === month;
+  });
 }
 
 export const yen = (n: number | null | undefined) => (n == null ? '—' : `¥${n.toLocaleString()}`);

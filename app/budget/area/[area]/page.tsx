@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabels, AREA_MONTHLY, AREAS, sitesOfArea, yen } from '../../_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -28,22 +28,24 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   const [repFilter, setRepFilter] = useState<string>('');
 
   const monthly = AREA_MONTHLY[areaId] ?? AREA_MONTHLY.kanto;
-  const base = monthly[activeMonth];
-  const ov = monthlyOverrides[`${areaId}__${activeMonth}`];
-  const current = ov
-    ? {
-        ...base,
-        salesBudget: numOrNull(ov.salesBudget) ?? base.salesBudget,
-        salesActual: numOrNull(ov.salesActual),
-        gpBudget: numOrNull(ov.gpBudget) ?? base.gpBudget,
-        gpActual: numOrNull(ov.gpActual),
-        activeStaff: numOrNull(ov.activeStaff),
-        avgHours: numOrNull(ov.avgHours),
-        joined: numOrNull(ov.joined),
-        resigned: numOrNull(ov.resigned),
-        heat: ov.heat || base.heat,
-      }
-    : base;
+  const mergeOverride = (m: MonthKey) => {
+    const b = monthly[m];
+    const o = monthlyOverrides[`${areaId}__${m}`];
+    if (!o) return b;
+    return {
+      ...b,
+      salesBudget: numOrNull(o.salesBudget) ?? b.salesBudget,
+      salesActual: numOrNull(o.salesActual),
+      gpBudget: numOrNull(o.gpBudget) ?? b.gpBudget,
+      gpActual: numOrNull(o.gpActual),
+      activeStaff: numOrNull(o.activeStaff),
+      avgHours: numOrNull(o.avgHours),
+      joined: numOrNull(o.joined),
+      resigned: numOrNull(o.resigned),
+      heat: o.heat || b.heat,
+    };
+  };
+  const current = mergeOverride(activeMonth);
   const sites = sitesOfArea(areaId);
   const endedSites = sites.filter((s) => !s.active);
 
@@ -51,13 +53,18 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   const gap = current.salesActual != null ? current.salesActual - current.salesBudget : null;
   const yoyPct = current.salesActual != null && current.yoyLastYear != null ? ((current.salesActual - current.yoyLastYear) / current.yoyLastYear) * 100 : null;
 
-  const prevMonthActual = monthIndex > 0 ? monthly[MONTHS[monthIndex - 1]]?.salesActual ?? null : null;
-  const salesChartData = [
-    { name: '前年同月', 売上高: current.yoyLastYear },
-    { name: '先月', 売上高: prevMonthActual },
-    { name: '当月実績', 売上高: current.salesActual },
-    { name: '予算', 売上高: current.salesBudget },
-  ];
+  // 縦軸=売上高、横軸=4月〜3月の通期。予算/前年/先月(前月実績)/当月実績(進捗)の4本で比較する。
+  const salesTrend = MONTHS.map((m, i) => {
+    const row = mergeOverride(m);
+    const prevRow = i > 0 ? mergeOverride(MONTHS[i - 1]) : null;
+    return {
+      name: `${monthCalendar(m).month}月`,
+      予算: row.salesBudget,
+      当月実績: row.salesActual,
+      前年: row.yoyLastYear,
+      先月: prevRow?.salesActual ?? null,
+    };
+  });
 
   const topics: { text: string; tone: 'default' | 'alert' | 'notice' }[] = [];
   if (rate != null && gap != null) topics.push({ text: `売上 予算比 ${rate.toFixed(1)}%（GAP ${gap > 0 ? '+' : ''}¥${gap.toLocaleString()}）`, tone: 'default' });
@@ -67,8 +74,12 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   if (endedSites.length > 0) {
     topics.push({ text: `終了・非稼働現場（${endedSites.length}件）: ${endedSites.map((s) => `${s.name}${s.lifecycle ? `（${s.lifecycle}）` : ''}`).join(' / ')}`, tone: 'notice' });
   }
+  const changingSites = sitesChangingInMonth(activeMonth, areaId);
+  if (changingSites.length > 0) {
+    topics.push({ text: `⚠ ${monthLabel(activeMonth)}に契約状況が変わる現場（${changingSites.length}件）: ${changingSites.map((s) => `${s.name}（${s.lifecycle}）`).join(' / ')}`, tone: 'alert' });
+  }
   if (topics.length === 0) topics.push({ text: '月次実績データは未登録です（月末確定後に反映されます）', tone: 'default' });
-  if (monthIndex >= 3 && !ov && current.salesActual == null) topics.push({ text: 'この月の実績はまだSheetsに未入力です（予算のみ表示）', tone: 'default' });
+  if (monthIndex >= 3 && current.salesActual == null) topics.push({ text: 'この月の実績はまだSheetsに未入力です（予算のみ表示）', tone: 'default' });
 
   return (
     <Shell agvColor={(AREA_THEME[areaId] || AREA_THEME.kanto).from}>
@@ -95,7 +106,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <HeroStat
             areaId={areaId}
-            eyebrow={`予実管理 (${activeMonth})`}
+            eyebrow={`予実管理 (${monthLabel(activeMonth)})`}
             value={current.salesActual == null ? `${yen(current.salesBudget)}（予算）` : yen(current.salesActual)}
             sub={<div className="flex justify-between"><span>予算 {yen(current.salesBudget)}</span><span>{rate == null ? '計画中' : `${rate.toFixed(1)}%`}</span></div>}
           />
@@ -163,29 +174,25 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
             })()}
           </Card>
 
-          {/* ── 売上高 前年・先月・予算 対比（折れ線） ── */}
-          <Card eyebrow="Analysis" title="売上高 前年・先月・予算 対比推移">
-            {current.salesActual == null ? (
-              <div className="h-40 border-2 border-dashed border-zinc-100 rounded-2xl flex items-center justify-center">
-                <p className="text-xs font-bold text-zinc-400">実績データ未登録（計画月）</p>
-              </div>
-            ) : (
-              <>
-                <p className="text-3xl font-black text-center font-mono" style={{ color: (AREA_THEME[areaId] || AREA_THEME.kanto).from }}>
-                  {yen(current.salesActual)}
-                </p>
-                <p className="text-[10px] text-zinc-400 text-center mb-2">当月実績</p>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={salesChartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#a1a1aa" />
-                    <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
-                    <Tooltip formatter={(v) => yen(typeof v === 'number' ? v : Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                    <Line type="monotone" dataKey="売上高" stroke={(AREA_THEME[areaId] || AREA_THEME.kanto).from} strokeWidth={2.5} connectNulls dot={{ r: 4 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </>
-            )}
+          {/* ── 売上高 前年・先月・予算 対比（通期折れ線） ── */}
+          <Card eyebrow="Analysis" title="売上高 前年・先月・予算 対比推移（4月〜3月）">
+            <p className="text-3xl font-black text-center font-mono" style={{ color: (AREA_THEME[areaId] || AREA_THEME.kanto).from }}>
+              {current.salesActual != null ? yen(current.salesActual) : `${yen(current.salesBudget)}（予算）`}
+            </p>
+            <p className="text-[10px] text-zinc-400 text-center mb-2">{monthLabel(activeMonth)}</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={salesTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="#a1a1aa" />
+                <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
+                <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="前年" stroke="#a855f7" strokeDasharray="4 3" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="先月" stroke="#f59e0b" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="当月実績" stroke={(AREA_THEME[areaId] || AREA_THEME.kanto).from} strokeWidth={2.5} connectNulls dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </Card>
         </div>
 
@@ -217,7 +224,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
         })()}
 
         {/* ── トピックス ───────────────────────────── */}
-        <Card eyebrow="Topics" title={`${activeMonth} ${area.title}エリア トピックス`}>
+        <Card eyebrow="Topics" title={`${monthLabel(activeMonth)} ${area.title}エリア トピックス`}>
           <ul className="space-y-2">
             {topics.map((t, i) => (
               <li

@@ -58,7 +58,7 @@ export default function LoginPage() {
         <div className="space-y-4">
           <button
             onClick={() => router.push("/budget")}
-            className="w-full py-4 bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white font-bold text-xs rounded-2xl transition-all duration-150 active:scale-[0.98] shadow-lg shadow-blue-900/20 font-montserrat tracking-[0.2em]"
+            className="w-full py-4 bg-white hover:bg-gradient-to-r hover:from-blue-900 hover:to-blue-700 text-blue-900 hover:text-white font-bold text-xs rounded-2xl transition-all duration-150 active:scale-[0.98] border border-blue-100 hover:border-transparent hover:shadow-lg hover:shadow-blue-900/20 font-montserrat tracking-[0.2em]"
           >
             DASHBOARD ➔
           </button>
