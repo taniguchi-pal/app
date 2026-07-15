@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel } from './_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, sumSitesActual } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -26,7 +26,23 @@ export default function GlobalDashboard() {
     fetch('/api/monthly-data').then((r) => r.json()).then((data) => { if (!data?.error) setMonthlyOverrides(data); }).catch(() => {});
   }, []);
 
-  const base = COMPANY_MONTHLY[activeMonth];
+  // 7月は関東・中部（現場実績を自動集計）＋関西（自社システム部門合計から大阪支店分を控除した実数値）の
+  // 合算で全社実績を算出する。大阪支店は別枠管理のためこの合計には含めない（従来と同じ扱い）。
+  const base = (() => {
+    const b = COMPANY_MONTHLY[activeMonth];
+    if (activeMonth !== CURRENT_ACTUAL_MONTH) return b;
+    const kanto = sumSitesActual('kanto');
+    const chubu = sumSitesActual('chubu');
+    const kansaiMonth = AREA_MONTHLY.kansai[CURRENT_ACTUAL_MONTH];
+    return {
+      ...b,
+      status: 'inprogress' as const,
+      salesBudget: kanto.salesBudget + chubu.salesBudget + kansaiMonth.salesBudget,
+      salesActual: kanto.salesActual + chubu.salesActual + (kansaiMonth.salesActual ?? 0),
+      opActual: kanto.opProfitActual + chubu.opProfitActual + (kansaiMonth.gpActual ?? 0),
+      topics: ['関東・中部・関西の管轄現場実績を自動集計した全社速報値です（大阪支店は別枠管理のため含みません）'],
+    };
+  })();
   const ov = monthlyOverrides[`company__${activeMonth}`];
   const current = ov
     ? {
@@ -171,7 +187,7 @@ export default function GlobalDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card eyebrow="Timeline" title="月次フィルター">
             <TabRow items={VISIBLE_MONTHS} active={activeMonth} onSelect={(m) => setActiveMonth(m as MonthKey)} labels={monthLabels(VISIBLE_MONTHS)} />
-            {monthIndex >= 3 && !ov && (
+            {monthIndex >= 3 && current.salesActual == null && (
               <p className="text-[10px] text-zinc-400 mt-2">※ この月の実績はまだSheetsに未入力のため、予算のプレースホルダー値を表示しています</p>
             )}
           </Card>

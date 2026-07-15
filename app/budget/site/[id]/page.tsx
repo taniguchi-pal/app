@@ -3,7 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, BackLink, Breadcrumb, AREA_THEME } from '../../_ui';
-import { SITES, AREAS, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef, ratesUpdatedLabel } from '../../_data';
+import { SITES, AREAS, MONTHS, MonthKey, monthCalendar, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef, ratesUpdatedLabel } from '../../_data';
+
+// 現在、現場ごとの実績スクリーンショットが反映されている対象月（自社システム反映分は7月進捗）
+const CURRENT_ACTUAL_MONTH: MonthKey = '7月進捗';
 
 const ACTION_COLOR: Record<ActionType, string> = {
   価格交渉: 'text-blue-700 bg-blue-50 border-blue-100',
@@ -36,6 +39,7 @@ interface EditableForm {
   recruitingCostSpent: string;
   recruitingCostBudget: string;
   postingPeriod: string;
+  staffCount: string; // SOが入職/退職を反映した最新の配置人数（Sheets連携）
 }
 
 export default function SiteKarte({ params }: { params: Promise<{ id: string }> }) {
@@ -51,6 +55,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
     recruitingCostSpent: site.recruiting?.costSpent != null ? String(site.recruiting.costSpent) : '',
     recruitingCostBudget: site.recruiting?.costBudget != null ? String(site.recruiting.costBudget) : '',
     postingPeriod: site.recruiting?.postingPeriod ?? '',
+    staffCount: site.staffCount != null ? String(site.staffCount) : '',
   });
   const [apiStatus, setApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -84,6 +89,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
             recruitingCostSpent: o.recruitingCostSpent ? String(o.recruitingCostSpent) : f.recruitingCostSpent,
             recruitingCostBudget: o.recruitingCostBudget ? String(o.recruitingCostBudget) : f.recruitingCostBudget,
             postingPeriod: o.postingPeriod || f.postingPeriod,
+            staffCount: o.staffCount ? String(o.staffCount) : f.staffCount,
           }));
         }
         setApiStatus('ready');
@@ -107,6 +113,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           recruitingCostSpent: form.recruitingCostSpent,
           recruitingCostBudget: form.recruitingCostBudget,
           postingPeriod: form.postingPeriod,
+          staffCount: form.staffCount,
         }),
       });
       const data = await res.json();
@@ -117,16 +124,16 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
   };
 
   const hasFinancials = hasAnyPLData(site);
-  const chartData = (['yoy', 'mom', 'actual', 'budget'] as const).map((key) => {
-    const point: Record<string, number | string | null> = {
-      name: key === 'yoy' ? '前年同月' : key === 'mom' ? '先月' : key === 'actual' ? '当月実績' : '予算',
-    };
-    CHART_METRICS.forEach(({ account }) => {
-      const row = getPLRow(site, account);
-      point[account.label] = row?.[key] ?? null;
-    });
-    return point;
-  });
+  // 縦軸=各指標の金額、横軸=4月〜3月の通期。売上高は月次予算表の実データ(4-9月)を予算線として使える一方、
+  // 売上総利益・営業利益は月次予算の内訳が無いため、当月実績の単点のみ表示する（憶測で埋めない）。
+  const metricTrend = (account: PLAccountDef) => {
+    const row = getPLRow(site, account);
+    return MONTHS.map((mk) => ({
+      name: `${monthCalendar(mk).month}月`,
+      予算: account.label === '売上高' ? (site.monthlyBudget?.[mk] ?? null) : null,
+      当月実績: mk === CURRENT_ACTUAL_MONTH ? (row?.actual ?? null) : null,
+    }));
+  };
   const linkedContactLog: { date: string; type: ActionType; text: string }[] = (() => {
     if (!linkedAttack?.contactLogJson) return [];
     try {
@@ -172,7 +179,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <p className="text-[10px] text-blue-300">配置人数</p>
-              <p className="text-2xl font-black mt-0.5 font-mono">{site.staffCount ?? '—'}<span className="text-xs font-normal ml-1">名</span></p>
+              <p className="text-2xl font-black mt-0.5 font-mono">{form.staffCount || '—'}<span className="text-xs font-normal ml-1">名</span></p>
             </div>
             <div>
               <p className="text-[10px] text-blue-300">総工数実績</p>
@@ -213,8 +220,8 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           </Card>
         </div>
 
-        {/* ── 前年・先月・予算 対比（指標ごとに折れ線グラフを分離） ── */}
-        <Card eyebrow="P&L Analysis" title="前年・先月・予算 対比推移（主要指標）">
+        {/* ── 主要指標 推移（4月〜3月、指標ごとに折れ線グラフを分離） ── */}
+        <Card eyebrow="P&L Analysis" title="主要指標 推移（4月〜3月）">
           {!hasFinancials ? (
             <div className="h-40 border-2 border-dashed border-zinc-200 rounded-2xl flex flex-col items-center justify-center gap-1">
               <p className="text-xs font-bold text-zinc-400">損益データ未登録</p>
@@ -224,6 +231,8 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {CHART_METRICS.map((m) => {
                 const row = getPLRow(site, m.account);
+                const trend = metricTrend(m.account);
+                const hasBudgetSeries = m.account.label === '売上高' && !!site.monthlyBudget;
                 return (
                   <div key={m.account.label} className="p-3 rounded-xl bg-zinc-50 border border-zinc-100">
                     <p className="text-xs font-bold text-zinc-500 text-center">{m.account.label}</p>
@@ -232,14 +241,16 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                     </p>
                     <p className="text-[10px] text-zinc-400 text-center mb-1">当月実績</p>
                     <ResponsiveContainer width="100%" height={140}>
-                      <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                      <LineChart data={trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
                         <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#a1a1aa" />
                         <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
-                        <Tooltip formatter={(v) => yen(typeof v === 'number' ? v : Number(v))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                        <Line type="monotone" dataKey={m.account.label} stroke={m.color} strokeWidth={2} connectNulls dot={{ r: 3 }} />
+                        <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                        {hasBudgetSeries && <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />}
+                        <Line type="monotone" dataKey="当月実績" stroke={m.color} strokeWidth={2} connectNulls dot={{ r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
+                    {!hasBudgetSeries && <p className="text-[9px] text-zinc-400 text-center mt-1">月次予算データ未登録（当月実績のみ表示）</p>}
                   </div>
                 );
               })}
@@ -373,6 +384,16 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                   <option value="">未設定</option>
                   {NEGOTIATION_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-[10px] font-bold text-zinc-400">配置人数（SOが入職・退職を反映）</label>
+                <input
+                  value={form.staffCount}
+                  onChange={(e) => setForm((f) => ({ ...f, staffCount: e.target.value.replace(/[^0-9]/g, '') }))}
+                  placeholder="未設定"
+                  inputMode="numeric"
+                  className="w-full mt-1 px-2 py-1.5 text-sm font-bold text-zinc-700 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+                />
               </div>
             </div>
             <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-2">

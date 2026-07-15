@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, yen } from '../../_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, sumSitesActual, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -35,8 +35,13 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   const areaWeather = weather[areaId];
 
   const monthly = AREA_MONTHLY[areaId] ?? AREA_MONTHLY.kanto;
+  const isAutoAggregated = (AUTO_AGGREGATE_AREAS as readonly string[]).includes(areaId);
   const mergeOverride = (m: MonthKey) => {
-    const b = monthly[m];
+    let b = monthly[m];
+    if (isAutoAggregated && m === CURRENT_ACTUAL_MONTH) {
+      const sums = sumSitesActual(areaId);
+      b = { ...b, salesActual: sums.salesActual, salesBudget: sums.salesBudget || b.salesBudget, gpActual: sums.opProfitActual };
+    }
     const o = monthlyOverrides[`${areaId}__${m}`];
     if (!o) return b;
     return {
@@ -108,6 +113,10 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
       </header>
 
       <main className="px-4 md:px-10 space-y-5">
+
+        {isAutoAggregated && activeMonth === CURRENT_ACTUAL_MONTH && (
+          <p className="text-[10px] text-emerald-600 font-bold -mb-2">✓ この月の売上高・営業利益は管轄現場{sumSitesActual(areaId).siteCount}件の実績を自動集計しています（現場データ更新で自動反映）</p>
+        )}
 
         {/* ── エリア管理数値 ドン ──────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

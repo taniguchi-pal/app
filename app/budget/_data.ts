@@ -359,6 +359,7 @@ export interface SiteData {
   active: boolean; lifecycle?: string;
   roles?: SiteRole[]; // 事業所内の役割別内訳（案件番号つき）
   sales?: Partial<SiteFinancial>; cost?: Partial<SiteFinancial>; paidLeave?: Partial<SiteFinancial>; opProfit?: Partial<SiteFinancial>;
+  monthlyBudget?: Partial<Record<MonthKey, number>>; // 現場ごとの月次売上予算（4-9月予算表より。10月以降は未確定）
   plDetail?: Record<string, Partial<SiteFinancial>>; // PL_ACCOUNTSのlabelをキーとした明細（実データ提供後に充実予定）
   staffCount?: number; totalHours?: number; avgHours?: number;
   liftUnitPrice?: number | null; workerUnitPrice?: number; minimumWage?: number;
@@ -380,6 +381,15 @@ function role(code: string, label: string, isNew?: boolean): SiteRole {
   return { code, label, isNew };
 }
 
+// 4-9月の月次予算表（現場名で突合）から、現場ごとの月次売上予算シリーズを組み立てる。10月以降は未確定のため含めない。
+function budgetSeries(apr: number | null, may: number | null, jun: number | null, jul: number | null, aug: number | null, sep: number | null): Partial<Record<MonthKey, number>> {
+  const keys: MonthKey[] = ['4月実績', '5月実績', '6月進捗', '7月進捗', '8月予定', '9月予定'];
+  const vals = [apr, may, jun, jul, aug, sep];
+  const out: Partial<Record<MonthKey, number>> = {};
+  keys.forEach((k, i) => { if (vals[i] != null) out[k] = vals[i]!; });
+  return out;
+}
+
 export const POSTING_PERIOD_OPTIONS = ['1週間', '2週間', '1ヶ月', '2ヶ月', '3ヶ月以上'] as const;
 
 export const SITES: Record<string, SiteData> = {
@@ -393,14 +403,16 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 3049701 },
     paidLeave: { actual: 87770 },
     opProfit: { actual: 619170 },
+    monthlyBudget: budgetSeries(3952000, 3800000, 3800000, 3952000, 3800000, 3648000),
   },
   '116-1': {
     active: true,
     id: '116-1', name: 'PCS 関東（重工田町ビル）', areaId: 'kanto', prefecture: '東京都',
-    sales: { actual: 683088, budget: 580000 },
+    sales: { actual: 732888, budget: 580000 },
     cost: { actual: 446880 },
     paidLeave: { actual: 10640 },
     opProfit: { actual: 151926 },
+    monthlyBudget: budgetSeries(520000, 510000, 570000, 580000, 450000, 540000),
   },
   '115-1': {
     active: false,
@@ -409,14 +421,16 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 0 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
+    monthlyBudget: budgetSeries(290000, 270000, 350000, 350000, 250000, 300000),
   },
   '657-1': {
     active: true,
     id: '657-1', name: 'PCS 関東（重工丸の内）', areaId: 'kanto', prefecture: '東京都',
-    sales: { actual: 665840, budget: 560000 },
+    sales: { actual: 682010, budget: 560000 },
     cost: { actual: 446220 },
     paidLeave: { actual: 10720 },
     opProfit: { actual: 141371 },
+    monthlyBudget: budgetSeries(550000, 490000, 560000, 560000, 410000, 540000),
   },
   '715-1': {
     active: true,
@@ -425,6 +439,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 1033164 },
     paidLeave: { actual: 30400 },
     opProfit: { actual: 262319 },
+    monthlyBudget: budgetSeries(1240000, 1130000, 1210000, 1190000, 1230000, 1390000),
   },
   '648-1': {
     active: true,
@@ -432,6 +447,7 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 739593, budget: 1000000 },
     cost: { actual: 532827 },
     paidLeave: { actual: 10800 },
+    monthlyBudget: budgetSeries(900000, 900000, 1000000, 1000000, 720000, 880000),
     opProfit: { actual: 154533 },
   },
   '835-1': placeholderSite('835-1', '有限会社黒岩運輸', 'kanto', { lifecycle: '新規現場' }),
@@ -446,6 +462,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 260810 },
     paidLeave: { actual: 10160 },
     opProfit: { actual: 42249 },
+    monthlyBudget: budgetSeries(350000, 300000, 300000, 350000, 300000, 330000),
   },
   '548-1': {
     active: true,
@@ -454,6 +471,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 1570455 },
     paidLeave: { actual: 94965 },
     opProfit: { actual: 376231 },
+    monthlyBudget: budgetSeries(2450000, 2200000, 2200000, 2200000, 2200000, 2200000),
   },
   '505-1': {
     active: true,
@@ -462,6 +480,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 286275 },
     paidLeave: { actual: 9760 },
     opProfit: { actual: 82960 },
+    monthlyBudget: budgetSeries(400000, 404000, 450000, 420000, 414000, 456000),
   },
   '675-1': placeholderSite('675-1', 'AFS中部センター', 'chubu'),
   '510-2': {
@@ -471,6 +490,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 236249 },
     paidLeave: { actual: 20800 },
     opProfit: { actual: 47768 },
+    monthlyBudget: budgetSeries(300000, 300000, 300000, 300000, 300000, 300000),
   },
   '790-1': {
     active: true,
@@ -480,6 +500,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 2193820 },
     paidLeave: { actual: 39200 },
     opProfit: { actual: 566064 },
+    monthlyBudget: budgetSeries(2500000, 2500000, 2600000, 2600000, 2600000, 2600000),
   },
   '833-1': placeholderSite('833-1', '摂津倉庫株式会社 春日井営業所', 'chubu', {
     lifecycle: '新規現場',
@@ -492,6 +513,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 716400 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 224652 },
+    monthlyBudget: budgetSeries(null, null, 1200000, 1200000, 1200000, 1200000),
   },
   '038-1': {
     active: false,
@@ -500,6 +522,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 0 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
+    monthlyBudget: budgetSeries(370000, 350000, 340000, 250000, 230000, 270000),
   },
   '301-1': {
     active: true,
@@ -508,6 +531,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 442803 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 61831 },
+    monthlyBudget: budgetSeries(400000, 300000, 350000, 300000, 300000, 300000),
   },
 
   // ── 関西 ──────────────────────────────────────────────
@@ -520,6 +544,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 1854110 },
     paidLeave: { actual: 74400 },
     opProfit: { actual: 542279 },
+    monthlyBudget: budgetSeries(3000000, 2800000, 3000000, 3000000, 2800000, 3000000),
   },
   '543-4': {
     active: true,
@@ -528,12 +553,14 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 0 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
+    monthlyBudget: budgetSeries(190000, 190000, 190000, 190000, 190000, 190000),
   },
   '595-1': {
     active: false,
     id: '595-1', name: '岡山県貨物運送 南港支店［リフト］', areaId: 'kansai', prefecture: null, lifecycle: '2026年6月末で契約終了',
     sales: { actual: 0, budget: 380000 },
     cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
+    monthlyBudget: budgetSeries(380000, 380000, 380000, 380000, 380000, 380000),
   },
   '136-1': {
     active: true,
@@ -542,6 +569,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 357460 },
     paidLeave: { actual: 16470 },
     opProfit: { actual: 105277 },
+    monthlyBudget: budgetSeries(380000, 250000, 380000, 380000, 380000, 380000),
   },
   '533-1': {
     active: true,
@@ -551,23 +579,26 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 602325 },
     paidLeave: { actual: 15120 },
     opProfit: { actual: 179725 },
+    monthlyBudget: budgetSeries(320000, 320000, 320000, 320000, 320000, 320000),
   },
   '570-1': {
     active: true,
     id: '570-1', name: '加茂商事［軽作業］（株式会社マラカナ・加茂商事）', areaId: 'kansai', prefecture: null,
-    sales: { actual: 628562, budget: 600000 },
+    sales: { actual: 638042, budget: 600000 },
     cost: { actual: 443334 },
     paidLeave: { actual: 21600 },
     opProfit: { actual: 78065 },
+    monthlyBudget: budgetSeries(600000, 600000, 600000, 600000, 420000, 600000),
   },
   // budgetは「PCS関西（神戸富士ゼロックス）」、実績システムでは「PCS関西（BPOソリューション事業本部）」表記。同一現場として突合。
   '530-1': {
     active: true,
     id: '530-1', name: 'PCS 関西（神戸）［配達作業員］', areaId: 'kansai', prefecture: null,
-    sales: { actual: 201600, budget: 250000 },
+    sales: { actual: 211680, budget: 250000 },
     cost: { actual: 122880 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 48271 },
+    monthlyBudget: budgetSeries(250000, 250000, 250000, 250000, 250000, 250000),
   },
   '723-1': placeholderSite('723-1', '阪菱企業 茨木', 'kansai', { roles: [role('723-1', 'リフト'), role('723-2', '軽作業')] }),
   '815-1': {
@@ -575,12 +606,14 @@ export const SITES: Record<string, SiteData> = {
     id: '815-1', name: '阪菱企業 西神現業所［軽作業］', areaId: 'kansai', prefecture: null,
     sales: { actual: 0, budget: 200000 },
     cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
+    monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
   },
   '753-1': {
     active: false,
     id: '753-1', name: 'ハウス物流サービス株式会社 伊丹［リフト］', areaId: 'kansai', prefecture: null, lifecycle: '2026年6月末で契約終了',
     sales: { actual: 0, budget: 350000 },
     cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
+    monthlyBudget: budgetSeries(350000, 300000, 350000, 350000, 300000, 350000),
   },
   '801-1': {
     active: true,
@@ -589,6 +622,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 0 },
     paidLeave: { actual: 0 },
     opProfit: { actual: -42070 },
+    monthlyBudget: budgetSeries(350000, 380000, 350000, 350000, 350000, 350000),
   },
   '633-1': {
     active: true,
@@ -597,6 +631,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 250862 },
     paidLeave: { actual: 35520 },
     opProfit: { actual: 12694 },
+    monthlyBudget: budgetSeries(300000, 300000, 300000, 300000, 300000, 300000),
   },
   '782-1': placeholderSite('782-1', 'SHUUEI物流 高槻センター［リフト］', 'kansai'),
   '606-3': placeholderSite('606-3', 'SHUUEI物流 枚方センター［リフト］短期', 'kansai'),
@@ -608,6 +643,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 1100100 },
     paidLeave: { actual: 35440 },
     opProfit: { actual: 290134 },
+    monthlyBudget: budgetSeries(600000, 550000, 600000, 600000, 600000, 600000),
   },
   '805-1': {
     active: true,
@@ -616,6 +652,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 310400 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 55842 },
+    monthlyBudget: budgetSeries(400000, 380000, 400000, 400000, 400000, 400000),
   },
   '720-1': placeholderSite('720-1', 'HMKロジサービス 西神戸センター［軽作業］', 'kansai'),
   '828-1': {
@@ -624,18 +661,21 @@ export const SITES: Record<string, SiteData> = {
     roles: [role('828-1', '軽作業'), role('828-2', 'リフト')],
     sales: { actual: 693197, budget: 580000 },
     cost: { actual: 497557 },
+    monthlyBudget: budgetSeries(580000, 560000, 580000, 580000, 580000, 580000),
   },
   '830-1': {
     active: true,
     id: '830-1', name: 'エヌエス物流 関西［軽作業］', areaId: 'kansai', prefecture: null,
     sales: { actual: 309295, budget: 270000 },
     cost: { actual: 216506 },
+    monthlyBudget: budgetSeries(270000, 270000, 270000, 270000, 270000, 270000),
   },
   '831-1': {
     active: true,
     id: '831-1', name: 'エヌエス物流 滋賀［軽作業］', areaId: 'kansai', prefecture: '滋賀県',
     sales: { actual: 231675, budget: 850000 },
     cost: { actual: 162835 },
+    monthlyBudget: budgetSeries(850000, 850000, 850000, 850000, 850000, 850000),
   },
   '832-1': {
     active: true,
@@ -646,6 +686,7 @@ export const SITES: Record<string, SiteData> = {
     ],
     sales: { actual: 713188, budget: 750000 },
     cost: { actual: 516665 },
+    monthlyBudget: budgetSeries(750000, 750000, 750000, 750000, 750000, 750000),
   },
   '836-1': placeholderSite('836-1', 'HMKロジサービス 南港（レッドウッド南港）', 'kansai', {
     lifecycle: '新規現場', roles: [role('836-1', '軽作業', true), role('836-2', 'リフト', true)],
@@ -662,6 +703,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 197120 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 49235 },
+    monthlyBudget: budgetSeries(400000, 400000, 600000, 600000, 600000, 600000),
   },
   '285-1': {
     active: true,
@@ -670,6 +712,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 177200 },
     paidLeave: { actual: 17920 },
     opProfit: { actual: 24939 },
+    monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
   },
   '287-1': {
     active: true,
@@ -678,6 +721,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 179200 },
     paidLeave: { actual: 17920 },
     opProfit: { actual: 25663 },
+    monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
   },
   '288-1': {
     active: true,
@@ -686,6 +730,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 188800 },
     paidLeave: { actual: 8960 },
     opProfit: { actual: 28845 },
+    monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
   },
   '229-1': {
     active: true,
@@ -694,6 +739,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 239400 },
     paidLeave: { actual: 11400 },
     opProfit: { actual: 40827 },
+    monthlyBudget: budgetSeries(250000, 250000, 250000, 250000, 250000, 250000),
   },
 
   // ── 大阪支店 ──────────────────────────────────────────
@@ -706,6 +752,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 12288918 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 2883072 },
+    monthlyBudget: budgetSeries(21060000, 20040000, 20550000, 21570000, 19530000, 20550000),
     staffCount: 124, totalHours: 14049, avgHours: 113.3,
     liftUnitPrice: 1550, workerUnitPrice: 1320, minimumWage: 1177, marketHourlyWage: 1280,
     backlogCount: 4, expectedImpact: 2100000, negotiationStatus: '交渉中',
@@ -720,6 +767,25 @@ export const SITES: Record<string, SiteData> = {
 
 export function sitesOfArea(areaId: string): SiteData[] {
   return Object.values(SITES).filter((s) => s.areaId === areaId);
+}
+
+// 現在、現場の実績スクリーンショットが反映されている対象月（自社システム反映分は7月進捗）。
+export const CURRENT_ACTUAL_MONTH: MonthKey = '7月進捗';
+
+// 現場ごとの実績(sales.actual/opProfit.actual)・月次予算を積み上げて、エリアの当月実績・予算を
+// 「自動集計」する。現場を更新すればここを直す必要なく合計に反映される。
+// 関西のみ、現場マスタに未登録の現場（関西新規枠・新規HMK3件など）が実データに含まれるため対象外とし、
+// 引き続き自社システムの部門合計（大阪支店分を差し引いた実数値）を正としている。
+export const AUTO_AGGREGATE_AREAS = ['kanto', 'chubu', 'osaka'] as const;
+export function sumSitesActual(areaId: string): { salesActual: number; salesBudget: number; opProfitActual: number; siteCount: number } {
+  const sites = sitesOfArea(areaId);
+  let salesActual = 0, salesBudget = 0, opProfitActual = 0, siteCount = 0;
+  for (const s of sites) {
+    if (s.sales?.actual != null) { salesActual += s.sales.actual; siteCount++; }
+    if (s.monthlyBudget?.[CURRENT_ACTUAL_MONTH] != null) salesBudget += s.monthlyBudget[CURRENT_ACTUAL_MONTH]!;
+    if (s.opProfit?.actual != null) opProfitActual += s.opProfit.actual;
+  }
+  return { salesActual, salesBudget, opProfitActual, siteCount };
 }
 
 // lifecycle文言（例:「2026年6月末で契約終了」「2026年7月より非稼働」）から年月を読み取り、
