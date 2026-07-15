@@ -3,15 +3,15 @@
 
 export const MONTHS = [
   '4月実績', '5月実績', '6月進捗',
-  '7月予定', '8月予定', '9月予定', '10月予定', '11月予定', '12月予定',
+  '7月進捗', '8月予定', '9月予定', '10月予定', '11月予定', '12月予定',
   '1月予定', '2月予定', '3月予定',
 ] as const;
 
 export type MonthKey = typeof MONTHS[number];
 
-// 実データがある4-6月のみをタイムラインに表示する（7月以降は実データ投入後に再度有効化）
-export const VISIBLE_MONTHS: MonthKey[] = ['4月実績', '5月実績', '6月進捗'];
-export const MONTH_SHORT_LABELS: Record<string, string> = { '4月実績': '4月', '5月実績': '5月', '6月進捗': '6月' };
+// 実データがある月のみをタイムラインに表示する（8月以降は実データ投入後に再度有効化）
+export const VISIBLE_MONTHS: MonthKey[] = ['4月実績', '5月実績', '6月進捗', '7月進捗'];
+export const MONTH_SHORT_LABELS: Record<string, string> = { '4月実績': '4月', '5月実績': '5月', '6月進捗': '6月', '7月進捗': '7月' };
 
 export const ANNUAL_GOAL = { sales: 620000000, gpRate: 14.51, opRate: 6.87 };
 
@@ -146,7 +146,7 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
       '■ 7月末: 稼働235名水準への回復',
     ],
   },
-  '7月予定': plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 31, stackupPotential: 6625700 }),
+  '7月進捗': plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 31, stackupPotential: 6625700 }),
   '8月予定': plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc),
   '9月予定': plannedCompany(53000000, ANNUAL_SCHEDULE[1].desc),
   '10月予定': plannedCompany(54000000, ANNUAL_SCHEDULE[2].desc),
@@ -158,7 +158,7 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
 };
 
 const PLANNED_BUDGETS: Record<string, number> = {
-  '7月予定': 50000000, '8月予定': 51000000, '9月予定': 53000000, '10月予定': 54000000,
+  '7月進捗': 50000000, '8月予定': 51000000, '9月予定': 53000000, '10月予定': 54000000,
   '11月予定': 55000000, '12月予定': 58000000, '1月予定': 56000000, '2月予定': 55000000, '3月予定': 60000000,
 };
 
@@ -175,7 +175,15 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '4月実績': { salesBudget: 6770000, salesActual: 7735000, yoyLastYear: 9131000, gpBudget: 1071695, gpActual: 1211200, activeStaff: 33, avgHours: 108.52, joined: 0, resigned: 0, heat: null, siteCount: 8, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '5月実績': { salesBudget: 6354000, salesActual: 6972000, yoyLastYear: 8706000, gpBudget: 1071695, gpActual: 1157937, activeStaff: 33, avgHours: 98.43, joined: 2, resigned: 3, heat: null, siteCount: 7, funnel: { meetings: 2, proposals: 2, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7740000, salesActual: 7116000, yoyLastYear: 8589000, gpBudget: 1220940, gpActual: 1173160, activeStaff: 33, avgHours: 100.22, joined: 3, resigned: 0, heat: '注意 31℃', siteCount: 7, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
-    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.chubu) / 1000) * 1000)])),
+    // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 所属部署: 人ソ（中部））より反映。
+    // gpActualは粗利益2（社保・雇保・有給等控除後）の部門合計。gpBudget/activeStaff等は当該資料に無いため未登録。
+    '7月進捗': {
+      salesBudget: 7620000, salesActual: 7986636, yoyLastYear: null,
+      gpBudget: null, gpActual: 1401755,
+      activeStaff: null, avgHours: null, joined: null, resigned: null,
+      heat: null, siteCount: 8, funnel: null,
+    },
+    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.chubu) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
   // 関西: 現場一覧(26現場)から再計算した結果、旧予算(11-17M台)は現場ベース売上(30-34M台)と大きく乖離するため、
   // 旧予算の粗利率/達成率のバランスを保つ形で予算・粗利も比例修正済み。要ユーザー確認。
@@ -301,7 +309,7 @@ export interface SiteData {
   id: string; name: string; areaId: string; prefecture: string | null;
   active: boolean; lifecycle?: string;
   roles?: SiteRole[]; // 事業所内の役割別内訳（案件番号つき）
-  sales?: SiteFinancial; cost?: SiteFinancial; paidLeave?: SiteFinancial; opProfit?: SiteFinancial;
+  sales?: Partial<SiteFinancial>; cost?: Partial<SiteFinancial>; paidLeave?: Partial<SiteFinancial>; opProfit?: Partial<SiteFinancial>;
   plDetail?: Record<string, Partial<SiteFinancial>>; // PL_ACCOUNTSのlabelをキーとした明細（実データ提供後に充実予定）
   staffCount?: number; totalHours?: number; avgHours?: number;
   liftUnitPrice?: number | null; workerUnitPrice?: number; minimumWage?: number;
@@ -350,48 +358,78 @@ export const SITES: Record<string, SiteData> = {
   '835-1': placeholderSite('835-1', '有限会社黒岩運輸', 'kanto', { lifecycle: '新規現場' }),
 
   // ── 中部 ──────────────────────────────────────────────
-  '142-3': placeholderSite('142-3', '福山通運 名古屋南流通センター', 'chubu'),
+  // 7月実績は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月）のスクリーンショットより反映。
+  // budgetは別途共有された月次予算表（現場名で突合、シート上のコードは不一致のため無視）の7月列。
+  '142-3': {
+    active: true,
+    id: '142-3', name: '福山通運 名古屋南流通センター', areaId: 'chubu', prefecture: '愛知県',
+    sales: { actual: 359360, budget: 350000 },
+    cost: { actual: 260810 },
+    paidLeave: { actual: 10160 },
+    opProfit: { actual: 42249 },
+  },
   '548-1': {
     active: true,
     id: '548-1', name: '福山通運 東海支店（セリア）', areaId: 'chubu', prefecture: '愛知県',
-    sales: { actual: 2400000, budget: 2350000, yoy: 2150000, mom: 2300000 },
-    cost: { actual: 1830000, budget: 1800000, yoy: 1650000, mom: 1760000 },
-    paidLeave: { actual: 40000, budget: 25000, yoy: 20000, mom: 30000 },
-    opProfit: { actual: 422000, budget: 410000, yoy: 370000, mom: 400000 },
-    staffCount: 12, totalHours: 1164, avgHours: 97.0,
-    liftUnitPrice: 1380, workerUnitPrice: 1190, minimumWage: 1077, marketHourlyWage: 1140,
-    backlogCount: 0, expectedImpact: 0, negotiationStatus: '未着手',
-    salesRep: null, soRep: null, recruiting: { active: false },
-    actionLog: [
-      { date: '2025-10', type: '価格交渉', text: '契約更新に伴う単価据え置き' },
-    ],
+    sales: { actual: 2276321, budget: 2200000 },
+    cost: { actual: 1570455 },
+    paidLeave: { actual: 94965 },
+    opProfit: { actual: 376231 },
   },
-  '505-1': placeholderSite('505-1', '岐阜アグリフーズ 本社・工場（食鳥部鶏肉加工課）', 'chubu'),
+  '505-1': {
+    active: true,
+    id: '505-1', name: '岐阜アグリフーズ 本社・工場（食鳥部鶏肉加工課）', areaId: 'chubu', prefecture: '岐阜県',
+    sales: { actual: 413575, budget: 420000 },
+    cost: { actual: 286275 },
+    paidLeave: { actual: 9760 },
+    opProfit: { actual: 82960 },
+  },
   '675-1': placeholderSite('675-1', 'AFS中部センター', 'chubu'),
-  '510-2': placeholderSite('510-2', 'afs 中部XD（派遣）', 'chubu'),
+  '510-2': {
+    active: true,
+    id: '510-2', name: 'afs 中部XD（派遣）', areaId: 'chubu', prefecture: '愛知県',
+    sales: { actual: 343766, budget: 300000 },
+    cost: { actual: 236249 },
+    paidLeave: { actual: 20800 },
+    opProfit: { actual: 47768 },
+  },
   '790-1': {
     active: true,
     id: '790-1', name: '昭和冷蔵 小牧センター', areaId: 'chubu', prefecture: '愛知県',
     roles: [role('790-1', 'リフト'), role('790-2', '倉庫内仕分け作業')],
-    sales: { actual: 4200000, budget: 4100000, yoy: 3800000, mom: 4050000 },
-    cost: { actual: 3350000, budget: 3280000, yoy: 3050000, mom: 3230000 },
-    paidLeave: { actual: 90000, budget: 50000, yoy: 45000, mom: 60000 },
-    opProfit: { actual: 508000, budget: 490000, yoy: 450000, mom: 480000 },
-    staffCount: 18, totalHours: 1818, avgHours: 101.0,
-    liftUnitPrice: 1400, workerUnitPrice: 1200, minimumWage: 1077, marketHourlyWage: 1150,
-    backlogCount: 3, expectedImpact: 620000, negotiationStatus: '交渉中',
-    salesRep: null, soRep: null, recruiting: { active: true, costSpent: 85000, costBudget: 150000, postingPeriod: '1ヶ月' },
-    actionLog: [
-      { date: '2025-12', type: '価格交渉', text: '冷蔵倉庫手当 新設 +40円/h 合意' },
-      { date: '2026-04', type: '価格交渉', text: '最低賃金改定に伴うベース単価見直し予定' },
-      { date: '2026-06', type: 'コンタクト', text: '現場責任者と定例MTG。夜間帯の人員不足を確認' },
-    ],
+    sales: { actual: 3009658, budget: 2600000 },
+    cost: { actual: 2193820 },
+    paidLeave: { actual: 39200 },
+    opProfit: { actual: 566064 },
   },
   '833-1': placeholderSite('833-1', '摂津倉庫株式会社 春日井営業所', 'chubu', {
     lifecycle: '新規現場',
     roles: [role('833-1', 'リフト', true), role('833-2', '作業員', true), role('833-3', '事務員', true)],
   }),
-  '834-1': placeholderSite('834-1', '昭和冷蔵 犬山ドライセンター', 'chubu', { lifecycle: '新規現場' }),
+  '834-1': {
+    active: true,
+    id: '834-1', name: '昭和冷蔵 犬山ドライセンター', areaId: 'chubu', prefecture: '愛知県', lifecycle: '新規現場',
+    sales: { actual: 983952, budget: 1200000 },
+    cost: { actual: 716400 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: 224652 },
+  },
+  '038-1': {
+    active: false,
+    id: '038-1', name: '株式会社Rian Japan 中部物流センター', areaId: 'chubu', prefecture: '愛知県', lifecycle: '2026年5月末で契約終了',
+    sales: { actual: 0, budget: 250000 },
+    cost: { actual: 0 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: 0 },
+  },
+  '301-1': {
+    active: true,
+    id: '301-1', name: '昭和冷蔵 名古屋センター', areaId: 'chubu', prefecture: '愛知県',
+    sales: { actual: 600004, budget: 300000 },
+    cost: { actual: 442803 },
+    paidLeave: { actual: 0 },
+    opProfit: { actual: 61831 },
+  },
 
   // ── 関西 ──────────────────────────────────────────────
   '543-3': placeholderSite('543-3', 'フェリシモ エスパス［軽作業］', 'kansai'),

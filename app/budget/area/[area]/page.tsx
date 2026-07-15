@@ -68,7 +68,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
     topics.push({ text: `終了・非稼働現場（${endedSites.length}件）: ${endedSites.map((s) => `${s.name}${s.lifecycle ? `（${s.lifecycle}）` : ''}`).join(' / ')}`, tone: 'notice' });
   }
   if (topics.length === 0) topics.push({ text: '月次実績データは未登録です（月末確定後に反映されます）', tone: 'default' });
-  if (monthIndex >= 3 && !ov) topics.push({ text: 'この月の実績はまだSheetsに未入力です（予算のみ表示）', tone: 'default' });
+  if (monthIndex >= 3 && !ov && current.salesActual == null) topics.push({ text: 'この月の実績はまだSheetsに未入力です（予算のみ表示）', tone: 'default' });
 
   return (
     <Shell agvColor={(AREA_THEME[areaId] || AREA_THEME.kanto).from}>
@@ -266,8 +266,8 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
               )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredSites.map((site) => {
-            const hasFinancials = site.sales != null;
-            const siteRate = hasFinancials ? (site.sales!.actual / site.sales!.budget) * 100 : null;
+            const hasFinancials = site.sales?.actual != null && site.sales?.budget != null;
+            const siteRate = hasFinancials ? (site.sales!.actual! / site.sales!.budget!) * 100 : null;
             return (
               <Link
                 key={site.id}
