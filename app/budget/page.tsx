@@ -74,6 +74,9 @@ export default function GlobalDashboard() {
       }
     : base;
 
+  // 見通しは大阪支店を含む全エリア合計と比較する（予実管理の「予算」は大阪支店除く全社の従来定義のため、
+  // 分母を揃えないと見通し達成率が実態より高く出てしまう）。
+  const allAreaBudget = AREAS.reduce((sum, a) => sum + (AREA_MONTHLY[a.id]?.[activeMonth]?.salesBudget ?? 0), 0);
   const salesRate = current.salesActual != null ? (current.salesActual / current.salesBudget) * 100 : null;
   const salesGap = current.salesActual != null ? current.salesActual - current.salesBudget : null;
   const yoyPct = current.salesActual != null && current.yoyLastYear != null ? ((current.salesActual - current.yoyLastYear) / current.yoyLastYear) * 100 : null;
@@ -166,11 +169,19 @@ export default function GlobalDashboard() {
             eyebrow={`予実管理 (${monthLabel(activeMonth)})`}
             value={current.salesActual == null ? `${yen(current.salesBudget)}（予算）` : yen(current.salesActual)}
             sub={
-              <div className="flex justify-between">
-                <span>予算 {yen(current.salesBudget)}</span>
-                <span className={salesGap == null ? '' : salesGap >= 0 ? 'text-emerald-300' : 'text-rose-300'}>
-                  {salesGap == null ? '実績未確定' : `${salesGap > 0 ? '+' : ''}${salesGap.toLocaleString()} (${salesRate!.toFixed(1)}%)`}
-                </span>
+              <div className="space-y-0.5">
+                <div className="flex justify-between">
+                  <span>予算 {yen(current.salesBudget)}</span>
+                  <span className={salesGap == null ? '' : salesGap >= 0 ? 'text-emerald-300' : 'text-rose-300'}>
+                    {salesGap == null ? '実績未確定' : `${salesGap > 0 ? '+' : ''}${salesGap.toLocaleString()} (${salesRate!.toFixed(1)}%)`}
+                  </span>
+                </div>
+                {current.salesForecast != null && (
+                  <div className="flex justify-between text-white/70">
+                    <span>見通し {yen(current.salesForecast)}（全エリア計）</span>
+                    <span>{allAreaBudget ? `${((current.salesForecast / allAreaBudget) * 100).toFixed(1)}%` : ''}</span>
+                  </div>
+                )}
               </div>
             }
           />

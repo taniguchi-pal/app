@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, sumSitesActual, sumAreaStaff, yen } from '../../_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -39,9 +39,15 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   const staffSums = sumAreaStaff(areaId, siteOverrides);
   const mergeOverride = (m: MonthKey) => {
     let b = monthly[m];
-    if (isAutoAggregated && m === CURRENT_ACTUAL_MONTH) {
-      const sums = sumSitesActual(areaId);
-      b = { ...b, salesActual: sums.salesActual, salesBudget: sums.salesBudget || b.salesBudget, gpActual: sums.opProfitActual };
+    if (isAutoAggregated) {
+      if (BUDGET_AGGREGATE_MONTHS.includes(m)) {
+        const budgetSum = sumSiteBudgetForMonth(areaId, m);
+        if (budgetSum > 0) b = { ...b, salesBudget: budgetSum };
+      }
+      if (m === CURRENT_ACTUAL_MONTH) {
+        const sums = sumSitesActual(areaId);
+        b = { ...b, salesActual: sums.salesActual, gpActual: sums.opProfitActual };
+      }
     }
     // 配置人数はエリア側に実確定値が無い月（現状7月のみ）に限り、現場カルテで入力されたSO反映値を集計して表示する。
     if (m === CURRENT_ACTUAL_MONTH && b.activeStaff == null && staffSums.filled > 0) {
@@ -129,7 +135,14 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
             areaId={areaId}
             eyebrow={`予実管理 (${monthLabel(activeMonth)})`}
             value={current.salesActual == null ? `${yen(current.salesBudget)}（予算）` : yen(current.salesActual)}
-            sub={<div className="flex justify-between"><span>予算 {yen(current.salesBudget)}</span><span>{rate == null ? '計画中' : `${rate.toFixed(1)}%`}</span></div>}
+            sub={
+              <div className="space-y-0.5">
+                <div className="flex justify-between"><span>予算 {yen(current.salesBudget)}</span><span>{rate == null ? '計画中' : `${rate.toFixed(1)}%`}</span></div>
+                {current.salesForecast != null && (
+                  <div className="flex justify-between text-white/70"><span>見通し {yen(current.salesForecast)}</span><span>{((current.salesForecast / current.salesBudget) * 100).toFixed(1)}%</span></div>
+                )}
+              </div>
+            }
           />
           <HeroStat
             areaId={areaId}

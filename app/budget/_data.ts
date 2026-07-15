@@ -71,6 +71,9 @@ export interface CompanyMonth {
   avgHours: number | null; orderBacklog: number | null;
   backlogStackupPotential?: number | null; // 受注残を全充足した場合の積上可能金額（月次）
   topics: string[]; schedule: string[];
+  // 見通し（予算とは別に、進捗を踏まえて更新される着地見込み）。予算を上書きせず並記する。
+  salesForecast?: number | null;
+  gpForecast?: number | null;
 }
 
 // 2Q目標: 受注残の積上げによる単月売上インパクト ¥500万/月
@@ -102,6 +105,9 @@ export interface AreaMonth {
   siteCount?: number | null;
   funnel: { meetings: number; proposals: number; estimates: number; orders: number } | null;
   soMetrics?: SOMetrics;
+  // 見通し（予算とは別に、進捗を踏まえて更新される着地見込み）。予算を上書きせず並記する。
+  salesForecast?: number | null;
+  gpForecast?: number | null;
 }
 
 function plannedCompany(budget: number, quarterDesc: string, backlog?: { orderBacklog: number; stackupPotential: number }): CompanyMonth {
@@ -174,12 +180,14 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
     ],
   },
   // 稼働人数・平均工数は7/14時点の実績KPIスナップショット（全体=関東+中部+関西+大阪支店）より。
+  // salesForecast/gpForecastは2Q見通しレポート（事業部合計）より、予算とは別枠の着地見込みとして並記。
   '7月進捗': {
     ...plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 31, stackupPotential: 6625700 }),
     activeStaff: 186, avgHours: 110.42,
+    salesForecast: 49074660, gpForecast: 6784281,
   },
-  '8月予定': plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc),
-  '9月予定': plannedCompany(53000000, ANNUAL_SCHEDULE[1].desc),
+  '8月予定': { ...plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 41053925 },
+  '9月予定': { ...plannedCompany(53000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 42095120 },
   '10月予定': plannedCompany(54000000, ANNUAL_SCHEDULE[2].desc),
   '11月予定': plannedCompany(55000000, ANNUAL_SCHEDULE[2].desc),
   '12月予定': plannedCompany(58000000, ANNUAL_SCHEDULE[2].desc),
@@ -201,14 +209,19 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '5月実績': { salesBudget: 7100000, salesActual: 6878370, yoyLastYear: 13848000, gpBudget: 1174255, gpActual: 1015258, activeStaff: 36, avgHours: 94.42, joined: 0, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7490000, salesActual: 7500000, yoyLastYear: 13701000, gpBudget: 1232684, gpActual: 1079448, activeStaff: 36, avgHours: 101.71, joined: 3, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 所属部署: 人ソ（関東））より反映。
-    // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。
+    // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。gpBudget/salesForecast/gpForecastは
+    // 7/14時点の2Q見通しレポートより（見通しは予算とは別に着地見込みとして並記）。
     '7月進捗': {
       salesBudget: 7632000, salesActual: 7799828, yoyLastYear: null,
-      gpBudget: null, gpActual: 1329319,
+      gpBudget: 1244779, gpActual: 1329319,
       activeStaff: 34, avgHours: 108.10, joined: null, resigned: null,
       heat: null, siteCount: 5, funnel: null,
+      salesForecast: 7625333, gpForecast: 1361779,
     },
-    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kanto) / 1000) * 1000)])),
+    // 8-9月の予算は月次予算表（現場積み上げ）を自動集計。見通しは2Q見通しレポートより。
+    '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.kanto) / 1000) * 1000), salesForecast: 5635000 },
+    '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.kanto) / 1000) * 1000), salesForecast: 5780000 },
+    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kanto) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
   chubu: {
     // 4月の稼働人数・工数は各現場の実績（派遣人数・総工数）を積み上げた実数値に修正（34名/105.33h、旧33名/108.52hから訂正）。
@@ -219,11 +232,14 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     // gpActualは粗利益2（社保・雇保・有給等控除後）の部門合計。稼働人数・総工数は7/14時点の実績KPIスナップショットより。
     '7月進捗': {
       salesBudget: 7620000, salesActual: 7986636, yoyLastYear: null,
-      gpBudget: null, gpActual: 1401755,
+      gpBudget: 1303020, gpActual: 1401755,
       activeStaff: 36, avgHours: 97.22, joined: null, resigned: null,
       heat: null, siteCount: 7, funnel: null,
+      salesForecast: 7480000, gpForecast: 1279080,
     },
-    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.chubu) / 1000) * 1000)])),
+    '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.chubu) / 1000) * 1000), salesForecast: 7600000 },
+    '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.chubu) / 1000) * 1000), salesForecast: 7700000 },
+    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.chubu) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
   // 関西: 売上予算は現場ベース売上と大きく乖離するため要ユーザー確認のまま。
   // 稼働人数・工数は各現場の実績（派遣人数・総工数）を積み上げた実数値に修正
@@ -237,11 +253,15 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。
     '7月進捗': {
       salesBudget: 17720000, salesActual: 12293534, yoyLastYear: null,
-      gpBudget: null, gpActual: 2013358,
+      gpBudget: 2541026, gpActual: 2013358,
       activeStaff: 49, avgHours: 130.20, joined: null, resigned: null,
       heat: null, siteCount: 26, funnel: null,
+      salesForecast: 14607700, gpForecast: 2046539,
     },
-    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kansai) / 1000) * 1000)])),
+    // 8-9月の予算は現場積み上げ(現場マスタ登録分)＋関西新規枠(月次6,500,000、未登録の新規現場分)の合計。
+    '8月予定': { ...plannedArea(17290000), salesForecast: 10510000 },
+    '9月予定': { ...plannedArea(17720000), salesForecast: 10290000 },
+    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kansai) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
   osaka: {
     // 稼働人数・工数は現場実績（福山通運大阪支店）の積み上げ実数値に修正（旧122/123/124名は推定値だったため、78/74/79名に訂正）。
@@ -252,11 +272,14 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。
     '7月進捗': {
       salesBudget: 21570000, salesActual: 17669531, yoyLastYear: null,
-      gpBudget: null, gpActual: 2883072,
+      gpBudget: 2838044, gpActual: 2883072,
       activeStaff: 67, avgHours: 103.64, joined: null, resigned: null,
       heat: null, siteCount: 1, funnel: null,
+      salesForecast: 19361627, gpForecast: 2096883,
     },
-    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.osaka) / 1000) * 1000)])),
+    '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 17308925 },
+    '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 18325120 },
+    ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.osaka) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
 };
 
@@ -900,6 +923,12 @@ export function sumSitesActual(areaId: string): { salesActual: number; salesBudg
     if (s.opProfit?.actual != null) opProfitActual += s.opProfit.actual;
   }
   return { salesActual, salesBudget, opProfitActual, siteCount };
+}
+
+// 現場ごとの月次予算表（4-9月）を持つ月。この範囲は現場積み上げで予算を自動集計できる。
+export const BUDGET_AGGREGATE_MONTHS: MonthKey[] = ['7月進捗', '8月予定', '9月予定'];
+export function sumSiteBudgetForMonth(areaId: string, m: MonthKey): number {
+  return sitesOfArea(areaId).reduce((sum, s) => sum + (s.monthlyBudget?.[m] ?? 0), 0);
 }
 
 // SOが現場カルテ（またはSiteOverridesシート）に入力した配置人数を積み上げる。
