@@ -14,10 +14,12 @@
 
 ### シート `SiteOverrides`（1行目ヘッダー）
 ```
-siteId	salesRep	soRep	negotiationStatus	recruitingActive	recruitingCostSpent	recruitingCostBudget	postingPeriod	staffCount	updatedAt
+siteId	salesRep	soRep	negotiationStatus	recruitingActive	recruitingCostSpent	recruitingCostBudget	postingPeriod	staffCount	totalHours	updatedAt
 ```
 - `staffCount` はSOが入職・退職を反映するたびに更新する現場の配置人数。現場カルテの「配置人数」表示に即反映されます
-  （エリア・全社の稼働人数は現状すべての現場で入力されるまでは自動集計せず、引き続き手動確定値を表示します）
+- `totalHours` はSOが週次で更新する現場の総工数。配置人数とあわせて1人当たり工数を自動算出します
+  （エリア・全社の稼働人数・平均工数は、その月にまだ手動確定値が無い場合に限り、現場の入力値から自動集計されます。
+  4-7月など既に確定値がある月は上書きされません）
 
 ### シート `MonthlyData`（1行目ヘッダー）
 ```
@@ -52,7 +54,7 @@ id	company	area	status	probability	salesRep	repContact	linkedSiteId	nextVisitDat
 
 ```javascript
 const SHEETS = {
-  overrides:  { name: 'SiteOverrides', key: 'siteId', headers: ['siteId', 'salesRep', 'soRep', 'negotiationStatus', 'recruitingActive', 'recruitingCostSpent', 'recruitingCostBudget', 'postingPeriod', 'staffCount', 'updatedAt'] },
+  overrides:  { name: 'SiteOverrides', key: 'siteId', headers: ['siteId', 'salesRep', 'soRep', 'negotiationStatus', 'recruitingActive', 'recruitingCostSpent', 'recruitingCostBudget', 'postingPeriod', 'staffCount', 'totalHours', 'updatedAt'] },
   monthly:    { name: 'MonthlyData',   key: 'compositeKey', headers: ['scope', 'month', 'salesBudget', 'salesActual', 'gpBudget', 'gpActual', 'opBudget', 'opActual', 'activeStaff', 'avgHours', 'joined', 'resigned', 'siteCount', 'heat', 'updatedAt'] },
   schedule:   { name: 'Schedule',      key: 'id',       headers: ['id', 'title', 'period', 'status', 'note', 'area', 'site', 'assignee', 'createdAt'] },
   attacklist: { name: 'AttackList',    key: 'id',       headers: ['id', 'company', 'area', 'status', 'probability', 'salesRep', 'repContact', 'linkedSiteId', 'nextVisitDate', 'lastContactDate', 'telAppoCount', 'quoteUrl', 'notebookLmUrl', 'asanaUrl', 'minutesUrl', 'needsIssues', 'escalatedTo', 'notes', 'contactLogJson', 'createdAt', 'updatedAt'] },

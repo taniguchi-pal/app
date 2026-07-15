@@ -34,9 +34,12 @@ export default function GlobalDashboard() {
   const staffSums = AREAS.reduce(
     (acc, a) => {
       const s = sumAreaStaff(a.id, siteOverrides);
-      return { sum: acc.sum + s.sum, filled: acc.filled + s.filled, total: acc.total + s.total };
+      return {
+        sum: acc.sum + s.sum, filled: acc.filled + s.filled, total: acc.total + s.total,
+        hoursSum: acc.hoursSum + s.hoursSum, hoursFilled: acc.hoursFilled + s.hoursFilled,
+      };
     },
-    { sum: 0, filled: 0, total: 0 }
+    { sum: 0, filled: 0, total: 0, hoursSum: 0, hoursFilled: 0 }
   );
 
   // 7月は関東・中部（現場実績を自動集計）＋関西（自社システム部門合計から大阪支店分を控除した実数値）の
@@ -54,6 +57,9 @@ export default function GlobalDashboard() {
       salesActual: kanto.salesActual + chubu.salesActual + (kansaiMonth.salesActual ?? 0),
       opActual: kanto.opProfitActual + chubu.opProfitActual + (kansaiMonth.gpActual ?? 0),
       activeStaff: b.activeStaff == null && staffSums.filled > 0 ? staffSums.sum : b.activeStaff,
+      avgHours: b.avgHours == null && staffSums.hoursFilled > 0 && staffSums.filled > 0
+        ? Math.round((staffSums.hoursSum / staffSums.sum) * 100) / 100
+        : b.avgHours,
       topics: ['関東・中部・関西の管轄現場実績を自動集計した全社速報値です（大阪支店は別枠管理のため含みません）'],
     };
   })();

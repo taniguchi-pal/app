@@ -40,6 +40,7 @@ interface EditableForm {
   recruitingCostBudget: string;
   postingPeriod: string;
   staffCount: string; // SOが入職/退職を反映した最新の配置人数（Sheets連携）
+  totalHours: string; // SOが週次で更新する総工数（Sheets連携）。配置人数とあわせて1人当たり工数を自動算出する
 }
 
 export default function SiteKarte({ params }: { params: Promise<{ id: string }> }) {
@@ -56,6 +57,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
     recruitingCostBudget: site.recruiting?.costBudget != null ? String(site.recruiting.costBudget) : '',
     postingPeriod: site.recruiting?.postingPeriod ?? '',
     staffCount: site.staffCount != null ? String(site.staffCount) : '',
+    totalHours: site.totalHours != null ? String(site.totalHours) : '',
   });
   const [apiStatus, setApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -90,6 +92,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
             recruitingCostBudget: o.recruitingCostBudget ? String(o.recruitingCostBudget) : f.recruitingCostBudget,
             postingPeriod: o.postingPeriod || f.postingPeriod,
             staffCount: o.staffCount ? String(o.staffCount) : f.staffCount,
+            totalHours: o.totalHours ? String(o.totalHours) : f.totalHours,
           }));
         }
         setApiStatus('ready');
@@ -114,6 +117,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           recruitingCostBudget: form.recruitingCostBudget,
           postingPeriod: form.postingPeriod,
           staffCount: form.staffCount,
+          totalHours: form.totalHours,
         }),
       });
       const data = await res.json();
@@ -183,11 +187,14 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
             </div>
             <div>
               <p className="text-[10px] text-blue-300">総工数実績</p>
-              <p className="text-2xl font-black mt-0.5 font-mono">{site.totalHours != null ? site.totalHours.toLocaleString() : '—'}<span className="text-xs font-normal ml-1">h</span></p>
+              <p className="text-2xl font-black mt-0.5 font-mono">{form.totalHours ? Number(form.totalHours).toLocaleString() : '—'}<span className="text-xs font-normal ml-1">h</span></p>
             </div>
             <div>
               <p className="text-[10px] text-blue-300">1人当たり工数</p>
-              <p className="text-2xl font-black mt-0.5 font-mono">{site.avgHours ?? '—'}<span className="text-xs font-normal ml-1">h</span></p>
+              <p className="text-2xl font-black mt-0.5 font-mono">
+                {form.staffCount && form.totalHours ? (Number(form.totalHours) / Number(form.staffCount)).toFixed(2) : '—'}
+                <span className="text-xs font-normal ml-1">h</span>
+              </p>
             </div>
           </div>
           {(site.staffCountByMonth || site.totalHoursByMonth) && (
@@ -397,7 +404,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                   {NEGOTIATION_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
-              <div className="col-span-2">
+              <div>
                 <label className="text-[10px] font-bold text-zinc-400">配置人数（SOが入職・退職を反映）</label>
                 <input
                   value={form.staffCount}
@@ -406,6 +413,17 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                   inputMode="numeric"
                   className="w-full mt-1 px-2 py-1.5 text-sm font-bold text-zinc-700 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
                 />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-zinc-400">総工数（週次更新）</label>
+                <input
+                  value={form.totalHours}
+                  onChange={(e) => setForm((f) => ({ ...f, totalHours: e.target.value.replace(/[^0-9.]/g, '') }))}
+                  placeholder="未設定"
+                  inputMode="decimal"
+                  className="w-full mt-1 px-2 py-1.5 text-sm font-bold text-zinc-700 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+                />
+                <p className="text-[9px] text-zinc-400 mt-0.5">配置人数とあわせて1人当たり工数を自動算出します</p>
               </div>
             </div>
             <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-2">

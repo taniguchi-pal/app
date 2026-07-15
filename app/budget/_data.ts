@@ -79,6 +79,9 @@ export interface CompanyMonth {
 // 2Q目標: 受注残の積上げによる単月売上インパクト ¥500万/月
 export const BACKLOG_STACKUP_MONTHLY_TARGET = 5000000;
 
+// KPI: 現場あたり月次売上の目標ライン
+export const SITE_SALES_TARGET = 1500000;
+
 // SO（採用オペレーション）管理KPI。件数は入力値、率は件数から自動計算。
 export interface SOMetrics {
   recruitingCost?: number; // 募集費
@@ -940,14 +943,22 @@ export function effectiveStaffCount(site: SiteData, overrides: Record<string, an
   const n = raw != null ? Number(raw) : NaN;
   return Number.isFinite(n) ? n : null;
 }
-export function sumAreaStaff(areaId: string, overrides: Record<string, any>): { sum: number; filled: number; total: number } {
+export function effectiveTotalHours(site: SiteData, overrides: Record<string, any>): number | null {
+  const ov = overrides?.[site.id];
+  const raw = ov?.totalHours != null && ov.totalHours !== '' ? ov.totalHours : site.totalHours;
+  const n = raw != null ? Number(raw) : NaN;
+  return Number.isFinite(n) ? n : null;
+}
+export function sumAreaStaff(areaId: string, overrides: Record<string, any>): { sum: number; filled: number; total: number; hoursSum: number; hoursFilled: number } {
   const sites = sitesOfArea(areaId);
-  let sum = 0, filled = 0;
+  let sum = 0, filled = 0, hoursSum = 0, hoursFilled = 0;
   for (const s of sites) {
     const v = effectiveStaffCount(s, overrides);
     if (v != null) { sum += v; filled++; }
+    const h = effectiveTotalHours(s, overrides);
+    if (h != null) { hoursSum += h; hoursFilled++; }
   }
-  return { sum, filled, total: sites.length };
+  return { sum, filled, total: sites.length, hoursSum, hoursFilled };
 }
 
 // lifecycle文言（例:「2026年6月末で契約終了」「2026年7月より非稼働」）から年月を読み取り、

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, yen } from '../../_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, SITE_SALES_TARGET, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -49,9 +49,15 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
         b = { ...b, salesActual: sums.salesActual, gpActual: sums.opProfitActual };
       }
     }
-    // 配置人数はエリア側に実確定値が無い月（現状7月のみ）に限り、現場カルテで入力されたSO反映値を集計して表示する。
-    if (m === CURRENT_ACTUAL_MONTH && b.activeStaff == null && staffSums.filled > 0) {
-      b = { ...b, activeStaff: staffSums.sum };
+    // 配置人数・平均工数はエリア側に実確定値が無い月に限り、現場カルテで入力されたSO反映値（週次更新）を
+    // 集計して自動的に表示する。既に確定値がある月（例: 7月時点のKPIスナップショット）は上書きしない。
+    if (m === CURRENT_ACTUAL_MONTH) {
+      if (b.activeStaff == null && staffSums.filled > 0) {
+        b = { ...b, activeStaff: staffSums.sum };
+      }
+      if (b.avgHours == null && staffSums.hoursFilled > 0 && staffSums.filled > 0) {
+        b = { ...b, avgHours: Math.round((staffSums.hoursSum / staffSums.sum) * 100) / 100 };
+      }
     }
     const o = monthlyOverrides[`${areaId}__${m}`];
     if (!o) return b;
@@ -298,7 +304,10 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
                 <div>
                   <p id="sites" className="text-[10px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase scroll-mt-4">管轄現場の個別収益一覧（{filteredSites.length}/{sites.length}現場）</p>
-                  <p className="text-[9px] text-zinc-400 mt-0.5">現場ごとの最低賃金・時給相場・マージン率は{ratesUpdatedLabel()}</p>
+                  <p className="text-[9px] text-zinc-400 mt-0.5">
+                    現場ごとの最低賃金・時給相場・マージン率は{ratesUpdatedLabel()}
+                    {' '}・ 1現場あたり売上{yen(SITE_SALES_TARGET)}達成: {sites.filter((s) => (s.sales?.actual ?? 0) >= SITE_SALES_TARGET).length}/{sites.filter((s) => s.sales?.actual != null).length}現場
+                  </p>
                 </div>
                 {repOptions.length > 0 && (
                   <select
@@ -336,8 +345,11 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                 </div>
                 {hasFinancials ? (
                   <>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-zinc-400">当月売上</span>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-zinc-400">当月売上{site.sales!.actual! >= SITE_SALES_TARGET
+                        ? <span className="ml-1 text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 py-0.5">✓ 150万達成</span>
+                        : <span className="ml-1 text-[9px] font-black text-zinc-400 bg-zinc-100 border border-zinc-200 rounded px-1 py-0.5">未達</span>
+                      }</span>
                       <span className="font-bold font-mono">{yen(site.sales!.actual)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
