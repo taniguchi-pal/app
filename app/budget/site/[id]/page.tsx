@@ -190,6 +190,18 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
               <p className="text-2xl font-black mt-0.5 font-mono">{site.avgHours ?? '—'}<span className="text-xs font-normal ml-1">h</span></p>
             </div>
           </div>
+          {(site.staffCountByMonth || site.totalHoursByMonth) && (
+            <div className="mt-4 pt-3 border-t border-white/10 grid grid-cols-3 gap-2">
+              {(['4月実績', '5月実績', '6月進捗'] as const).map((m) => (
+                <div key={m}>
+                  <p className="text-[9px] text-blue-300">{monthCalendar(m).month}月実績</p>
+                  <p className="text-xs font-bold font-mono text-white/90">
+                    {site.staffCountByMonth?.[m] ?? '—'}名 / {site.totalHoursByMonth?.[m] != null ? site.totalHoursByMonth[m]!.toLocaleString() : '—'}h
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── 受注残・期待インパクト・交渉ステータス ── */}

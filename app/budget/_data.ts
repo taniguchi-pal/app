@@ -173,7 +173,11 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
       '■ 7月末: 稼働235名水準への回復',
     ],
   },
-  '7月進捗': plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 31, stackupPotential: 6625700 }),
+  // 稼働人数・平均工数は7/14時点の実績KPIスナップショット（全体=関東+中部+関西+大阪支店）より。
+  '7月進捗': {
+    ...plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 31, stackupPotential: 6625700 }),
+    activeStaff: 186, avgHours: 110.42,
+  },
   '8月予定': plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc),
   '9月予定': plannedCompany(53000000, ANNUAL_SCHEDULE[1].desc),
   '10月予定': plannedCompany(54000000, ANNUAL_SCHEDULE[2].desc),
@@ -197,53 +201,59 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '5月実績': { salesBudget: 7100000, salesActual: 6878370, yoyLastYear: 13848000, gpBudget: 1174255, gpActual: 1015258, activeStaff: 36, avgHours: 94.42, joined: 0, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7490000, salesActual: 7500000, yoyLastYear: 13701000, gpBudget: 1232684, gpActual: 1079448, activeStaff: 36, avgHours: 101.71, joined: 3, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 所属部署: 人ソ（関東））より反映。
+    // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。
     '7月進捗': {
       salesBudget: 7632000, salesActual: 7799828, yoyLastYear: null,
       gpBudget: null, gpActual: 1329319,
-      activeStaff: null, avgHours: null, joined: null, resigned: null,
-      heat: null, siteCount: 6, funnel: null,
+      activeStaff: 34, avgHours: 108.10, joined: null, resigned: null,
+      heat: null, siteCount: 5, funnel: null,
     },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kanto) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
   chubu: {
-    '4月実績': { salesBudget: 6770000, salesActual: 7735000, yoyLastYear: 9131000, gpBudget: 1071695, gpActual: 1211200, activeStaff: 33, avgHours: 108.52, joined: 0, resigned: 0, heat: null, siteCount: 8, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
+    // 4月の稼働人数・工数は各現場の実績（派遣人数・総工数）を積み上げた実数値に修正（34名/105.33h、旧33名/108.52hから訂正）。
+    '4月実績': { salesBudget: 6770000, salesActual: 7735000, yoyLastYear: 9131000, gpBudget: 1071695, gpActual: 1211200, activeStaff: 34, avgHours: 105.33, joined: 0, resigned: 0, heat: null, siteCount: 8, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '5月実績': { salesBudget: 6354000, salesActual: 6972000, yoyLastYear: 8706000, gpBudget: 1071695, gpActual: 1157937, activeStaff: 33, avgHours: 98.43, joined: 2, resigned: 3, heat: null, siteCount: 7, funnel: { meetings: 2, proposals: 2, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7740000, salesActual: 7116000, yoyLastYear: 8589000, gpBudget: 1220940, gpActual: 1173160, activeStaff: 33, avgHours: 100.22, joined: 3, resigned: 0, heat: '注意 31℃', siteCount: 7, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 所属部署: 人ソ（中部））より反映。
-    // gpActualは粗利益2（社保・雇保・有給等控除後）の部門合計。gpBudget/activeStaff等は当該資料に無いため未登録。
+    // gpActualは粗利益2（社保・雇保・有給等控除後）の部門合計。稼働人数・総工数は7/14時点の実績KPIスナップショットより。
     '7月進捗': {
       salesBudget: 7620000, salesActual: 7986636, yoyLastYear: null,
       gpBudget: null, gpActual: 1401755,
-      activeStaff: null, avgHours: null, joined: null, resigned: null,
-      heat: null, siteCount: 8, funnel: null,
+      activeStaff: 36, avgHours: 97.22, joined: null, resigned: null,
+      heat: null, siteCount: 7, funnel: null,
     },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.chubu) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
-  // 関西: 現場一覧(26現場)から再計算した結果、旧予算(11-17M台)は現場ベース売上(30-34M台)と大きく乖離するため、
-  // 旧予算の粗利率/達成率のバランスを保つ形で予算・粗利も比例修正済み。要ユーザー確認。
+  // 関西: 売上予算は現場ベース売上と大きく乖離するため要ユーザー確認のまま。
+  // 稼働人数・工数は各現場の実績（派遣人数・総工数）を積み上げた実数値に修正
+  // （旧: 130/124/135名は現場ベースの再計算前の推定値だったため、52/50/56名に訂正）。
   kansai: {
-    '4月実績': { salesBudget: 30856000, salesActual: 34436000, yoyLastYear: 40202000, gpBudget: 4107000, gpActual: 6362000, activeStaff: 130, avgHours: 126.26, joined: 12, resigned: 10, heat: null, siteCount: 25, funnel: { meetings: 4, proposals: 3, estimates: 2, orders: 2 } },
-    '5月実績': { salesBudget: 29624000, salesActual: 29324000, yoyLastYear: 37920000, gpBudget: 4020000, gpActual: 2822000, activeStaff: 124, avgHours: 113.33, joined: 2, resigned: 16, heat: null, siteCount: 25, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 1 } },
-    '6月進捗': { salesBudget: 49616000, salesActual: 32475000, yoyLastYear: 38577000, gpBudget: 7047000, gpActual: 2855000, activeStaff: 135, avgHours: 115.24, joined: 6, resigned: 1, heat: '厳重警戒', siteCount: 27, funnel: { meetings: 5, proposals: 3, estimates: 1, orders: 1 } },
+    '4月実績': { salesBudget: 30856000, salesActual: 34436000, yoyLastYear: 40202000, gpBudget: 4107000, gpActual: 6362000, activeStaff: 52, avgHours: 109.09, joined: 12, resigned: 10, heat: null, siteCount: 25, funnel: { meetings: 4, proposals: 3, estimates: 2, orders: 2 } },
+    '5月実績': { salesBudget: 29624000, salesActual: 29324000, yoyLastYear: 37920000, gpBudget: 4020000, gpActual: 2822000, activeStaff: 50, avgHours: 93.76, joined: 2, resigned: 16, heat: null, siteCount: 25, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 1 } },
+    '6月進捗': { salesBudget: 49616000, salesActual: 32475000, yoyLastYear: 38577000, gpBudget: 7047000, gpActual: 2855000, activeStaff: 56, avgHours: 96.02, joined: 6, resigned: 1, heat: '厳重警戒', siteCount: 27, funnel: { meetings: 5, proposals: 3, estimates: 1, orders: 1 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西）の部門合計から
     // 大阪支店（福山通運大阪支店、osakaエリアで別管理）の分を差し引いた関西のみの実数値。
+    // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。
     '7月進捗': {
       salesBudget: 17720000, salesActual: 12293534, yoyLastYear: null,
       gpBudget: null, gpActual: 2013358,
-      activeStaff: null, avgHours: null, joined: null, resigned: null,
+      activeStaff: 49, avgHours: 130.20, joined: null, resigned: null,
       heat: null, siteCount: 26, funnel: null,
     },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kansai) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
   osaka: {
-    '4月実績': { salesBudget: 21060000, salesActual: 23423983, yoyLastYear: 21300000, gpBudget: 3086758, gpActual: 3552490, activeStaff: 122, avgHours: 111.5, joined: 0, resigned: 0, heat: null, funnel: { meetings: 5, proposals: 4, estimates: 2, orders: 1 } },
-    '5月実績': { salesBudget: 20500000, salesActual: 20329795, yoyLastYear: 18700000, gpBudget: 2557300, gpActual: 2478432, activeStaff: 123, avgHours: 112.5, joined: 0, resigned: 0, heat: null, funnel: { meetings: 4, proposals: 3, estimates: 2, orders: 1 } },
-    '6月進捗': { salesBudget: 20550000, salesActual: 20220000, yoyLastYear: 18400000, gpBudget: 2543060, gpActual: 2459806, activeStaff: 124, avgHours: 113.3, joined: 3, resigned: 1, heat: '厳重警戒', funnel: { meetings: 5, proposals: 4, estimates: 2, orders: 1 } },
+    // 稼働人数・工数は現場実績（福山通運大阪支店）の積み上げ実数値に修正（旧122/123/124名は推定値だったため、78/74/79名に訂正）。
+    '4月実績': { salesBudget: 21060000, salesActual: 23423983, yoyLastYear: 21300000, gpBudget: 3086758, gpActual: 3552490, activeStaff: 78, avgHours: 137.71, joined: 0, resigned: 0, heat: null, funnel: { meetings: 5, proposals: 4, estimates: 2, orders: 1 } },
+    '5月実績': { salesBudget: 20500000, salesActual: 20329795, yoyLastYear: 18700000, gpBudget: 2557300, gpActual: 2478432, activeStaff: 74, avgHours: 126.56, joined: 0, resigned: 0, heat: null, funnel: { meetings: 4, proposals: 3, estimates: 2, orders: 1 } },
+    '6月進捗': { salesBudget: 20550000, salesActual: 20220000, yoyLastYear: 18400000, gpBudget: 2543060, gpActual: 2459806, activeStaff: 79, avgHours: 128.87, joined: 3, resigned: 1, heat: '厳重警戒', funnel: { meetings: 5, proposals: 4, estimates: 2, orders: 1 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西内の福山通運大阪支店行）より反映。
+    // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。
     '7月進捗': {
       salesBudget: 21570000, salesActual: 17669531, yoyLastYear: null,
       gpBudget: null, gpActual: 2883072,
-      activeStaff: null, avgHours: null, joined: null, resigned: null,
+      activeStaff: 67, avgHours: 103.64, joined: null, resigned: null,
       heat: null, siteCount: 1, funnel: null,
     },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => m !== '7月進捗').map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.osaka) / 1000) * 1000)])),
@@ -360,6 +370,8 @@ export interface SiteData {
   roles?: SiteRole[]; // 事業所内の役割別内訳（案件番号つき）
   sales?: Partial<SiteFinancial>; cost?: Partial<SiteFinancial>; paidLeave?: Partial<SiteFinancial>; opProfit?: Partial<SiteFinancial>;
   monthlyBudget?: Partial<Record<MonthKey, number>>; // 現場ごとの月次売上予算（4-9月予算表より。10月以降は未確定）
+  staffCountByMonth?: Partial<Record<MonthKey, number>>; // 現場ごとの月次派遣人数（実績、4-6月）
+  totalHoursByMonth?: Partial<Record<MonthKey, number>>; // 現場ごとの月次総工数（実績、4-6月）
   plDetail?: Record<string, Partial<SiteFinancial>>; // PL_ACCOUNTSのlabelをキーとした明細（実データ提供後に充実予定）
   staffCount?: number; totalHours?: number; avgHours?: number;
   liftUnitPrice?: number | null; workerUnitPrice?: number; minimumWage?: number;
@@ -390,6 +402,15 @@ function budgetSeries(apr: number | null, may: number | null, jun: number | null
   return out;
 }
 
+// 現場ごとの月次派遣人数・総工数の実績（4-6月）を組み立てる。
+function monthSeries3(apr: number | null, may: number | null, jun: number | null): Partial<Record<MonthKey, number>> {
+  const keys: MonthKey[] = ['4月実績', '5月実績', '6月進捗'];
+  const vals = [apr, may, jun];
+  const out: Partial<Record<MonthKey, number>> = {};
+  keys.forEach((k, i) => { if (vals[i] != null) out[k] = vals[i]!; });
+  return out;
+}
+
 export const POSTING_PERIOD_OPTIONS = ['1週間', '2週間', '1ヶ月', '2ヶ月', '3ヶ月以上'] as const;
 
 export const SITES: Record<string, SiteData> = {
@@ -404,6 +425,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 87770 },
     opProfit: { actual: 619170 },
     monthlyBudget: budgetSeries(3952000, 3800000, 3800000, 3952000, 3800000, 3648000),
+    staffCountByMonth: monthSeries3(26, 26, 26),
+    totalHoursByMonth: monthSeries3(2138.75, 2030.50, 2083.75),
   },
   '116-1': {
     active: true,
@@ -413,6 +436,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 10640 },
     opProfit: { actual: 151926 },
     monthlyBudget: budgetSeries(520000, 510000, 570000, 580000, 450000, 540000),
+    staffCountByMonth: monthSeries3(2, 2, 2),
+    totalHoursByMonth: monthSeries3(306.00, 271.50, 320.00),
   },
   '115-1': {
     active: false,
@@ -422,6 +447,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(290000, 270000, 350000, 350000, 250000, 300000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(136.00, 112.00, 16.00),
   },
   '657-1': {
     active: true,
@@ -431,6 +458,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 10720 },
     opProfit: { actual: 141371 },
     monthlyBudget: budgetSeries(550000, 490000, 560000, 560000, 410000, 540000),
+    staffCountByMonth: monthSeries3(2, 2, 2),
+    totalHoursByMonth: monthSeries3(304.00, 256.00, 320.00),
   },
   '715-1': {
     active: true,
@@ -440,6 +469,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 30400 },
     opProfit: { actual: 262319 },
     monthlyBudget: budgetSeries(1240000, 1130000, 1210000, 1190000, 1230000, 1390000),
+    staffCountByMonth: monthSeries3(3, 3, 3),
+    totalHoursByMonth: monthSeries3(474.75, 396.58, 506.83),
   },
   '648-1': {
     active: true,
@@ -449,6 +480,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 10800 },
     monthlyBudget: budgetSeries(900000, 900000, 1000000, 1000000, 720000, 880000),
     opProfit: { actual: 154533 },
+    staffCountByMonth: monthSeries3(2, 2, 2),
+    totalHoursByMonth: monthSeries3(399.90, 332.42, 414.93),
   },
   '835-1': placeholderSite('835-1', '有限会社黒岩運輸', 'kanto', { lifecycle: '新規現場' }),
 
@@ -463,6 +496,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 10160 },
     opProfit: { actual: 42249 },
     monthlyBudget: budgetSeries(350000, 300000, 300000, 350000, 300000, 330000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(177.50, 146.75, 165.50),
   },
   '548-1': {
     active: true,
@@ -472,6 +507,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 94965 },
     opProfit: { actual: 376231 },
     monthlyBudget: budgetSeries(2450000, 2200000, 2200000, 2200000, 2200000, 2200000),
+    staffCountByMonth: monthSeries3(17, 15, 15),
+    totalHoursByMonth: monthSeries3(1212.75, 1226.75, 1137.50),
   },
   '505-1': {
     active: true,
@@ -481,6 +518,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 9760 },
     opProfit: { actual: 82960 },
     monthlyBudget: budgetSeries(400000, 404000, 450000, 420000, 414000, 456000),
+    staffCountByMonth: monthSeries3(2, 2, 2),
+    totalHoursByMonth: monthSeries3(226.85, 221.75, 219.30),
   },
   '675-1': placeholderSite('675-1', 'AFS中部センター', 'chubu'),
   '510-2': {
@@ -491,6 +530,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 20800 },
     opProfit: { actual: 47768 },
     monthlyBudget: budgetSeries(300000, 300000, 300000, 300000, 300000, 300000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(193.58, 170.02, 187.05),
   },
   '790-1': {
     active: true,
@@ -501,6 +542,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 39200 },
     opProfit: { actual: 566064 },
     monthlyBudget: budgetSeries(2500000, 2500000, 2600000, 2600000, 2600000, 2600000),
+    staffCountByMonth: monthSeries3(10, 11, 11),
+    totalHoursByMonth: monthSeries3(1136.08, 969.08, 1188.00),
   },
   '833-1': placeholderSite('833-1', '摂津倉庫株式会社 春日井営業所', 'chubu', {
     lifecycle: '新規現場',
@@ -514,6 +557,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 224652 },
     monthlyBudget: budgetSeries(null, null, 1200000, 1200000, 1200000, 1200000),
+    staffCountByMonth: monthSeries3(1, 1, 2),
+    totalHoursByMonth: monthSeries3(233.50, 235.00, 196.00),
   },
   '038-1': {
     active: false,
@@ -523,6 +568,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(370000, 350000, 340000, 250000, 230000, 270000),
+    staffCountByMonth: monthSeries3(1, 1, 0),
+    totalHoursByMonth: monthSeries3(198.25, 59.00, 0),
   },
   '301-1': {
     active: true,
@@ -532,6 +579,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 61831 },
     monthlyBudget: budgetSeries(400000, 300000, 350000, 300000, 300000, 300000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(202.75, 219.75, 214.00),
   },
 
   // ── 関西 ──────────────────────────────────────────────
@@ -545,6 +594,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 74400 },
     opProfit: { actual: 542279 },
     monthlyBudget: budgetSeries(3000000, 2800000, 3000000, 3000000, 2800000, 3000000),
+    staffCountByMonth: monthSeries3(22, 20, 19),
+    totalHoursByMonth: monthSeries3(1610.00, 1222.50, 1429.50),
   },
   '543-4': {
     active: true,
@@ -554,6 +605,14 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(190000, 190000, 190000, 190000, 190000, 190000),
+    staffCountByMonth: monthSeries3(1, 0, 1),
+    totalHoursByMonth: monthSeries3(126.00, 0, 120.00),
+  },
+  '543-5': {
+    active: true,
+    id: '543-5', name: 'フェリシモ エスパス（伝票管理業務）', areaId: 'kansai', prefecture: '兵庫県',
+    staffCountByMonth: monthSeries3(0, 1, 0),
+    totalHoursByMonth: monthSeries3(0, 94.50, 0),
   },
   '595-1': {
     active: false,
@@ -561,6 +620,8 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 0, budget: 380000 },
     cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(380000, 380000, 380000, 380000, 380000, 380000),
+    staffCountByMonth: monthSeries3(1, 1, 0),
+    totalHoursByMonth: monthSeries3(188.00, 56.25, 0),
   },
   '136-1': {
     active: true,
@@ -570,6 +631,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 16470 },
     opProfit: { actual: 105277 },
     monthlyBudget: budgetSeries(380000, 250000, 380000, 380000, 380000, 380000),
+    staffCountByMonth: monthSeries3(3, 3, 3),
+    totalHoursByMonth: monthSeries3(157.50, 169.00, 186.00),
   },
   '533-1': {
     active: true,
@@ -580,6 +643,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 15120 },
     opProfit: { actual: 179725 },
     monthlyBudget: budgetSeries(320000, 320000, 320000, 320000, 320000, 320000),
+    staffCountByMonth: monthSeries3(3, 2, 3),
+    totalHoursByMonth: monthSeries3(249.75, 188.00, 347.75),
   },
   '570-1': {
     active: true,
@@ -589,6 +654,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 21600 },
     opProfit: { actual: 78065 },
     monthlyBudget: budgetSeries(600000, 600000, 600000, 600000, 420000, 600000),
+    staffCountByMonth: monthSeries3(2, 2, 0),
+    totalHoursByMonth: monthSeries3(374.00, 307.42, 0),
   },
   // budgetは「PCS関西（神戸富士ゼロックス）」、実績システムでは「PCS関西（BPOソリューション事業本部）」表記。同一現場として突合。
   '530-1': {
@@ -599,6 +666,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 48271 },
     monthlyBudget: budgetSeries(250000, 250000, 250000, 250000, 250000, 250000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(144.00, 128.00, 176.00),
   },
   '723-1': placeholderSite('723-1', '阪菱企業 茨木', 'kansai', { roles: [role('723-1', 'リフト'), role('723-2', '軽作業')] }),
   '815-1': {
@@ -607,6 +676,8 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 0, budget: 200000 },
     cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
+    staffCountByMonth: monthSeries3(1, 0, 0),
+    totalHoursByMonth: monthSeries3(120.50, 0, 0),
   },
   '753-1': {
     active: false,
@@ -614,6 +685,8 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 0, budget: 350000 },
     cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(350000, 300000, 350000, 350000, 300000, 350000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(220.00, 146.75, 184.25),
   },
   '801-1': {
     active: true,
@@ -623,6 +696,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: -42070 },
     monthlyBudget: budgetSeries(350000, 380000, 350000, 350000, 350000, 350000),
+    staffCountByMonth: monthSeries3(0, 0, 0),
+    totalHoursByMonth: monthSeries3(0, 0, 0),
   },
   '633-1': {
     active: true,
@@ -632,6 +707,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 35520 },
     opProfit: { actual: 12694 },
     monthlyBudget: budgetSeries(300000, 300000, 300000, 300000, 300000, 300000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(194.25, 166.75, 178.25),
   },
   '782-1': placeholderSite('782-1', 'SHUUEI物流 高槻センター［リフト］', 'kansai'),
   '606-3': placeholderSite('606-3', 'SHUUEI物流 枚方センター［リフト］短期', 'kansai'),
@@ -644,6 +721,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 35440 },
     opProfit: { actual: 290134 },
     monthlyBudget: budgetSeries(600000, 550000, 600000, 600000, 600000, 600000),
+    staffCountByMonth: monthSeries3(2, 3, 5),
+    totalHoursByMonth: monthSeries3(337.42, 403.50, 565.50),
   },
   '805-1': {
     active: true,
@@ -653,8 +732,15 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 55842 },
     monthlyBudget: budgetSeries(400000, 380000, 400000, 400000, 400000, 400000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(211.50, 193.50, 184.50),
   },
-  '720-1': placeholderSite('720-1', 'HMKロジサービス 西神戸センター［軽作業］', 'kansai'),
+  '720-1': {
+    active: true,
+    id: '720-1', name: 'HMKロジサービス 西神戸センター［軽作業］', areaId: 'kansai', prefecture: null,
+    staffCountByMonth: monthSeries3(0, 0, 7),
+    totalHoursByMonth: monthSeries3(0, 0, 214.00),
+  },
   '828-1': {
     active: true,
     id: '828-1', name: '摂津倉庫 京田辺', areaId: 'kansai', prefecture: '京都府',
@@ -662,6 +748,8 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 693197, budget: 580000 },
     cost: { actual: 497557 },
     monthlyBudget: budgetSeries(580000, 560000, 580000, 580000, 580000, 580000),
+    staffCountByMonth: monthSeries3(2, 2, 2),
+    totalHoursByMonth: monthSeries3(316.75, 267.75, 356.25),
   },
   '830-1': {
     active: true,
@@ -669,6 +757,8 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 309295, budget: 270000 },
     cost: { actual: 216506 },
     monthlyBudget: budgetSeries(270000, 270000, 270000, 270000, 270000, 270000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(187.18, 182.12, 148.60),
   },
   '831-1': {
     active: true,
@@ -676,6 +766,8 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 231675, budget: 850000 },
     cost: { actual: 162835 },
     monthlyBudget: budgetSeries(850000, 850000, 850000, 850000, 850000, 850000),
+    staffCountByMonth: monthSeries3(3, 3, 2),
+    totalHoursByMonth: monthSeries3(343.28, 262.87, 171.05),
   },
   '832-1': {
     active: true,
@@ -687,13 +779,23 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 713188, budget: 750000 },
     cost: { actual: 516665 },
     monthlyBudget: budgetSeries(750000, 750000, 750000, 750000, 750000, 750000),
+    staffCountByMonth: monthSeries3(2, 3, 1),
+    totalHoursByMonth: monthSeries3(207.42, 334.88, 120.92),
   },
-  '836-1': placeholderSite('836-1', 'HMKロジサービス 南港（レッドウッド南港）', 'kansai', {
+  '836-1': {
+    active: true,
+    id: '836-1', name: 'HMKロジサービス 南港（レッドウッド南港）', areaId: 'kansai', prefecture: null,
     lifecycle: '新規現場', roles: [role('836-1', '軽作業', true), role('836-2', 'リフト', true)],
-  }),
-  '836-3': placeholderSite('836-3', 'HMKロジサービス 南港（GLP大阪）', 'kansai', {
+    staffCountByMonth: monthSeries3(null, null, 2),
+    totalHoursByMonth: monthSeries3(null, null, 203.00),
+  },
+  '836-3': {
+    active: true,
+    id: '836-3', name: 'HMKロジサービス 南港（GLP大阪）', areaId: 'kansai', prefecture: null,
     lifecycle: '新規現場', roles: [role('836-3', 'リフト', true), role('836-4', '軽作業（短期）', true)],
-  }),
+    staffCountByMonth: monthSeries3(null, null, 1),
+    totalHoursByMonth: monthSeries3(null, null, 70.00),
+  },
   '837-1': placeholderSite('837-1', 'SHUUEI物流株式会社 尼崎センター（ロジポート尼崎）［軽作業］', 'kansai', { lifecycle: '新規現場' }),
   // 阪菱企業の配送センター/倉庫は損益書が個別に分かれているため、茨木(723-1)とは別現場として管理。
   '246-1': {
@@ -704,6 +806,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 49235 },
     monthlyBudget: budgetSeries(400000, 400000, 600000, 600000, 600000, 600000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(122.50, 82.00, 145.00),
   },
   '285-1': {
     active: true,
@@ -713,6 +817,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 17920 },
     opProfit: { actual: 24939 },
     monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(129.00, 126.00, 125.50),
   },
   '287-1': {
     active: true,
@@ -722,6 +828,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 17920 },
     opProfit: { actual: 25663 },
     monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(141.75, 115.25, 147.00),
   },
   '288-1': {
     active: true,
@@ -731,6 +839,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 8960 },
     opProfit: { actual: 28845 },
     monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(142.00, 113.25, 137.75),
   },
   '229-1': {
     active: true,
@@ -740,6 +850,8 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 11400 },
     opProfit: { actual: 40827 },
     monthlyBudget: budgetSeries(250000, 250000, 250000, 250000, 250000, 250000),
+    staffCountByMonth: monthSeries3(1, 1, 1),
+    totalHoursByMonth: monthSeries3(150.00, 127.50, 166.25),
   },
 
   // ── 大阪支店 ──────────────────────────────────────────
@@ -753,7 +865,9 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 2883072 },
     monthlyBudget: budgetSeries(21060000, 20040000, 20550000, 21570000, 19530000, 20550000),
-    staffCount: 124, totalHours: 14049, avgHours: 113.3,
+    staffCountByMonth: monthSeries3(78, 74, 79),
+    totalHoursByMonth: monthSeries3(10741.43, 9365.45, 10180.95),
+    staffCount: 67, totalHours: 6944, avgHours: 103.64,
     liftUnitPrice: 1550, workerUnitPrice: 1320, minimumWage: 1177, marketHourlyWage: 1280,
     backlogCount: 4, expectedImpact: 2100000, negotiationStatus: '交渉中',
     salesRep: null, soRep: null, recruiting: { active: true, costSpent: 320000, costBudget: 400000, postingPeriod: '3ヶ月以上' },
