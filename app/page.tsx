@@ -67,7 +67,7 @@ export default function LoginPage() {
             onClick={() => router.push("/attack-list")}
             className="w-full py-4 bg-white hover:bg-zinc-50 text-blue-900 font-bold text-xs rounded-2xl transition-all duration-150 active:scale-[0.98] border border-blue-100 font-montserrat tracking-[0.2em]"
           >
-            アタックリスト ➔
+            ATTACK LIST ➔
           </button>
         </div>
       </div>

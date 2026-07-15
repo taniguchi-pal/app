@@ -25,6 +25,9 @@ export const AREAS: { id: string; title: string }[] = [
   { id: 'osaka', title: '大阪支店' },
 ];
 
+// タスク管理の担当者プルダウン用
+export const ASSIGNEES = ['田中', '谷口', '岩田', '山口', '五十嵐', '貴子'] as const;
+
 const AREA_WEIGHT: Record<string, number> = { kanto: 0.140, chubu: 0.1447, kansai: 0.3312, osaka: 0.3841 };
 
 export interface CompanyMonth {

@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
-import { MONTHS, MonthKey, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, yen, BACKLOG_STACKUP_MONTHLY_TARGET } from './_data';
+import { MONTHS, MonthKey, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
-interface ScheduleTask { id: string; title: string; period: string; status: string; note: string; createdAt: string }
+interface ScheduleTask { id: string; title: string; period: string; status: string; note: string; area: string; site: string; assignee: string; createdAt: string }
 
 export default function GlobalDashboard() {
   const [activeMonth, setActiveMonth] = useState<MonthKey>('6月進捗');
@@ -50,8 +50,9 @@ export default function GlobalDashboard() {
   // ── 年間スケジュール・タスク（Sheets連携） ──
   const [tasks, setTasks] = useState<ScheduleTask[]>([]);
   const [taskApiStatus, setTaskApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
-  const [newTask, setNewTask] = useState({ title: '', period: '', note: '' });
+  const [newTask, setNewTask] = useState({ title: '', period: '', note: '', area: '', site: '', assignee: '' });
   const [adding, setAdding] = useState(false);
+  const newTaskSites = newTask.area ? sitesOfArea(newTask.area) : [];
 
   const loadTasks = () => {
     fetch('/api/schedule').then((r) => r.json()).then((data) => {
@@ -69,9 +70,9 @@ export default function GlobalDashboard() {
       await fetch('/api/schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTask.title, period: newTask.period, status: '未着手', note: newTask.note }),
+        body: JSON.stringify({ title: newTask.title, period: newTask.period, status: '未着手', note: newTask.note, area: newTask.area, site: newTask.site, assignee: newTask.assignee }),
       });
-      setNewTask({ title: '', period: '', note: '' });
+      setNewTask({ title: '', period: '', note: '', area: '', site: '', assignee: '' });
       loadTasks();
     } finally {
       setAdding(false);
@@ -94,7 +95,7 @@ export default function GlobalDashboard() {
       <header className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 md:px-10 py-5 bg-white border-b border-zinc-100 overflow-hidden">
         <AGVLine />
         <div>
-          <BackLink href="/" label="ログイン画面へ戻る" />
+          <BackLink href="/" label="TOPページへ戻る" />
           <Eyebrow>Staffing Management Brain</Eyebrow>
           <h1 className="mt-1 text-xl md:text-2xl font-black text-zinc-900 tracking-tight">27期 人材ソリューション事業部 経営ダッシュボード</h1>
         </div>
@@ -250,47 +251,87 @@ export default function GlobalDashboard() {
               共有保存基盤（Google Sheets連携）が未設定のため、タスクの追加・保存はまだできません。docs/site-overrides-setup.md をご参照ください。
             </p>
           )}
-          <div className="flex flex-col sm:flex-row gap-2 mb-3">
-            <input
-              value={newTask.title}
-              onChange={(e) => setNewTask((t) => ({ ...t, title: e.target.value }))}
-              placeholder="タスク名（例: 関西エリア価格交渉フォロー）"
-              className="flex-1 px-2 py-1.5 text-sm bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-            />
-            <input
-              value={newTask.period}
-              onChange={(e) => setNewTask((t) => ({ ...t, period: e.target.value }))}
-              placeholder="期限（例: 7月末）"
-              className="sm:w-40 px-2 py-1.5 text-sm bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-            />
-            <button
-              onClick={handleAddTask}
-              disabled={taskApiStatus !== 'ready' || adding || !newTask.title.trim()}
-              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition shrink-0"
-            >
-              {adding ? '追加中…' : '+ タスク追加'}
-            </button>
+          <div className="space-y-2 mb-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                value={newTask.title}
+                onChange={(e) => setNewTask((t) => ({ ...t, title: e.target.value }))}
+                placeholder="タスク名（例: 関西エリア価格交渉フォロー）"
+                className="flex-1 px-2 py-1.5 text-sm bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+              />
+              <input
+                value={newTask.period}
+                onChange={(e) => setNewTask((t) => ({ ...t, period: e.target.value }))}
+                placeholder="期限（例: 7月末）"
+                className="sm:w-32 px-2 py-1.5 text-sm bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select
+                value={newTask.area}
+                onChange={(e) => setNewTask((t) => ({ ...t, area: e.target.value, site: '' }))}
+                className="flex-1 px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+              >
+                <option value="">エリア（任意）</option>
+                {AREAS.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
+              </select>
+              <select
+                value={newTask.site}
+                onChange={(e) => setNewTask((t) => ({ ...t, site: e.target.value }))}
+                disabled={!newTask.area}
+                className="flex-1 px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400 disabled:opacity-40"
+              >
+                <option value="">現場（任意）</option>
+                {newTaskSites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <select
+                value={newTask.assignee}
+                onChange={(e) => setNewTask((t) => ({ ...t, assignee: e.target.value }))}
+                className="flex-1 px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+              >
+                <option value="">担当（任意）</option>
+                {ASSIGNEES.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+              <button
+                onClick={handleAddTask}
+                disabled={taskApiStatus !== 'ready' || adding || !newTask.title.trim()}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition shrink-0"
+              >
+                {adding ? '追加中…' : '+ タスク追加'}
+              </button>
+            </div>
           </div>
           {tasks.length === 0 ? (
             <p className="text-xs text-zinc-400">登録されているタスクはありません</p>
           ) : (
             <ul className="space-y-2">
-              {tasks.map((t) => (
-                <li key={t.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
-                  <button
-                    onClick={() => cycleStatus(t)}
-                    className={`text-[10px] font-bold px-2 py-1 rounded border shrink-0 transition ${
-                      t.status === '完了' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                      : t.status === '進行中' ? 'text-amber-700 bg-amber-50 border-amber-200'
-                      : 'text-zinc-500 bg-zinc-100 border-zinc-200'
-                    }`}
-                  >
-                    {t.status || '未着手'}
-                  </button>
-                  <span className={`text-sm font-bold flex-1 ${t.status === '完了' ? 'text-zinc-400 line-through' : 'text-zinc-700'}`}>{t.title}</span>
-                  {t.period && <span className="text-[10px] text-zinc-400 font-mono shrink-0">{t.period}</span>}
-                </li>
-              ))}
+              {tasks.map((t) => {
+                const taskArea = AREAS.find((a) => a.id === t.area);
+                const taskSite = t.site ? sitesOfArea(t.area).find((s) => s.id === t.site) : null;
+                return (
+                  <li key={t.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
+                    <button
+                      onClick={() => cycleStatus(t)}
+                      className={`text-[10px] font-bold px-2 py-1 rounded border shrink-0 transition ${
+                        t.status === '完了' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                        : t.status === '進行中' ? 'text-amber-700 bg-amber-50 border-amber-200'
+                        : 'text-zinc-500 bg-zinc-100 border-zinc-200'
+                      }`}
+                    >
+                      {t.status || '未着手'}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-sm font-bold ${t.status === '完了' ? 'text-zinc-400 line-through' : 'text-zinc-700'}`}>{t.title}</span>
+                      {(taskArea || taskSite || t.assignee) && (
+                        <p className="text-[10px] text-zinc-400 mt-0.5 truncate">
+                          {[taskArea?.title, taskSite?.name, t.assignee && `担当: ${t.assignee}`].filter(Boolean).join(' ・ ')}
+                        </p>
+                      )}
+                    </div>
+                    {t.period && <span className="text-[10px] text-zinc-400 font-mono shrink-0">{t.period}</span>}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Card>

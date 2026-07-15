@@ -27,9 +27,10 @@ scope	month	salesBudget	salesActual	gpBudget	gpActual	opBudget	opActual	activeSt
 
 ### シート `Schedule`（1行目ヘッダー）
 ```
-id	title	period	status	note	createdAt
+id	title	period	status	note	area	site	assignee	createdAt
 ```
 - `status` は `未着手` / `進行中` / `完了` を想定
+- `area` は `kanto` / `chubu` / `kansai` / `osaka`、`site` は現場の案件コード、`assignee` は `田中`/`谷口`/`岩田`/`山口`/`五十嵐`/`貴子` を想定（いずれも任意入力）
 
 ### シート `AttackList`（1行目ヘッダー）
 ```
@@ -46,7 +47,7 @@ id	company	area	status	salesRep	nextVisitDate	lastContactDate	telAppoCount	notes
 const SHEETS = {
   overrides:  { name: 'SiteOverrides', key: 'siteId', headers: ['siteId', 'salesRep', 'soRep', 'negotiationStatus', 'recruitingActive', 'recruitingCostSpent', 'recruitingCostBudget', 'postingPeriod', 'updatedAt'] },
   monthly:    { name: 'MonthlyData',   key: 'compositeKey', headers: ['scope', 'month', 'salesBudget', 'salesActual', 'gpBudget', 'gpActual', 'opBudget', 'opActual', 'activeStaff', 'avgHours', 'joined', 'resigned', 'siteCount', 'heat', 'updatedAt'] },
-  schedule:   { name: 'Schedule',      key: 'id',       headers: ['id', 'title', 'period', 'status', 'note', 'createdAt'] },
+  schedule:   { name: 'Schedule',      key: 'id',       headers: ['id', 'title', 'period', 'status', 'note', 'area', 'site', 'assignee', 'createdAt'] },
   attacklist: { name: 'AttackList',    key: 'id',       headers: ['id', 'company', 'area', 'status', 'salesRep', 'nextVisitDate', 'lastContactDate', 'telAppoCount', 'notes', 'contactLogJson', 'createdAt', 'updatedAt'] },
 };
 

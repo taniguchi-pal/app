@@ -120,9 +120,9 @@ export default function AttackListPage() {
   return (
     <Shell agvColor="#1e40af">
       <header className="px-4 md:px-10 pt-6 pb-4">
-        <BackLink href="/" label="入口へ戻る" />
+        <BackLink href="/" label="TOPページへ戻る" />
         <Eyebrow>Sales Activity</Eyebrow>
-        <h1 className="mt-1 text-xl md:text-2xl font-black text-zinc-900 tracking-tight">営業アタックリスト</h1>
+        <h1 className="mt-1 text-xl md:text-2xl font-black text-zinc-900 tracking-tight">ATTACK LIST</h1>
         <p className="text-xs text-zinc-400 mt-0.5">テレアポ・コンタクト履歴・次回訪問予定をSales内で共有管理</p>
       </header>
 
