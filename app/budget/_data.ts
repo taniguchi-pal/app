@@ -40,6 +40,19 @@ export function ratesUpdatedLabel(): string {
   return `最終更新 ${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}（週次更新）`;
 }
 
+// 地域別最低賃金（令和7年度・厚生労働省公表、2025年10〜11月発効）。都道府県ごとに一元管理し、
+// 現場のprefectureから自動反映する（現場側で個別にminimumWageを持たせている場合はそちらを優先）。
+// 出典: 厚生労働省 地域別最低賃金の全国一覧（https://saiteichingin.mhlw.go.jp/）
+export const MINIMUM_WAGE_BY_PREFECTURE: Record<string, number> = {
+  '東京都': 1226, '神奈川県': 1225, '千葉県': 1140, '愛知県': 1140, '岐阜県': 1065,
+  '大阪府': 1177, '兵庫県': 1116, '京都府': 1122, '滋賀県': 1080,
+};
+export const MINIMUM_WAGE_SOURCE_LABEL = '出典: 厚生労働省 地域別最低賃金（令和7年度、2025年10〜11月発効）';
+export function effectiveMinimumWage(site: SiteData): number | null {
+  if (site.minimumWage != null) return site.minimumWage;
+  return site.prefecture ? MINIMUM_WAGE_BY_PREFECTURE[site.prefecture] ?? null : null;
+}
+
 export const ANNUAL_GOAL = { sales: 620000000, gpRate: 14.51, opRate: 6.87 };
 
 export const ANNUAL_SCHEDULE = [
