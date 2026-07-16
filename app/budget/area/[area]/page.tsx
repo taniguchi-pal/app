@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME, AGVLine, AGV_PASTEL } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, SITE_SALES_TARGET, yen } from '../../_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, effectiveStaffCount, effectiveTotalHours, SITE_SALES_TARGET, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -387,6 +387,18 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
           {filteredSites.map((site) => {
             const hasFinancials = site.sales?.actual != null && site.sales?.budget != null;
             const siteRate = hasFinancials ? (site.sales!.actual! / site.sales!.budget!) * 100 : null;
+            const monthStaff = site.staffCountByMonth?.[activeMonth];
+            const siteStaffCount = monthStaff != null
+              ? monthStaff
+              : activeMonth === CURRENT_ACTUAL_MONTH
+                ? effectiveStaffCount(site, siteOverrides)
+                : null;
+            const monthHours = site.totalHoursByMonth?.[activeMonth];
+            const siteTotalHours = monthHours != null
+              ? monthHours
+              : activeMonth === CURRENT_ACTUAL_MONTH
+                ? effectiveTotalHours(site, siteOverrides)
+                : null;
             return (
               <Link
                 key={site.id}
@@ -403,21 +415,28 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                   </div>
                   {hasFinancials ? <AchieveBadge rate={siteRate} /> : <span className="text-[10px] font-bold text-zinc-400 bg-zinc-100 px-2 py-1 rounded shrink-0">データ未登録</span>}
                 </div>
-                {hasFinancials ? (
+                {hasFinancials && (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-400">当月売上{site.sales!.actual! >= SITE_SALES_TARGET
+                      ? <span className="ml-1 text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 py-0.5">✓ 150万達成</span>
+                      : <span className="ml-1 text-[9px] font-black text-zinc-400 bg-zinc-100 border border-zinc-200 rounded px-1 py-0.5">未達</span>
+                    }</span>
+                    <span className="font-bold font-mono">{yen(site.sales!.actual)}</span>
+                  </div>
+                )}
+                {(siteStaffCount != null || siteTotalHours != null) && (
                   <>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-zinc-400">当月売上{site.sales!.actual! >= SITE_SALES_TARGET
-                        ? <span className="ml-1 text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 py-0.5">✓ 150万達成</span>
-                        : <span className="ml-1 text-[9px] font-black text-zinc-400 bg-zinc-100 border border-zinc-200 rounded px-1 py-0.5">未達</span>
-                      }</span>
-                      <span className="font-bold font-mono">{yen(site.sales!.actual)}</span>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-zinc-400">配置人数（{monthLabel(activeMonth)}）</span>
+                      <span className="font-bold font-mono">{siteStaffCount != null ? `${siteStaffCount}名` : 'データ未登録'}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-zinc-400">配置人数</span>
-                      <span className="font-bold font-mono">{site.staffCount}名</span>
+                      <span className="text-zinc-400">総工数（{monthLabel(activeMonth)}）</span>
+                      <span className="font-bold font-mono">{siteTotalHours != null ? `${siteTotalHours.toLocaleString(undefined, { maximumFractionDigits: 2 })}h` : 'データ未登録'}</span>
                     </div>
                   </>
-                ) : (
+                )}
+                {!hasFinancials && siteStaffCount == null && siteTotalHours == null && (
                   <p className="text-xs text-zinc-400">損益データはまだ登録されていません</p>
                 )}
                 {(site.backlogCount != null || site.expectedImpact != null) && (
