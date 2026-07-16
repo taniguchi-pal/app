@@ -428,9 +428,12 @@ function role(code: string, label: string, isNew?: boolean): SiteRole {
 }
 
 // 4-9月の月次予算表（現場名で突合）から、現場ごとの月次売上予算シリーズを組み立てる。10月以降は未確定のため含めない。
-function budgetSeries(apr: number | null, may: number | null, jun: number | null, jul: number | null, aug: number | null, sep: number | null): Partial<Record<MonthKey, number>> {
-  const keys: MonthKey[] = ['4月実績', '5月実績', '6月進捗', '7月進捗', '8月予定', '9月予定'];
-  const vals = [apr, may, jun, jul, aug, sep];
+function budgetSeries(
+  apr: number | null, may: number | null, jun: number | null, jul: number | null, aug: number | null, sep: number | null,
+  oct: number | null = null, nov: number | null = null, dec: number | null = null, jan: number | null = null, feb: number | null = null, mar: number | null = null
+): Partial<Record<MonthKey, number>> {
+  const keys: MonthKey[] = ['4月実績', '5月実績', '6月進捗', '7月進捗', '8月予定', '9月予定', '10月予定', '11月予定', '12月予定', '1月予定', '2月予定', '3月予定'];
+  const vals = [apr, may, jun, jul, aug, sep, oct, nov, dec, jan, feb, mar];
   const out: Partial<Record<MonthKey, number>> = {};
   keys.forEach((k, i) => { if (vals[i] != null) out[k] = vals[i]!; });
   return out;
@@ -458,7 +461,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 3049701 },
     paidLeave: { actual: 87770 },
     opProfit: { actual: 619170 },
-    monthlyBudget: budgetSeries(3952000, 3800000, 3800000, 3952000, 3800000, 3648000),
+    monthlyBudget: budgetSeries(3952000, 3800000, 3800000, 3952000, 3800000, 3648000, 3952000, 3648000, 3800000, 3496000, 3496000, 3800000),
     staffCountByMonth: monthSeries3(26, 26, 26),
     totalHoursByMonth: monthSeries3(2138.75, 2030.50, 2083.75),
   },
@@ -469,7 +472,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 446880 },
     paidLeave: { actual: 10640 },
     opProfit: { actual: 151926 },
-    monthlyBudget: budgetSeries(520000, 510000, 570000, 580000, 450000, 540000),
+    monthlyBudget: budgetSeries(520000, 510000, 570000, 580000, 450000, 540000, 600000, 480000, 550000, 510000, 500000, 520000),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(306.00, 271.50, 320.00),
   },
@@ -480,7 +483,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 0 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
-    monthlyBudget: budgetSeries(290000, 270000, 350000, 350000, 250000, 300000),
+    monthlyBudget: budgetSeries(290000, 270000, 350000, 350000, 250000, 300000, 340000, 290000, 300000, 320000, 290000, 350000),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(136.00, 112.00, 16.00),
   },
@@ -491,7 +494,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 446220 },
     paidLeave: { actual: 10720 },
     opProfit: { actual: 141371 },
-    monthlyBudget: budgetSeries(550000, 490000, 560000, 560000, 410000, 540000),
+    monthlyBudget: budgetSeries(550000, 490000, 560000, 560000, 410000, 540000, 610000, 450000, 510000, 510000, 480000, 440000),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(304.00, 256.00, 320.00),
   },
@@ -502,7 +505,7 @@ export const SITES: Record<string, SiteData> = {
     cost: { actual: 1033164 },
     paidLeave: { actual: 30400 },
     opProfit: { actual: 262319 },
-    monthlyBudget: budgetSeries(1240000, 1130000, 1210000, 1190000, 1230000, 1390000),
+    monthlyBudget: budgetSeries(1240000, 1130000, 1210000, 1190000, 1230000, 1390000, 1270000, 1100000, 1110000, 1100000, 1050000, 1150000),
     staffCountByMonth: monthSeries3(3, 3, 3),
     totalHoursByMonth: monthSeries3(474.75, 396.58, 506.83),
   },
@@ -512,7 +515,7 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 739593, budget: 1000000 },
     cost: { actual: 532827 },
     paidLeave: { actual: 10800 },
-    monthlyBudget: budgetSeries(900000, 900000, 1000000, 1000000, 720000, 880000),
+    monthlyBudget: budgetSeries(900000, 900000, 1000000, 1000000, 720000, 880000, 1000000, 850000, 900000, 900000, 850000, 1000000),
     opProfit: { actual: 154533 },
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(399.90, 332.42, 414.93),
@@ -936,8 +939,9 @@ export function sumSitesActual(areaId: string): { salesActual: number; salesBudg
   return { salesActual, salesBudget, opProfitActual, siteCount };
 }
 
-// 現場ごとの月次予算表（4-9月）を持つ月。この範囲は現場積み上げで予算を自動集計できる。
-export const BUDGET_AGGREGATE_MONTHS: MonthKey[] = ['7月進捗', '8月予定', '9月予定'];
+// 現場積み上げの月次予算データがある月。関東は10-3月まで、他エリアは9月までのため、
+// sumSiteBudgetForMonthが0を返す月（データが無い）は自動集計せず既存の概算値のままにする。
+export const BUDGET_AGGREGATE_MONTHS: MonthKey[] = MONTHS.filter((m) => m !== '4月実績' && m !== '5月実績' && m !== '6月進捗');
 export function sumSiteBudgetForMonth(areaId: string, m: MonthKey): number {
   return sitesOfArea(areaId).reduce((sum, s) => sum + (s.monthlyBudget?.[m] ?? 0), 0);
 }
