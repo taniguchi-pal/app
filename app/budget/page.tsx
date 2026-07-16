@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, sumSitesActual, sumAreaStaff } from './_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, PROJECTS, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, sumSitesActual, sumAreaStaff } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -41,6 +41,34 @@ export default function GlobalDashboard() {
     },
     { sum: 0, filled: 0, total: 0, hoursSum: 0, hoursFilled: 0 }
   );
+
+  // ── トピックス・プロジェクトの参照URL（Sheets連携） ──
+  const [projectData, setProjectData] = useState<Record<string, { url?: string; note?: string }>>({});
+  const [projectApiStatus, setProjectApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
+  const [projectEdits, setProjectEdits] = useState<Record<string, string>>({});
+  const [projectSaving, setProjectSaving] = useState<string | null>(null);
+  const loadProjects = () => {
+    fetch('/api/projects').then((r) => r.json()).then((data) => {
+      if (data?.error) { setProjectApiStatus('unconfigured'); return; }
+      setProjectData(data || {});
+      setProjectApiStatus('ready');
+    }).catch(() => setProjectApiStatus('error'));
+  };
+  useEffect(() => { loadProjects(); }, []);
+  const handleSaveProject = async (projectId: string) => {
+    const url = projectEdits[projectId] ?? projectData[projectId]?.url ?? '';
+    setProjectSaving(projectId);
+    try {
+      await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId, url }),
+      });
+      loadProjects();
+    } finally {
+      setProjectSaving(null);
+    }
+  };
 
   // 7月は関東・中部（現場実績を自動集計）＋関西（自社システム部門合計から大阪支店分を控除した実数値）の
   // 合算で全社実績を算出する。大阪支店は別枠管理のためこの合計には含めない（従来と同じ扱い）。
@@ -453,6 +481,47 @@ export default function GlobalDashboard() {
               })}
             </ul>
           )}
+        </Card>
+
+        {/* ── トピックス・プロジェクト（参照URL） ──── */}
+        <Card eyebrow="Projects" title="トピックス・プロジェクト">
+          {projectApiStatus === 'unconfigured' && (
+            <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 -mt-1 mb-3">
+              共有保存基盤（Google Sheets連携）が未設定のため、URLの保存はまだできません。docs/site-overrides-setup.md の「Projects」シートをご参照ください。
+            </p>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {PROJECTS.map((p, i) => {
+              const saved = projectData[p.id]?.url ?? '';
+              const value = projectEdits[p.id] ?? saved;
+              return (
+                <div key={p.id} className="p-3 rounded-xl bg-zinc-50 border border-zinc-100">
+                  <p className="text-xs font-bold text-zinc-700">{`①②③④`[i] ?? ''} {p.name}</p>
+                  {p.note && <p className="text-[10px] text-zinc-400 mt-0.5">{p.note}</p>}
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      value={value}
+                      onChange={(e) => setProjectEdits((f) => ({ ...f, [p.id]: e.target.value }))}
+                      placeholder="Googleドライブ・AIツールなどのURL"
+                      className="flex-1 px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+                    />
+                    <button
+                      onClick={() => handleSaveProject(p.id)}
+                      disabled={projectApiStatus !== 'ready' || projectSaving === p.id}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition shrink-0"
+                    >
+                      {projectSaving === p.id ? '保存中…' : '保存'}
+                    </button>
+                  </div>
+                  {saved && (
+                    <a href={saved} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded px-2 py-0.5 hover:bg-blue-100">
+                      開く ↗
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </Card>
 
         {/* ── トピックス ───────────────────────────── */}

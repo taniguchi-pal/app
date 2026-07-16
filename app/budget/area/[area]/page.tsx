@@ -26,6 +26,8 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
     fetch('/api/site-overrides').then((r) => r.json()).then((data) => { if (!data?.error) setSiteOverrides(data); }).catch(() => {});
   }, []);
   const [repFilter, setRepFilter] = useState<string>('');
+  const [siteFilter, setSiteFilter] = useState<string>('');
+  const [siteSort, setSiteSort] = useState<string>('');
 
   // ── 実際の気象情報（当日分をOpen-Meteoから取得） ──
   const [weather, setWeather] = useState<Record<string, { tempC: number; humidity: number; weatherCode: number } | null>>({});
@@ -293,12 +295,42 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
             const ov = siteOverrides[site.id];
             return { salesRep: (ov?.salesRep || site.salesRep) ?? null, soRep: (ov?.soRep || site.soRep) ?? null };
           };
+          const effectiveRecruiting = (site: (typeof sites)[number]) => {
+            const ov = siteOverrides[site.id];
+            if (ov?.recruitingActive != null && ov.recruitingActive !== '') {
+              return ov.recruitingActive === true || ov.recruitingActive === 'TRUE' || ov.recruitingActive === 'true';
+            }
+            return site.recruiting?.active ?? false;
+          };
+          const effectiveStaffN = (site: (typeof sites)[number]) => {
+            const ov = siteOverrides[site.id];
+            const raw = ov?.staffCount != null && ov.staffCount !== '' ? ov.staffCount : site.staffCount;
+            const n = raw != null ? Number(raw) : NaN;
+            return Number.isFinite(n) ? n : null;
+          };
+          const siteMargin = (site: (typeof sites)[number]) => {
+            const actual = site.opProfit?.actual, sales = site.sales?.actual;
+            return actual != null && sales ? (actual / sales) * 100 : null;
+          };
           const repOptions = Array.from(new Set(
             sites.flatMap((s) => { const r = effectiveRep(s); return [r.salesRep, r.soRep].filter(Boolean) as string[]; })
           ));
-          const filteredSites = repFilter
+          const SITE_FILTER_PRESETS: { value: string; label: string; test: (s: (typeof sites)[number]) => boolean }[] = [
+            { value: 'recruiting', label: '採用中（掲載中）現場', test: (s) => effectiveRecruiting(s) },
+            { value: 'active', label: '稼働中現場', test: (s) => s.active },
+            { value: 'inactive', label: '終了現場・非稼働現場', test: (s) => !s.active },
+            { value: 'margin9', label: '営業利益率9%以上現場', test: (s) => { const m = siteMargin(s); return m != null && m >= 9; } },
+            { value: 'unprofitable', label: '不採算現場（営業利益マイナス）', test: (s) => (s.opProfit?.actual ?? 0) < 0 },
+            { value: 'staff1', label: '派遣人数1名現場', test: (s) => effectiveStaffN(s) === 1 },
+          ];
+          let filteredSites = repFilter
             ? sites.filter((s) => { const r = effectiveRep(s); return r.salesRep === repFilter || r.soRep === repFilter; })
             : sites;
+          const preset = SITE_FILTER_PRESETS.find((p) => p.value === siteFilter);
+          if (preset) filteredSites = filteredSites.filter(preset.test);
+          if (siteSort === 'marginDesc') {
+            filteredSites = [...filteredSites].sort((a, b) => (siteMargin(b) ?? -Infinity) - (siteMargin(a) ?? -Infinity));
+          }
           return (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
@@ -309,16 +341,34 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                     {' '}・ 1現場あたり売上{yen(SITE_SALES_TARGET)}達成: {sites.filter((s) => (s.sales?.actual ?? 0) >= SITE_SALES_TARGET).length}/{sites.filter((s) => s.sales?.actual != null).length}現場
                   </p>
                 </div>
-                {repOptions.length > 0 && (
+                <div className="flex flex-wrap gap-2">
                   <select
-                    value={repFilter}
-                    onChange={(e) => setRepFilter(e.target.value)}
+                    value={siteFilter}
+                    onChange={(e) => setSiteFilter(e.target.value)}
                     className="text-xs font-bold px-2 py-1.5 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
                   >
-                    <option value="">担当Sales/SOで絞り込み（全員）</option>
-                    {repOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+                    <option value="">目的で絞り込み（すべて）</option>
+                    {SITE_FILTER_PRESETS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                   </select>
-                )}
+                  <select
+                    value={siteSort}
+                    onChange={(e) => setSiteSort(e.target.value)}
+                    className="text-xs font-bold px-2 py-1.5 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+                  >
+                    <option value="">並び順（デフォルト）</option>
+                    <option value="marginDesc">営業利益率順（高い順）</option>
+                  </select>
+                  {repOptions.length > 0 && (
+                    <select
+                      value={repFilter}
+                      onChange={(e) => setRepFilter(e.target.value)}
+                      className="text-xs font-bold px-2 py-1.5 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+                    >
+                      <option value="">担当Sales/SOで絞り込み（全員）</option>
+                      {repOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  )}
+                </div>
               </div>
               {filteredSites.length === 0 && (
                 <p className="text-xs text-zinc-400 py-4 text-center">該当する現場がありません</p>

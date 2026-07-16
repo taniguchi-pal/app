@@ -59,6 +59,14 @@ export const AREAS: { id: string; title: string }[] = [
 // タスク管理の担当者プルダウン用
 export const ASSIGNEES = ['田中', '谷口', '岩田', '山口', '五十嵐', '貴子'] as const;
 
+// ダッシュボード大元「トピックス・プロジェクト」で参照URLを貼れる進行中プロジェクト
+export const PROJECTS: { id: string; name: string; note?: string }[] = [
+  { id: 'fukuyama', name: '福山通運様PJ' },
+  { id: 'palmee', name: 'PALMEE PJ', note: '運用アップデート：勤怠表の紙ベース終了承認問題のフェーズへ' },
+  { id: 'so-flow', name: 'SO業務フロー改善' },
+  { id: 'ai-agent', name: 'AIエージェント' },
+];
+
 const AREA_WEIGHT: Record<string, number> = { kanto: 0.140, chubu: 0.1447, kansai: 0.3312, osaka: 0.3841 };
 
 export interface CompanyMonth {

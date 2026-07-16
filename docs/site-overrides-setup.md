@@ -7,10 +7,12 @@
 2. **MonthlyData**: 7月以降の月次実績・予算・稼働人数など（4〜6月は確定値なのでアプリ内に固定値のまま）
 3. **Schedule**: 年間スケジュール・タスクの追加/管理
 4. **AttackList**: 営業アタックリスト（テレアポ・コンタクト履歴、Sales専用の営業活動管理）
+5. **RecruitingHistory**: 現場ごとの掲載履歴（募集費・原稿URL）
+6. **Projects**: ダッシュボード大元「トピックス・プロジェクト」の参照URL
 
 ## 1. スプレッドシートを作成
 
-新しいGoogleスプレッドシートを1つ作成し、以下の4枚のシートを作ってください（シート名は正確に）。
+新しいGoogleスプレッドシートを1つ作成し、以下の6枚のシートを作ってください（シート名は正確に）。
 
 ### シート `SiteOverrides`（1行目ヘッダー）
 ```
@@ -48,6 +50,22 @@ id	company	area	status	probability	salesRep	repContact	linkedSiteId	nextVisitDat
 - `needsIssues` は先方の課題・ニーズの自由記述、`escalatedTo` はどこ（誰）へ連携したかの自由記述
 - `contactLogJson` は訪問・TEL・メールのコンタクト履歴を `[{"datetime":"2026-07-01T10:30","method":"TEL","content":"..."}]` のようなJSON文字列でそのまま保存（アプリ側でパースします）
 
+### シート `RecruitingHistory`（1行目ヘッダー）
+```
+id	siteId	postingPeriod	costSpent	costBudget	adUrl	note	createdAt
+```
+- `siteId` は現場の案件コード。現場カルテの「掲載履歴」に自動的に絞り込んで表示されます
+- `adUrl` は求人原稿のURL。現場カルテからクリックで開けます
+- 「担当者・募集状況」カードの掲載中チェック・当月の募集費（進捗）は引き続きSiteOverridesシート側で管理し、
+  RecruitingHistoryは掲載が終わるごとに追加していく履歴ログという位置づけです
+
+### シート `Projects`（1行目ヘッダー）
+```
+projectId	url	note	updatedAt
+```
+- `projectId` は `fukuyama` / `palmee` / `so-flow` / `ai-agent` の4つ（アプリ側に固定表示される4プロジェクトに対応）
+- `url` はGoogleドライブ・AIツールなどの参照リンク、`note` は自由記述の補足メモ
+
 ## 2. Apps Scriptを設置
 
 スプレッドシートのメニューから「拡張機能」→「Apps Script」を開き、`Code.gs` の中身を全部消して以下を貼り付けてください。
@@ -58,6 +76,8 @@ const SHEETS = {
   monthly:    { name: 'MonthlyData',   key: 'compositeKey', headers: ['scope', 'month', 'salesBudget', 'salesActual', 'gpBudget', 'gpActual', 'opBudget', 'opActual', 'activeStaff', 'avgHours', 'joined', 'resigned', 'siteCount', 'heat', 'updatedAt'] },
   schedule:   { name: 'Schedule',      key: 'id',       headers: ['id', 'title', 'period', 'status', 'note', 'area', 'site', 'assignee', 'createdAt'] },
   attacklist: { name: 'AttackList',    key: 'id',       headers: ['id', 'company', 'area', 'status', 'probability', 'salesRep', 'repContact', 'linkedSiteId', 'nextVisitDate', 'lastContactDate', 'telAppoCount', 'quoteUrl', 'notebookLmUrl', 'asanaUrl', 'minutesUrl', 'needsIssues', 'escalatedTo', 'notes', 'contactLogJson', 'createdAt', 'updatedAt'] },
+  recruitinghistory: { name: 'RecruitingHistory', key: 'id', headers: ['id', 'siteId', 'postingPeriod', 'costSpent', 'costBudget', 'adUrl', 'note', 'createdAt'] },
+  projects:   { name: 'Projects',      key: 'projectId', headers: ['projectId', 'url', 'note', 'updatedAt'] },
 };
 
 function getSheetConfig(key) {
@@ -70,8 +90,8 @@ function doGet(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(cfg.name);
   const rows = sheet.getDataRange().getValues();
 
-  if (which === 'schedule' || which === 'attacklist') {
-    // Schedule/AttackListは配列で返す（一覧表示のため）
+  if (which === 'schedule' || which === 'attacklist' || which === 'recruitinghistory') {
+    // Schedule/AttackList/RecruitingHistoryは配列で返す（一覧表示のため）
     const list = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
@@ -116,6 +136,14 @@ function doPost(e) {
   } else if (which === 'attacklist') {
     if (!body.id) body.id = 'attack_' + new Date().getTime();
     rowKey = (r) => r[0] === body.id;
+  } else if (which === 'recruitinghistory') {
+    if (!body.id) body.id = 'rec_' + new Date().getTime();
+    rowKey = (r) => r[0] === body.id;
+  } else if (which === 'projects') {
+    if (!body.projectId) {
+      return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'projectId is required' })).setMimeType(ContentService.MimeType.JSON);
+    }
+    rowKey = (r) => r[0] === body.projectId;
   } else {
     if (!body.siteId) {
       return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'siteId is required' })).setMimeType(ContentService.MimeType.JSON);

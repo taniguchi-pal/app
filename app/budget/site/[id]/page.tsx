@@ -74,6 +74,35 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
     return () => { cancelled = true; };
   }, [id]);
 
+  // ── 掲載履歴（募集費・原稿URL）── SOが掲載終了ごとに追加する履歴ログ ──
+  const [recruitingHistory, setRecruitingHistory] = useState<{ id: string; siteId: string; postingPeriod: string; costSpent: string; costBudget: string; adUrl: string; note: string; createdAt: string }[]>([]);
+  const [recruitingApiStatus, setRecruitingApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
+  const [newPosting, setNewPosting] = useState({ postingPeriod: '', costSpent: '', costBudget: '', adUrl: '', note: '' });
+  const [postingSaving, setPostingSaving] = useState(false);
+  const loadRecruitingHistory = () => {
+    fetch('/api/recruiting-history').then((r) => r.json()).then((data) => {
+      if (data?.error) { setRecruitingApiStatus('unconfigured'); return; }
+      setRecruitingHistory(Array.isArray(data) ? data.filter((e: any) => e.siteId === id) : []);
+      setRecruitingApiStatus('ready');
+    }).catch(() => setRecruitingApiStatus('error'));
+  };
+  useEffect(() => { loadRecruitingHistory(); }, [id]);
+  const handleAddPosting = async () => {
+    if (!newPosting.postingPeriod.trim() && !newPosting.adUrl.trim()) return;
+    setPostingSaving(true);
+    try {
+      await fetch('/api/recruiting-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteId: id, ...newPosting }),
+      });
+      setNewPosting({ postingPeriod: '', costSpent: '', costBudget: '', adUrl: '', note: '' });
+      loadRecruitingHistory();
+    } finally {
+      setPostingSaving(false);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     fetch('/api/site-overrides')
@@ -477,6 +506,84 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
             {saveState === 'saved' && <span className="text-xs font-bold text-emerald-600">✓ 保存しました（全員に共有されます）</span>}
             {saveState === 'error' && <span className="text-xs font-bold text-rose-600">保存に失敗しました</span>}
           </div>
+        </Card>
+
+        {/* ── 掲載履歴（募集費・原稿URL） ────────────── */}
+        <Card eyebrow="Postings" title="掲載履歴">
+          {form.recruitingActive && (
+            <p className="text-[11px] text-zinc-500 mb-3">
+              当月の募集費進捗: <span className="font-bold text-zinc-700 font-mono">{form.recruitingCostSpent || '—'}</span> / <span className="font-bold text-zinc-700 font-mono">{form.recruitingCostBudget || '—'}</span>
+              {' '}（担当者・募集状況カードで編集）
+            </p>
+          )}
+          {recruitingApiStatus === 'unconfigured' && (
+            <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-3">
+              共有保存基盤（Google Sheets連携）が未設定です。docs/site-overrides-setup.md の「RecruitingHistory」シートを追加すると使えます。
+            </p>
+          )}
+          {recruitingHistory.length === 0 ? (
+            <p className="text-xs font-bold text-zinc-400 mb-3">履歴はまだ登録されていません</p>
+          ) : (
+            <ul className="space-y-2 mb-3">
+              {recruitingHistory.slice().reverse().map((h) => (
+                <li key={h.id} className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-zinc-700">{h.postingPeriod || '期間未設定'}</span>
+                    <span className="text-[10px] text-zinc-400 font-mono">{h.costSpent || '—'} / {h.costBudget || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 mt-1">
+                    {h.note && <p className="text-[11px] text-zinc-500">{h.note}</p>}
+                    {h.adUrl && (
+                      <a href={h.adUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded px-2 py-0.5 hover:bg-blue-100 shrink-0">
+                        原稿を見る ↗
+                      </a>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input
+              value={newPosting.postingPeriod}
+              onChange={(e) => setNewPosting((f) => ({ ...f, postingPeriod: e.target.value }))}
+              placeholder="掲載期間（例: 2026年7月）"
+              className="px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            />
+            <input
+              value={newPosting.adUrl}
+              onChange={(e) => setNewPosting((f) => ({ ...f, adUrl: e.target.value }))}
+              placeholder="原稿URL"
+              className="px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            />
+            <input
+              value={newPosting.costSpent}
+              onChange={(e) => setNewPosting((f) => ({ ...f, costSpent: e.target.value }))}
+              placeholder="募集費（使用額）"
+              inputMode="numeric"
+              className="px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            />
+            <input
+              value={newPosting.costBudget}
+              onChange={(e) => setNewPosting((f) => ({ ...f, costBudget: e.target.value }))}
+              placeholder="募集費（予算額）"
+              inputMode="numeric"
+              className="px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            />
+            <input
+              value={newPosting.note}
+              onChange={(e) => setNewPosting((f) => ({ ...f, note: e.target.value }))}
+              placeholder="メモ（任意）"
+              className="px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400 sm:col-span-2"
+            />
+          </div>
+          <button
+            onClick={handleAddPosting}
+            disabled={recruitingApiStatus !== 'ready' || postingSaving || (!newPosting.postingPeriod.trim() && !newPosting.adUrl.trim())}
+            className="mt-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition"
+          >
+            {postingSaving ? '追加中…' : '+ 掲載履歴を追加'}
+          </button>
         </Card>
 
         {/* ── アクション履歴（価格交渉・コンタクト・横展開） ── */}
