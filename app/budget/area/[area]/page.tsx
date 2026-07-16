@@ -144,7 +144,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
       <main className="px-4 md:px-10 space-y-5">
 
         {isAutoAggregated && activeMonth === CURRENT_ACTUAL_MONTH && (
-          <p className="text-[10px] text-emerald-600 font-bold -mb-2">✓ この月の売上高・営業利益は管轄現場{sumSitesActual(areaId).siteCount}件の実績を自動集計しています（現場データ更新で自動反映）</p>
+          <p className="text-[10px] text-emerald-600 font-bold">✓ この月の売上高・営業利益は管轄現場{sumSitesActual(areaId).siteCount}件の実績を自動集計しています（現場データ更新で自動反映）</p>
         )}
 
         {/* ── エリア管理数値 ドン ──────────────────── */}
