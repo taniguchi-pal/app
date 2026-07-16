@@ -14,21 +14,42 @@ export function Shell({ children, agvColor }: { children: React.ReactNode; agvCo
   );
 }
 
-// ログイン画面と同じ「AGVが走る水色スキャンライン」演出。ヘッダー等の相対配置コンテナ内に置く（横向き）。
-export function AGVLine() {
+// ログイン画面と同じ「AGVが走るスキャンライン」演出。ヘッダー等の相対配置コンテナ内に置く（横向き）。
+// colorはAGVLineVertical・ShellのagvColorと揃えたパステル色を渡す想定（目立ちすぎないように）。
+export function AGVLine({ color = '#93c5fd' }: { color?: string }) {
+  const id = React.useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes budget-scan-line { 0% { transform: translateX(-10%); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateX(110%); opacity: 0; } }
-        @keyframes budget-agv-dot { 0% { left: -3%; } 100% { left: 103%; } }
+        @keyframes budget-scan-line-${id} { 0% { transform: translateX(-10%); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateX(110%); opacity: 0; } }
+        @keyframes budget-agv-dot-${id} { 0% { left: -3%; } 100% { left: 103%; } }
       `}} />
       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[2px] overflow-hidden pointer-events-none">
-        <div className="absolute top-0 h-full w-1/3 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_8px_rgba(59,130,246,0.6)]" style={{ animation: 'budget-scan-line 6s ease-in-out infinite' }} />
+        <div
+          className="absolute top-0 h-full w-1/3"
+          style={{
+            background: `linear-gradient(to right, transparent, ${color}, transparent)`,
+            boxShadow: `0 0 8px ${color}99`,
+            animation: `budget-scan-line-${id} 6s ease-in-out infinite`,
+          }}
+        />
       </div>
-      <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-sm bg-blue-600 shadow-[0_0_6px_rgba(37,99,235,0.7)] pointer-events-none" style={{ animation: 'budget-agv-dot 6s linear infinite' }} />
+      <div
+        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-sm pointer-events-none"
+        style={{ background: color, boxShadow: `0 0 6px ${color}b3`, animation: `budget-agv-dot-${id} 6s linear infinite` }}
+      />
     </>
   );
 }
+
+// エリア別・全社共通のAGVライン用パステルカラー（HeroStat等の濃い配色とは別枠。目立ちすぎない柔らかい色調）。
+export const AGV_PASTEL: Record<string, string> = {
+  kanto: '#a5f3fc', // pastel cyan
+  chubu: '#d9f99d', // pastel lime
+  kansai: '#fbcfe8', // pastel pink
+  osaka: '#fde68a', // pastel amber
+  company: '#bfdbfe', // pastel blue
+};
 
 // 物流倉庫の床ラインをイメージした縦のAGV走行演出。ページ背景に敷く（z-indexは最背面）。
 export function AGVLineVertical({ color = '#22d3ee', left = '6%' }: { color?: string; left?: string }) {

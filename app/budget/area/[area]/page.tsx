@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME } from '../../_ui';
+import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME, AGVLine, AGV_PASTEL } from '../../_ui';
 import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, SITE_SALES_TARGET, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
@@ -112,9 +112,13 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   if (topics.length === 0) topics.push({ text: '月次実績データは未登録です（月末確定後に反映されます）', tone: 'default' });
   if (monthIndex >= 3 && current.salesActual == null) topics.push({ text: 'この月の実績はまだSheetsに未入力です（予算のみ表示）', tone: 'default' });
 
+  const agvColor = AGV_PASTEL[areaId] || AGV_PASTEL.kanto;
   return (
-    <Shell agvColor={(AREA_THEME[areaId] || AREA_THEME.kanto).from}>
+    <Shell agvColor={agvColor}>
       <header className="px-4 md:px-10 pt-6 pb-4">
+        <div className="relative h-4 -mt-2 mb-1 overflow-hidden">
+          <AGVLine color={agvColor} />
+        </div>
         <BackLink href="/budget" label="事業部ダッシュボードへ戻る" />
         <Breadcrumb items={[{ label: '事業部ダッシュボード', href: '/budget' }, { label: `${area.title}エリア` }]} />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

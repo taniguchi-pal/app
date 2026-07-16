@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Shell, Eyebrow, Card, BackLink, Breadcrumb, AREA_THEME } from '../../_ui';
+import { Shell, Eyebrow, Card, BackLink, Breadcrumb, AREA_THEME, AGVLine, AGV_PASTEL } from '../../_ui';
 import { SITES, AREAS, MONTHS, MonthKey, monthCalendar, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef, ratesUpdatedLabel } from '../../_data';
 
 // 現在、現場ごとの実績スクリーンショットが反映されている対象月（自社システム反映分は7月進捗）
@@ -188,9 +188,13 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
   const salesRow = getPLRow(site, salesAccount);
   const opMarginRate = opProfitRow?.actual != null && salesRow?.actual ? (opProfitRow.actual / salesRow.actual) * 100 : null;
 
+  const agvColor = AGV_PASTEL[site.areaId] || AGV_PASTEL.kanto;
   return (
-    <Shell agvColor={(AREA_THEME[site.areaId] || AREA_THEME.kanto).from}>
+    <Shell agvColor={agvColor}>
       <header className="px-4 md:px-10 pt-6 pb-4">
+        <div className="relative h-4 -mt-2 mb-1 overflow-hidden">
+          <AGVLine color={agvColor} />
+        </div>
         <BackLink href={`/budget/area/${site.areaId}`} label={`${area?.title}エリア進捗一覧へ戻る`} />
         <Breadcrumb items={[{ label: '事業部ダッシュボード', href: '/budget' }, { label: `${area?.title}エリア`, href: `/budget/area/${site.areaId}` }, { label: site.name }]} />
         <Eyebrow>Site Karte</Eyebrow>

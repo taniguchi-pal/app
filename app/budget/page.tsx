@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, WeatherBadge, BackLink } from './_ui';
+import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, AGV_PASTEL, WeatherBadge, BackLink } from './_ui';
 import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, PROJECTS, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, sumSitesActual, sumAreaStaff } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
@@ -170,10 +170,10 @@ export default function GlobalDashboard() {
   };
 
   return (
-    <Shell agvColor="#1e40af">
+    <Shell agvColor={AGV_PASTEL.company}>
       {/* ── ヘッダー ─────────────────────────────────── */}
       <header className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 md:px-10 py-5 bg-white border-b border-zinc-100 overflow-hidden">
-        <AGVLine />
+        <AGVLine color={AGV_PASTEL.company} />
         <div>
           <BackLink href="/" label="TOPページへ戻る" />
           <Eyebrow>Staffing Management Brain</Eyebrow>
