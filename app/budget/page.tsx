@@ -14,7 +14,7 @@ const QUARTER_MONTHS = [[4, 5, 6], [7, 8, 9], [10, 11, 12], [1, 2, 3]];
 
 export default function GlobalDashboard() {
   const router = useRouter();
-  const [activeMonth, setActiveMonth] = useState<MonthKey>('6月進捗');
+  const [activeMonth, setActiveMonth] = useState<MonthKey>(CURRENT_ACTUAL_MONTH);
   const monthIndex = MONTHS.indexOf(activeMonth);
   const activeQuarter = Math.floor(monthIndex / 3);
   const siteList = Object.values(SITES).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
@@ -177,7 +177,7 @@ export default function GlobalDashboard() {
         <div>
           <BackLink href="/" label="TOPページへ戻る" />
           <Eyebrow>Staffing Management Brain</Eyebrow>
-          <h1 className="mt-1 text-xl md:text-2xl font-black text-zinc-900 tracking-tight">27期 人材ソリューション事業部 経営ダッシュボード</h1>
+          <h1 className="mt-1 text-xl md:text-2xl font-black text-zinc-900 tracking-tight">27期 人材ソリューション事業部 DASHBOARD</h1>
         </div>
         <div className="flex items-center gap-3 self-start sm:self-center">
           <span className="text-[9px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase">Powered by</span>

@@ -11,7 +11,7 @@ const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null :
 export default function AreaDashboard({ params }: { params: Promise<{ area: string }> }) {
   const { area: areaId } = React.use(params);
   const area = AREAS.find((a) => a.id === areaId) ?? AREAS[0];
-  const [activeMonth, setActiveMonth] = useState<MonthKey>('6月進捗');
+  const [activeMonth, setActiveMonth] = useState<MonthKey>(CURRENT_ACTUAL_MONTH);
   const monthIndex = MONTHS.indexOf(activeMonth);
 
   // ── 7月以降の実績はSheetsの値があれば上書き ──
@@ -242,7 +242,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
               <LineChart data={salesTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="#a1a1aa" />
-                <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
+                <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickCount={9} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
                 <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />

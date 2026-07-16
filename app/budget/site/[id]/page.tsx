@@ -188,6 +188,14 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
   const salesRow = getPLRow(site, salesAccount);
   const opMarginRate = opProfitRow?.actual != null && salesRow?.actual ? (opProfitRow.actual / salesRow.actual) * 100 : null;
 
+  // 配置人数・総工数はSheets入力（週次更新）が無ければ、直近の確定実績月（6月→5月→4月）にフォールバックする。
+  const latestHistorical = (['6月進捗', '5月実績', '4月実績'] as const)
+    .map((m) => ({ m, staff: site.staffCountByMonth?.[m], hours: site.totalHoursByMonth?.[m] }))
+    .find((x) => x.staff != null || x.hours != null);
+  const displayStaffCount = form.staffCount || (latestHistorical?.staff != null ? String(latestHistorical.staff) : '');
+  const displayTotalHours = form.totalHours || (latestHistorical?.hours != null ? String(latestHistorical.hours) : '');
+  const usingHistoricalFallback = !form.staffCount && !form.totalHours && !!latestHistorical;
+
   const agvColor = AGV_PASTEL[site.areaId] || AGV_PASTEL.kanto;
   return (
     <Shell agvColor={agvColor}>
@@ -216,20 +224,23 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <p className="text-[10px] text-blue-300">配置人数</p>
-              <p className="text-2xl font-black mt-0.5 font-mono">{form.staffCount || '—'}<span className="text-xs font-normal ml-1">名</span></p>
+              <p className="text-2xl font-black mt-0.5 font-mono">{displayStaffCount || '—'}<span className="text-xs font-normal ml-1">名</span></p>
             </div>
             <div>
               <p className="text-[10px] text-blue-300">総工数実績</p>
-              <p className="text-2xl font-black mt-0.5 font-mono">{form.totalHours ? Number(form.totalHours).toLocaleString() : '—'}<span className="text-xs font-normal ml-1">h</span></p>
+              <p className="text-2xl font-black mt-0.5 font-mono">{displayTotalHours ? Number(displayTotalHours).toLocaleString() : '—'}<span className="text-xs font-normal ml-1">h</span></p>
             </div>
             <div>
               <p className="text-[10px] text-blue-300">1人当たり工数</p>
               <p className="text-2xl font-black mt-0.5 font-mono">
-                {form.staffCount && form.totalHours ? (Number(form.totalHours) / Number(form.staffCount)).toFixed(2) : '—'}
+                {displayStaffCount && displayTotalHours ? (Number(displayTotalHours) / Number(displayStaffCount)).toFixed(2) : '—'}
                 <span className="text-xs font-normal ml-1">h</span>
               </p>
             </div>
           </div>
+          {usingHistoricalFallback && (
+            <p className="text-[9px] text-blue-300 mt-2">※ 週次入力が未設定のため、直近の確定実績（{monthCalendar(latestHistorical!.m).month}月）を表示しています</p>
+          )}
           {(site.staffCountByMonth || site.totalHoursByMonth) && (
             <div className="mt-4 pt-3 border-t border-white/10 grid grid-cols-3 gap-2">
               {(['4月実績', '5月実績', '6月進捗'] as const).map((m) => (
@@ -296,7 +307,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                       <LineChart data={trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
                         <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#a1a1aa" />
-                        <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} tickFormatter={(v) => `${Math.round(Number(v) / 10000)}万`} />
+                        <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} tickCount={8} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
                         <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
                         {hasBudgetSeries && <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />}
                         <Line type="monotone" dataKey="当月実績" stroke={m.color} strokeWidth={2} connectNulls dot={{ r: 3 }} />
