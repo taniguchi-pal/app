@@ -70,25 +70,32 @@ export default function GlobalDashboard() {
     }
   };
 
-  // 7月は関東・中部（現場実績を自動集計）＋関西（自社システム部門合計から大阪支店分を控除した実数値）の
-  // 合算で全社実績を算出する。大阪支店は別枠管理のためこの合計には含めない（従来と同じ扱い）。
+  // 7月は関東・中部（現場実績を自動集計）＋関西・大阪支店（自社システムの実数値）の
+  // 全4エリア合算で全社実績を算出する。見通し（salesForecast）が全4エリア計のため、
+  // 予算・進捗も同じ範囲（全4エリア）で揃えないと見通しとの整合性が崩れるため統一。
   const base = (() => {
     const b = COMPANY_MONTHLY[activeMonth];
     if (activeMonth !== CURRENT_ACTUAL_MONTH) return b;
     const kanto = sumSitesActual('kanto');
     const chubu = sumSitesActual('chubu');
     const kansaiMonth = AREA_MONTHLY.kansai[CURRENT_ACTUAL_MONTH];
+    const osakaMonth = AREA_MONTHLY.osaka[CURRENT_ACTUAL_MONTH];
+    const salesBudget = kanto.salesBudget + chubu.salesBudget + kansaiMonth.salesBudget + osakaMonth.salesBudget;
+    const salesActual = kanto.salesActual + chubu.salesActual + (kansaiMonth.salesActual ?? 0) + (osakaMonth.salesActual ?? 0);
+    const opActual = kanto.opProfitActual + chubu.opProfitActual + (kansaiMonth.gpActual ?? 0) + (osakaMonth.gpActual ?? 0);
     return {
       ...b,
       status: 'inprogress' as const,
-      salesBudget: kanto.salesBudget + chubu.salesBudget + kansaiMonth.salesBudget,
-      salesActual: kanto.salesActual + chubu.salesActual + (kansaiMonth.salesActual ?? 0),
-      opActual: kanto.opProfitActual + chubu.opProfitActual + (kansaiMonth.gpActual ?? 0),
+      salesBudget,
+      salesActual,
+      gpBudget: Math.round(salesBudget * (ANNUAL_GOAL.gpRate / 100)),
+      opBudget: Math.round(salesBudget * (ANNUAL_GOAL.opRate / 100)),
+      opActual,
       activeStaff: b.activeStaff == null && staffSums.filled > 0 ? staffSums.sum : b.activeStaff,
       avgHours: b.avgHours == null && staffSums.hoursFilled > 0 && staffSums.filled > 0
         ? Math.round((staffSums.hoursSum / staffSums.sum) * 100) / 100
         : b.avgHours,
-      topics: ['関東・中部・関西の管轄現場実績を自動集計した全社速報値です（大阪支店は別枠管理のため含みません）'],
+      topics: ['関東・中部・関西・大阪支店の管轄現場実績を自動集計した全社速報値です'],
     };
   })();
   const ov = monthlyOverrides[`company__${activeMonth}`];
