@@ -9,10 +9,11 @@
 4. **AttackList**: 営業アタックリスト（テレアポ・コンタクト履歴、Sales専用の営業活動管理）
 5. **RecruitingHistory**: 現場ごとの掲載履歴（募集費・原稿URL）
 6. **Projects**: ダッシュボード大元「トピックス・プロジェクト」の参照URL
+7. **NewSites**: 新規現場の一覧（案件番号つき）。コードを直さなくてもエリアページに一覧表示されます
 
 ## 1. スプレッドシートを作成
 
-新しいGoogleスプレッドシートを1つ作成し、以下の6枚のシートを作ってください（シート名は正確に）。
+新しいGoogleスプレッドシートを1つ作成し、以下の7枚のシートを作ってください（シート名は正確に）。
 
 ### シート `SiteOverrides`（1行目ヘッダー）
 ```
@@ -66,6 +67,16 @@ projectId	url	note	updatedAt
 - `projectId` は `fukuyama` / `palmee` / `so-flow` / `ai-agent` の4つ（アプリ側に固定表示される4プロジェクトに対応）
 - `url` はGoogleドライブ・AIツールなどの参照リンク、`note` は自由記述の補足メモ
 
+### シート `NewSites`（1行目ヘッダー）
+```
+siteId	name	areaId	prefecture	lifecycle	note	createdAt
+```
+- `siteId` は案件番号（既存の現場マスタと重複しないもの）
+- `areaId` は `kanto` / `chubu` / `kansai` / `osaka`
+- ここに追加した現場は、該当エリアページの現場一覧の下に「新規現場（スプレッドシート管理）」として
+  自動的に表示されます。損益・稼働人数などの実データが揃った段階で、通常の現場マスタ（コード）に
+  昇格させる運用を想定しています
+
 ## 2. Apps Scriptを設置
 
 スプレッドシートのメニューから「拡張機能」→「Apps Script」を開き、`Code.gs` の中身を全部消して以下を貼り付けてください。
@@ -78,6 +89,7 @@ const SHEETS = {
   attacklist: { name: 'AttackList',    key: 'id',       headers: ['id', 'company', 'area', 'status', 'probability', 'salesRep', 'repContact', 'linkedSiteId', 'nextVisitDate', 'lastContactDate', 'telAppoCount', 'quoteUrl', 'notebookLmUrl', 'asanaUrl', 'minutesUrl', 'needsIssues', 'escalatedTo', 'notes', 'contactLogJson', 'createdAt', 'updatedAt'] },
   recruitinghistory: { name: 'RecruitingHistory', key: 'id', headers: ['id', 'siteId', 'postingPeriod', 'costSpent', 'costBudget', 'adUrl', 'note', 'createdAt'] },
   projects:   { name: 'Projects',      key: 'projectId', headers: ['projectId', 'url', 'note', 'updatedAt'] },
+  newsites:   { name: 'NewSites',      key: 'siteId',    headers: ['siteId', 'name', 'areaId', 'prefecture', 'lifecycle', 'note', 'createdAt'] },
 };
 
 function getSheetConfig(key) {
@@ -90,8 +102,8 @@ function doGet(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(cfg.name);
   const rows = sheet.getDataRange().getValues();
 
-  if (which === 'schedule' || which === 'attacklist' || which === 'recruitinghistory') {
-    // Schedule/AttackList/RecruitingHistoryは配列で返す（一覧表示のため）
+  if (which === 'schedule' || which === 'attacklist' || which === 'recruitinghistory' || which === 'newsites') {
+    // Schedule/AttackList/RecruitingHistory/NewSitesは配列で返す（一覧表示のため）
     const list = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
@@ -144,6 +156,11 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'projectId is required' })).setMimeType(ContentService.MimeType.JSON);
     }
     rowKey = (r) => r[0] === body.projectId;
+  } else if (which === 'newsites') {
+    if (!body.siteId) {
+      return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'siteId is required' })).setMimeType(ContentService.MimeType.JSON);
+    }
+    rowKey = (r) => r[0] === body.siteId;
   } else {
     if (!body.siteId) {
       return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'siteId is required' })).setMimeType(ContentService.MimeType.JSON);

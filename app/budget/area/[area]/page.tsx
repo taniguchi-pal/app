@@ -36,6 +36,12 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   }, []);
   const areaWeather = weather[areaId];
 
+  // ── スプレッドシート管理の新規現場（案件番号つき、まだ現場マスタに未登録） ──
+  const [newSites, setNewSites] = useState<{ siteId: string; name: string; areaId: string; prefecture: string; lifecycle: string; note: string; createdAt: string }[]>([]);
+  useEffect(() => {
+    fetch('/api/new-sites').then((r) => r.json()).then((data) => { if (!data?.error && Array.isArray(data)) setNewSites(data.filter((s: any) => s.areaId === areaId)); }).catch(() => {});
+  }, [areaId]);
+
   const monthly = AREA_MONTHLY[areaId] ?? AREA_MONTHLY.kanto;
   const isAutoAggregated = (AUTO_AGGREGATE_AREAS as readonly string[]).includes(areaId);
   const staffSums = sumAreaStaff(areaId, siteOverrides);
@@ -436,6 +442,24 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
             );
           })}
         </div>
+        {newSites.length > 0 && (
+          <div className="mt-2">
+            <p className="text-[10px] font-bold text-zinc-400 font-montserrat tracking-[0.15em] uppercase">新規現場（スプレッドシート管理・{newSites.length}件）</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+              {newSites.map((s) => (
+                <div key={s.siteId} className="p-3 rounded-xl bg-amber-50/60 border border-amber-100">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-zinc-700">{s.name}</span>
+                    <span className="text-[9px] font-black text-white bg-amber-500 px-1.5 py-0.5 rounded shrink-0">新規</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">{s.prefecture || '所在地未登録'} ・ 案件コード {s.siteId}</p>
+                  {s.lifecycle && <p className="text-[10px] text-amber-700 mt-1">⚠ {s.lifecycle}</p>}
+                  {s.note && <p className="text-[11px] text-zinc-500 mt-1">{s.note}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
             </>
           );
         })()}
