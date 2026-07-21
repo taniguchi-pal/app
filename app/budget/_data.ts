@@ -53,6 +53,20 @@ export function effectiveMinimumWage(site: SiteData): number | null {
   return site.prefecture ? MINIMUM_WAGE_BY_PREFECTURE[site.prefecture] ?? null : null;
 }
 
+// 時給相場（都道府県別・全職種平均、ハローワーク求人データ集計）。軽作業・リフト等の職種別公的データが
+// 無いため全職種平均を暫定値として使う。現場固有の実相場が分かればsite.marketHourlyWageで上書きされる
+// （現場側の値を優先）。要現場確認・マスタ整備次第で随時更新。
+// 出典: ハローワークプラス 都道府県別時給比較（https://helloworkplus.com/parttime/salary-by-area/）
+export const MARKET_HOURLY_WAGE_BY_PREFECTURE: Record<string, number> = {
+  '東京都': 1445, '神奈川県': 1439, '千葉県': 1358, '愛知県': 1338, '岐阜県': 1253,
+  '大阪府': 1393, '兵庫県': 1320, '京都府': 1319, '滋賀県': 1266,
+};
+export const MARKET_HOURLY_WAGE_SOURCE_LABEL = '参考値（全職種平均・ハローワーク求人データ集計） ・ 要現場確認';
+export function effectiveMarketHourlyWage(site: SiteData): number | null {
+  if (site.marketHourlyWage != null) return site.marketHourlyWage;
+  return site.prefecture ? MARKET_HOURLY_WAGE_BY_PREFECTURE[site.prefecture] ?? null : null;
+}
+
 export const ANNUAL_GOAL = { sales: 620000000, gpRate: 14.51, opRate: 6.87 };
 
 export const ANNUAL_SCHEDULE = [

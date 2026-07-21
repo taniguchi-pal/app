@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, BackLink, Breadcrumb, AREA_THEME, AGVLine, AGV_PASTEL } from '../../_ui';
-import { SITES, AREAS, MONTHS, MonthKey, monthCalendar, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef, ratesUpdatedLabel, effectiveMinimumWage, MINIMUM_WAGE_SOURCE_LABEL } from '../../_data';
+import { SITES, AREAS, MONTHS, MonthKey, monthCalendar, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef, ratesUpdatedLabel, effectiveMinimumWage, MINIMUM_WAGE_SOURCE_LABEL, effectiveMarketHourlyWage, MARKET_HOURLY_WAGE_SOURCE_LABEL } from '../../_data';
 
 // 現在、現場ごとの実績スクリーンショットが反映されている対象月（自社システム反映分は7月進捗）
 const CURRENT_ACTUAL_MONTH: MonthKey = '7月進捗';
@@ -48,6 +48,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
   const site = SITES[id] ?? Object.values(SITES)[0];
   const area = AREAS.find((a) => a.id === site.areaId);
   const minWage = effectiveMinimumWage(site);
+  const marketWage = effectiveMarketHourlyWage(site);
 
   const [form, setForm] = useState<EditableForm>({
     salesRep: site.salesRep ?? '',
@@ -381,8 +382,12 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
             <p className="text-[10px] text-zinc-400 mt-1">一般作業員 請求単価</p>
           </Card>
           <Card eyebrow="Reference" title="時給相場（エリア相場）">
-            <p className="text-2xl font-black text-zinc-800 font-mono">{site.marketHourlyWage != null ? `¥${site.marketHourlyWage.toLocaleString()}` : 'データ未登録'}{site.marketHourlyWage != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
-            <p className="text-[10px] text-zinc-400 mt-1">同職種・同エリアの支払相場（参考値） ・ {ratesUpdatedLabel()}</p>
+            <p className="text-2xl font-black text-zinc-800 font-mono">{marketWage != null ? `¥${marketWage.toLocaleString()}` : 'データ未登録'}{marketWage != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
+            <p className="text-[10px] text-zinc-400 mt-1">
+              {site.marketHourlyWage != null
+                ? `同職種・同エリアの支払相場（参考値） ・ ${ratesUpdatedLabel()}`
+                : marketWage != null ? MARKET_HOURLY_WAGE_SOURCE_LABEL : '同職種・同エリアの支払相場（参考値） ・ ' + ratesUpdatedLabel()}
+            </p>
           </Card>
           <Card eyebrow="Reference" title="地域別最低賃金">
             <p className="text-2xl font-black text-zinc-800 font-mono">{minWage != null ? `¥${minWage.toLocaleString()}` : 'データ未登録'}{minWage != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
