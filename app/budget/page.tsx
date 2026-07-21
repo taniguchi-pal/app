@@ -70,16 +70,15 @@ export default function GlobalDashboard() {
     }
   };
 
-  // ── 週次 応募対応（募集費・応募数・採用数・入職率など、Sheets連携） ──
+  // ── 週次 応募対応（募集費・応募数・面接数・入職数・退職数・入職率など、Sheets連携） ──
   interface WeeklyRecruitingEntry {
-    id: string; areaId: string; weekStart: string;
-    recruitingCost: number; applicants: number; hires: number;
-    inProgress: number; awaitingJoin: number; declined: number;
+    id: string; areaId: string; assignee: string; weekStart: string;
+    recruitingCost: number; applicants: number; interviews: number; hires: number; resignations: number;
   }
   const [weeklyRecruiting, setWeeklyRecruiting] = useState<WeeklyRecruitingEntry[]>([]);
   const [weeklyApiStatus, setWeeklyApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
   const [weeklyAreaFilter, setWeeklyAreaFilter] = useState<string>('');
-  const [newWeekly, setNewWeekly] = useState({ areaId: 'kanto', weekStart: '', recruitingCost: '', applicants: '', hires: '', inProgress: '', awaitingJoin: '', declined: '' });
+  const [newWeekly, setNewWeekly] = useState({ areaId: 'kanto', assignee: '', weekStart: '', recruitingCost: '', applicants: '', interviews: '', hires: '', resignations: '' });
   const [weeklyAdding, setWeeklyAdding] = useState(false);
   const loadWeeklyRecruiting = () => {
     fetch('/api/weekly-recruiting').then((r) => r.json()).then((data) => {
@@ -97,16 +96,15 @@ export default function GlobalDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          areaId: newWeekly.areaId, weekStart: newWeekly.weekStart,
+          areaId: newWeekly.areaId, assignee: newWeekly.assignee, weekStart: newWeekly.weekStart,
           recruitingCost: numOrNull(newWeekly.recruitingCost) ?? 0,
           applicants: numOrNull(newWeekly.applicants) ?? 0,
+          interviews: numOrNull(newWeekly.interviews) ?? 0,
           hires: numOrNull(newWeekly.hires) ?? 0,
-          inProgress: numOrNull(newWeekly.inProgress) ?? 0,
-          awaitingJoin: numOrNull(newWeekly.awaitingJoin) ?? 0,
-          declined: numOrNull(newWeekly.declined) ?? 0,
+          resignations: numOrNull(newWeekly.resignations) ?? 0,
         }),
       });
-      setNewWeekly({ areaId: newWeekly.areaId, weekStart: '', recruitingCost: '', applicants: '', hires: '', inProgress: '', awaitingJoin: '', declined: '' });
+      setNewWeekly({ areaId: newWeekly.areaId, assignee: newWeekly.assignee, weekStart: '', recruitingCost: '', applicants: '', interviews: '', hires: '', resignations: '' });
       loadWeeklyRecruiting();
     } finally {
       setWeeklyAdding(false);
@@ -116,36 +114,36 @@ export default function GlobalDashboard() {
   const weeklyWeekLabel = (iso: string) => {
     if (!iso) return '—';
     const d = new Date(iso);
-    return isNaN(d.getTime()) ? iso : `${d.getMonth() + 1}/${d.getDate()}週`;
+    return isNaN(d.getTime()) ? iso : `${d.getMonth() + 1}/${d.getDate()}週〜`;
   };
   const weeklyRows = (() => {
     const filtered = weeklyRecruiting.filter((e) => !weeklyAreaFilter || e.areaId === weeklyAreaFilter);
     if (weeklyAreaFilter) {
-      return [...filtered].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+      return [...filtered]
+        .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
+        .map((e) => ({ ...e }));
     }
-    const byWeek = new Map<string, Omit<WeeklyRecruitingEntry, 'id' | 'areaId'>>();
+    const byWeek = new Map<string, Omit<WeeklyRecruitingEntry, 'id' | 'areaId' | 'assignee'>>();
     for (const e of filtered) {
-      const cur = byWeek.get(e.weekStart) ?? { weekStart: e.weekStart, recruitingCost: 0, applicants: 0, hires: 0, inProgress: 0, awaitingJoin: 0, declined: 0 };
+      const cur = byWeek.get(e.weekStart) ?? { weekStart: e.weekStart, recruitingCost: 0, applicants: 0, interviews: 0, hires: 0, resignations: 0 };
       cur.recruitingCost += weeklyNum(e.recruitingCost);
       cur.applicants += weeklyNum(e.applicants);
+      cur.interviews += weeklyNum(e.interviews);
       cur.hires += weeklyNum(e.hires);
-      cur.inProgress += weeklyNum(e.inProgress);
-      cur.awaitingJoin += weeklyNum(e.awaitingJoin);
-      cur.declined += weeklyNum(e.declined);
+      cur.resignations += weeklyNum(e.resignations);
       byWeek.set(e.weekStart, cur);
     }
-    return [...byWeek.values()].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+    return [...byWeek.values()].sort((a, b) => a.weekStart.localeCompare(b.weekStart)).map((r) => ({ ...r, assignee: '' }));
   })();
   const weeklyTotals = weeklyRows.reduce(
     (acc, r) => ({
       recruitingCost: acc.recruitingCost + weeklyNum(r.recruitingCost),
       applicants: acc.applicants + weeklyNum(r.applicants),
+      interviews: acc.interviews + weeklyNum(r.interviews),
       hires: acc.hires + weeklyNum(r.hires),
-      inProgress: acc.inProgress + weeklyNum(r.inProgress),
-      awaitingJoin: acc.awaitingJoin + weeklyNum(r.awaitingJoin),
-      declined: acc.declined + weeklyNum(r.declined),
+      resignations: acc.resignations + weeklyNum(r.resignations),
     }),
-    { recruitingCost: 0, applicants: 0, hires: 0, inProgress: 0, awaitingJoin: 0, declined: 0 }
+    { recruitingCost: 0, applicants: 0, interviews: 0, hires: 0, resignations: 0 }
   );
   const weeklyHireRate = (hires: number, applicants: number) => (applicants > 0 ? `${((hires / applicants) * 100).toFixed(1)}%` : '—');
   const weeklyUnitCost = (cost: number, hires: number) => (hires > 0 ? yen(Math.round(cost / hires)) : '—');
@@ -640,16 +638,16 @@ export default function GlobalDashboard() {
             <p className="text-xs text-zinc-400 mb-3">登録されている週次データはありません</p>
           ) : (
             <div className="overflow-x-auto -mx-1 mb-3">
-              <table className="min-w-[760px] w-full text-xs">
+              <table className="min-w-[720px] w-full text-xs">
                 <thead>
                   <tr className="text-zinc-400 border-b border-zinc-100">
                     <th className="text-left font-bold px-2 py-1.5">週</th>
+                    {!weeklyAreaFilter ? null : <th className="text-left font-bold px-2 py-1.5">担当者</th>}
                     <th className="text-right font-bold px-2 py-1.5">募集費</th>
                     <th className="text-right font-bold px-2 py-1.5">応募数</th>
-                    <th className="text-right font-bold px-2 py-1.5">採用数</th>
-                    <th className="text-right font-bold px-2 py-1.5">対応中</th>
-                    <th className="text-right font-bold px-2 py-1.5">入職待ち</th>
-                    <th className="text-right font-bold px-2 py-1.5">辞退・不採用</th>
+                    <th className="text-right font-bold px-2 py-1.5">面接数</th>
+                    <th className="text-right font-bold px-2 py-1.5">入職数</th>
+                    <th className="text-right font-bold px-2 py-1.5">退職数</th>
                     <th className="text-right font-bold px-2 py-1.5">入職率</th>
                     <th className="text-right font-bold px-2 py-1.5">採用単価</th>
                   </tr>
@@ -658,12 +656,12 @@ export default function GlobalDashboard() {
                   {weeklyRows.map((r, i) => (
                     <tr key={i} className="border-b border-zinc-50">
                       <td className="px-2 py-1.5 font-bold text-zinc-700">{weeklyWeekLabel(r.weekStart)}</td>
+                      {!weeklyAreaFilter ? null : <td className="px-2 py-1.5 text-zinc-500">{r.assignee || '—'}</td>}
                       <td className="px-2 py-1.5 text-right font-mono">{yen(weeklyNum(r.recruitingCost))}</td>
                       <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.applicants)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.interviews)}</td>
                       <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.hires)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.inProgress)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.awaitingJoin)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.declined)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.resignations)}</td>
                       <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyHireRate(weeklyNum(r.hires), weeklyNum(r.applicants))}</td>
                       <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyUnitCost(weeklyNum(r.recruitingCost), weeklyNum(r.hires))}</td>
                     </tr>
@@ -672,12 +670,12 @@ export default function GlobalDashboard() {
                 <tfoot>
                   <tr className="border-t border-zinc-200 bg-zinc-50">
                     <td className="px-2 py-1.5 font-black text-zinc-700">合計</td>
+                    {!weeklyAreaFilter ? null : <td className="px-2 py-1.5" />}
                     <td className="px-2 py-1.5 text-right font-mono font-black">{yen(weeklyTotals.recruitingCost)}</td>
                     <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.applicants}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.interviews}</td>
                     <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.hires}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.inProgress}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.awaitingJoin}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.declined}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.resignations}</td>
                     <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyHireRate(weeklyTotals.hires, weeklyTotals.applicants)}</td>
                     <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyUnitCost(weeklyTotals.recruitingCost, weeklyTotals.hires)}</td>
                   </tr>
@@ -687,7 +685,7 @@ export default function GlobalDashboard() {
           )}
 
           <div className="h-px bg-zinc-100 my-3" />
-          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">週次データを追加</p>
+          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">週次データを追加（数字だけ入力すればOK）</p>
           <div className="flex flex-wrap gap-2 items-end">
             <select
               value={newWeekly.areaId}
@@ -696,6 +694,14 @@ export default function GlobalDashboard() {
             >
               {AREAS.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
             </select>
+            <select
+              value={newWeekly.assignee}
+              onChange={(e) => setNewWeekly((w) => ({ ...w, assignee: e.target.value }))}
+              className="px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            >
+              <option value="">担当者（任意）</option>
+              {ASSIGNEES.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
             <input
               type="date"
               value={newWeekly.weekStart}
@@ -703,8 +709,8 @@ export default function GlobalDashboard() {
               className="px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
             />
             {([
-              ['recruitingCost', '募集費'], ['applicants', '応募数'], ['hires', '採用数'],
-              ['inProgress', '対応中'], ['awaitingJoin', '入職待ち'], ['declined', '辞退・不採用'],
+              ['recruitingCost', '募集費'], ['applicants', '応募数'], ['interviews', '面接数'],
+              ['hires', '入職数'], ['resignations', '退職数'],
             ] as const).map(([key, label]) => (
               <input
                 key={key}
@@ -723,6 +729,7 @@ export default function GlobalDashboard() {
               {weeklyAdding ? '追加中…' : '+ 追加'}
             </button>
           </div>
+          <p className="text-[10px] text-zinc-400 mt-2">週は開始日（例: 7/1・7/6・7/13・7/20・7/27）で入力。担当者・エリアはプルダウン選択のみで入力できます。</p>
         </Card>
 
         {/* ── トピックス ───────────────────────────── */}
