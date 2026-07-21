@@ -65,7 +65,7 @@ export default function LoginPage() {
 
           <button
             onClick={() => router.push("/attack-list")}
-            className="w-full py-4 bg-white hover:bg-zinc-50 text-blue-900 font-bold text-xs rounded-2xl transition-all duration-150 active:scale-[0.98] border border-blue-100 font-montserrat tracking-[0.2em]"
+            className="w-full py-4 bg-white hover:bg-gradient-to-r hover:from-blue-900 hover:to-blue-700 text-blue-900 hover:text-white font-bold text-xs rounded-2xl transition-all duration-150 active:scale-[0.98] border border-blue-100 hover:border-transparent hover:shadow-lg hover:shadow-blue-900/20 font-montserrat tracking-[0.2em]"
           >
             ATTACK LIST ➔
           </button>
