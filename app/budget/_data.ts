@@ -217,12 +217,12 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
       '■ 7月末: 稼働235名水準への回復',
     ],
   },
-  // 稼働人数・平均工数は7/14時点の実績KPIスナップショット（全体=関東+中部+関西+大阪支店）より。
-  // salesForecast/gpForecastは2Q見通しレポート（事業部合計）より、予算とは別枠の着地見込みとして並記。
+  // 稼働人数・平均工数・受注残・salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新
+  // （全体=関東+中部+関西+大阪支店）。見通しは予算とは別枠の着地見込みとして並記。
   '7月進捗': {
-    ...plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 31, stackupPotential: 6625700 }),
-    activeStaff: 186, avgHours: 110.42,
-    salesForecast: 49074660, gpForecast: 6784281,
+    ...plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 16, stackupPotential: 2410700 }),
+    activeStaff: 193, avgHours: 117.04,
+    salesForecast: 49226862, gpForecast: 6819522,
   },
   '8月予定': { ...plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 41053925 },
   '9月予定': { ...plannedCompany(53000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 42095120 },
@@ -247,14 +247,13 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '5月実績': { salesBudget: 7100000, salesActual: 6878370, yoyLastYear: 13848000, gpBudget: 1174255, gpActual: 1015258, activeStaff: 36, avgHours: 94.42, joined: 0, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7490000, salesActual: 7500000, yoyLastYear: 13701000, gpBudget: 1232684, gpActual: 1079448, activeStaff: 36, avgHours: 101.71, joined: 3, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 所属部署: 人ソ（関東））より反映。
-    // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。gpBudget/salesForecast/gpForecastは
-    // 7/14時点の2Q見通しレポートより（見通しは予算とは別に着地見込みとして並記）。
+    // 稼働人数・総工数、salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
     '7月進捗': {
       salesBudget: 7632000, salesActual: 7799828, yoyLastYear: null,
       gpBudget: 1244779, gpActual: 1329319,
-      activeStaff: 34, avgHours: 108.10, joined: null, resigned: null,
+      activeStaff: 34, avgHours: 113.88, joined: null, resigned: null,
       heat: null, siteCount: 5, funnel: null,
-      salesForecast: 7625333, gpForecast: 1361779,
+      salesForecast: 7684658, gpForecast: 1342521,
     },
     // 8-9月の予算は月次予算表（現場積み上げ）を自動集計。見通しは2Q見通しレポートより。
     '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.kanto) / 1000) * 1000), salesForecast: 5635000 },
@@ -267,13 +266,14 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '5月実績': { salesBudget: 6354000, salesActual: 6972000, yoyLastYear: 8706000, gpBudget: 1071695, gpActual: 1157937, activeStaff: 33, avgHours: 98.43, joined: 2, resigned: 3, heat: null, siteCount: 7, funnel: { meetings: 2, proposals: 2, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7740000, salesActual: 7116000, yoyLastYear: 8589000, gpBudget: 1220940, gpActual: 1173160, activeStaff: 33, avgHours: 100.22, joined: 3, resigned: 0, heat: '注意 31℃', siteCount: 7, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 所属部署: 人ソ（中部））より反映。
-    // gpActualは粗利益2（社保・雇保・有給等控除後）の部門合計。稼働人数・総工数は7/14時点の実績KPIスナップショットより。
+    // gpActualは粗利益2（社保・雇保・有給等控除後）の部門合計。稼働人数・総工数、salesForecast/gpForecastは
+    // 7/21時点の人ソ予算進捗MTGアジェンダより更新。
     '7月進捗': {
       salesBudget: 7620000, salesActual: 7986636, yoyLastYear: null,
       gpBudget: 1303020, gpActual: 1401755,
-      activeStaff: 36, avgHours: 97.22, joined: null, resigned: null,
+      activeStaff: 37, avgHours: 101.97, joined: null, resigned: null,
       heat: null, siteCount: 7, funnel: null,
-      salesForecast: 7480000, gpForecast: 1279080,
+      salesForecast: 7980000, gpForecast: 1364580,
     },
     '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.chubu) / 1000) * 1000), salesForecast: 7600000 },
     '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.chubu) / 1000) * 1000), salesForecast: 7700000 },
@@ -288,13 +288,13 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '6月進捗': { salesBudget: 49616000, salesActual: 32475000, yoyLastYear: 38577000, gpBudget: 7047000, gpActual: 2855000, activeStaff: 56, avgHours: 96.02, joined: 6, resigned: 1, heat: '厳重警戒', siteCount: 27, funnel: { meetings: 5, proposals: 3, estimates: 1, orders: 1 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西）の部門合計から
     // 大阪支店（福山通運大阪支店、osakaエリアで別管理）の分を差し引いた関西のみの実数値。
-    // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。
+    // 稼働人数・総工数、salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
     '7月進捗': {
       salesBudget: 17720000, salesActual: 12293534, yoyLastYear: null,
       gpBudget: 2541026, gpActual: 2013358,
-      activeStaff: 49, avgHours: 130.20, joined: null, resigned: null,
+      activeStaff: 47, avgHours: 139.53, joined: null, resigned: null,
       heat: null, siteCount: 26, funnel: null,
-      salesForecast: 14607700, gpForecast: 2046539,
+      salesForecast: 14386426, gpForecast: 2015538,
     },
     // 8-9月の予算は現場積み上げ(現場マスタ登録分)＋関西新規枠(月次6,500,000、未登録の新規現場分)の合計。
     '8月予定': { ...plannedArea(17290000), salesForecast: 10510000 },
@@ -307,13 +307,13 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '5月実績': { salesBudget: 20500000, salesActual: 20329795, yoyLastYear: 18700000, gpBudget: 2557300, gpActual: 2478432, activeStaff: 74, avgHours: 126.56, joined: 0, resigned: 0, heat: null, funnel: { meetings: 4, proposals: 3, estimates: 2, orders: 1 } },
     '6月進捗': { salesBudget: 20550000, salesActual: 20220000, yoyLastYear: 18400000, gpBudget: 2543060, gpActual: 2459806, activeStaff: 79, avgHours: 128.87, joined: 3, resigned: 1, heat: '厳重警戒', funnel: { meetings: 5, proposals: 4, estimates: 2, orders: 1 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西内の福山通運大阪支店行）より反映。
-    // 稼働人数・総工数は7/14時点の実績KPIスナップショットより。
+    // 稼働人数・総工数、salesForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
     '7月進捗': {
       salesBudget: 21570000, salesActual: 17669531, yoyLastYear: null,
       gpBudget: 2838044, gpActual: 2883072,
-      activeStaff: 67, avgHours: 103.64, joined: null, resigned: null,
+      activeStaff: 75, avgHours: 111.30, joined: null, resigned: null,
       heat: null, siteCount: 1, funnel: null,
-      salesForecast: 19361627, gpForecast: 2096883,
+      salesForecast: 19175778, gpForecast: 2096883,
     },
     '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 17308925 },
     '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 18325120 },

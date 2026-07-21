@@ -156,17 +156,20 @@ export default function GlobalDashboard() {
     if (activeMonth !== CURRENT_ACTUAL_MONTH) return b;
     const kanto = sumSitesActual('kanto');
     const chubu = sumSitesActual('chubu');
+    const kantoMonth = AREA_MONTHLY.kanto[CURRENT_ACTUAL_MONTH];
+    const chubuMonth = AREA_MONTHLY.chubu[CURRENT_ACTUAL_MONTH];
     const kansaiMonth = AREA_MONTHLY.kansai[CURRENT_ACTUAL_MONTH];
     const osakaMonth = AREA_MONTHLY.osaka[CURRENT_ACTUAL_MONTH];
     const salesBudget = kanto.salesBudget + chubu.salesBudget + kansaiMonth.salesBudget + osakaMonth.salesBudget;
     const salesActual = kanto.salesActual + chubu.salesActual + (kansaiMonth.salesActual ?? 0) + (osakaMonth.salesActual ?? 0);
     const opActual = kanto.opProfitActual + chubu.opProfitActual + (kansaiMonth.gpActual ?? 0) + (osakaMonth.gpActual ?? 0);
+    const gpBudget = (kantoMonth.gpBudget ?? 0) + (chubuMonth.gpBudget ?? 0) + (kansaiMonth.gpBudget ?? 0) + (osakaMonth.gpBudget ?? 0);
     return {
       ...b,
       status: 'inprogress' as const,
       salesBudget,
       salesActual,
-      gpBudget: Math.round(salesBudget * (ANNUAL_GOAL.gpRate / 100)),
+      gpBudget,
       opBudget: Math.round(salesBudget * (ANNUAL_GOAL.opRate / 100)),
       opActual,
       activeStaff: b.activeStaff == null && staffSums.filled > 0 ? staffSums.sum : b.activeStaff,
