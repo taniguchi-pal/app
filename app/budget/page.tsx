@@ -475,6 +475,129 @@ export default function GlobalDashboard() {
           )}
         </Card>
 
+        {/* ── 週次 応募対応（募集費・入職率） ────────── */}
+        <Card eyebrow="Recruiting" title="週次 応募対応（募集費・入職率）">
+          {weeklyApiStatus === 'unconfigured' && (
+            <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 -mt-1 mb-3">
+              共有保存基盤（Google Sheets連携）が未設定のため、週次応募対応の追加・保存はまだできません。docs/site-overrides-setup.md をご参照ください。
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2 mb-3">
+            <button
+              onClick={() => setWeeklyAreaFilter('')}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition ${weeklyAreaFilter === '' ? 'bg-blue-900 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-blue-50 hover:text-blue-700'}`}
+            >
+              全社
+            </button>
+            {AREAS.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => setWeeklyAreaFilter(a.id)}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition ${weeklyAreaFilter === a.id ? 'bg-blue-900 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-blue-50 hover:text-blue-700'}`}
+              >
+                {a.title}
+              </button>
+            ))}
+          </div>
+
+          {weeklyRows.length === 0 ? (
+            <p className="text-xs text-zinc-400 mb-3">登録されている週次データはありません</p>
+          ) : (
+            <div className="overflow-x-auto -mx-1 mb-3">
+              <table className="min-w-[720px] w-full text-xs">
+                <thead>
+                  <tr className="text-zinc-400 border-b border-zinc-100">
+                    <th className="text-left font-bold px-2 py-1.5">週</th>
+                    {!weeklyAreaFilter ? null : <th className="text-left font-bold px-2 py-1.5">担当者</th>}
+                    <th className="text-right font-bold px-2 py-1.5">募集費</th>
+                    <th className="text-right font-bold px-2 py-1.5">応募数</th>
+                    <th className="text-right font-bold px-2 py-1.5">面接数</th>
+                    <th className="text-right font-bold px-2 py-1.5">入職数</th>
+                    <th className="text-right font-bold px-2 py-1.5">退職数</th>
+                    <th className="text-right font-bold px-2 py-1.5">入職率</th>
+                    <th className="text-right font-bold px-2 py-1.5">採用単価</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weeklyRows.map((r, i) => (
+                    <tr key={i} className="border-b border-zinc-50">
+                      <td className="px-2 py-1.5 font-bold text-zinc-700">{weeklyWeekLabel(r.weekStart)}</td>
+                      {!weeklyAreaFilter ? null : <td className="px-2 py-1.5 text-zinc-500">{r.assignee || '—'}</td>}
+                      <td className="px-2 py-1.5 text-right font-mono">{yen(weeklyNum(r.recruitingCost))}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.applicants)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.interviews)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.hires)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.resignations)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyHireRate(weeklyNum(r.hires), weeklyNum(r.applicants))}</td>
+                      <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyUnitCost(weeklyNum(r.recruitingCost), weeklyNum(r.hires))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-zinc-200 bg-zinc-50">
+                    <td className="px-2 py-1.5 font-black text-zinc-700">合計</td>
+                    {!weeklyAreaFilter ? null : <td className="px-2 py-1.5" />}
+                    <td className="px-2 py-1.5 text-right font-mono font-black">{yen(weeklyTotals.recruitingCost)}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.applicants}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.interviews}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.hires}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.resignations}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyHireRate(weeklyTotals.hires, weeklyTotals.applicants)}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyUnitCost(weeklyTotals.recruitingCost, weeklyTotals.hires)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+
+          <div className="h-px bg-zinc-100 my-3" />
+          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">週次データを追加（数字だけ入力すればOK）</p>
+          <div className="flex flex-wrap gap-2 items-end">
+            <select
+              value={newWeekly.areaId}
+              onChange={(e) => setNewWeekly((w) => ({ ...w, areaId: e.target.value }))}
+              className="px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            >
+              {AREAS.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
+            </select>
+            <select
+              value={newWeekly.assignee}
+              onChange={(e) => setNewWeekly((w) => ({ ...w, assignee: e.target.value }))}
+              className="px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            >
+              <option value="">担当者（任意）</option>
+              {ASSIGNEES.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <input
+              type="date"
+              value={newWeekly.weekStart}
+              onChange={(e) => setNewWeekly((w) => ({ ...w, weekStart: e.target.value }))}
+              className="px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            />
+            {([
+              ['recruitingCost', '募集費'], ['applicants', '応募数'], ['interviews', '面接数'],
+              ['hires', '入職数'], ['resignations', '退職数'],
+            ] as const).map(([key, label]) => (
+              <input
+                key={key}
+                type="number"
+                value={newWeekly[key]}
+                onChange={(e) => setNewWeekly((w) => ({ ...w, [key]: e.target.value }))}
+                placeholder={label}
+                className="w-24 px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+              />
+            ))}
+            <button
+              onClick={handleAddWeekly}
+              disabled={weeklyApiStatus !== 'ready' || weeklyAdding || !newWeekly.weekStart}
+              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition shrink-0"
+            >
+              {weeklyAdding ? '追加中…' : '+ 追加'}
+            </button>
+          </div>
+          <p className="text-[10px] text-zinc-400 mt-2">週は開始日（例: 7/1・7/6・7/13・7/20・7/27）で入力。担当者・エリアはプルダウン選択のみで入力できます。</p>
+        </Card>
+
         {/* ── タスク管理（追加・ステータス変更） ────── */}
         <Card eyebrow="Tasks" title="スケジュール・タスク管理">
           {taskApiStatus === 'unconfigured' && (
@@ -607,129 +730,6 @@ export default function GlobalDashboard() {
               );
             })}
           </div>
-        </Card>
-
-        {/* ── 週次 応募対応（募集費・入職率） ────────── */}
-        <Card eyebrow="Recruiting" title="週次 応募対応（募集費・入職率）">
-          {weeklyApiStatus === 'unconfigured' && (
-            <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 -mt-1 mb-3">
-              共有保存基盤（Google Sheets連携）が未設定のため、週次応募対応の追加・保存はまだできません。docs/site-overrides-setup.md をご参照ください。
-            </p>
-          )}
-          <div className="flex flex-wrap gap-2 mb-3">
-            <button
-              onClick={() => setWeeklyAreaFilter('')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition ${weeklyAreaFilter === '' ? 'bg-blue-900 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-blue-50 hover:text-blue-700'}`}
-            >
-              全社
-            </button>
-            {AREAS.map((a) => (
-              <button
-                key={a.id}
-                onClick={() => setWeeklyAreaFilter(a.id)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition ${weeklyAreaFilter === a.id ? 'bg-blue-900 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-blue-50 hover:text-blue-700'}`}
-              >
-                {a.title}
-              </button>
-            ))}
-          </div>
-
-          {weeklyRows.length === 0 ? (
-            <p className="text-xs text-zinc-400 mb-3">登録されている週次データはありません</p>
-          ) : (
-            <div className="overflow-x-auto -mx-1 mb-3">
-              <table className="min-w-[720px] w-full text-xs">
-                <thead>
-                  <tr className="text-zinc-400 border-b border-zinc-100">
-                    <th className="text-left font-bold px-2 py-1.5">週</th>
-                    {!weeklyAreaFilter ? null : <th className="text-left font-bold px-2 py-1.5">担当者</th>}
-                    <th className="text-right font-bold px-2 py-1.5">募集費</th>
-                    <th className="text-right font-bold px-2 py-1.5">応募数</th>
-                    <th className="text-right font-bold px-2 py-1.5">面接数</th>
-                    <th className="text-right font-bold px-2 py-1.5">入職数</th>
-                    <th className="text-right font-bold px-2 py-1.5">退職数</th>
-                    <th className="text-right font-bold px-2 py-1.5">入職率</th>
-                    <th className="text-right font-bold px-2 py-1.5">採用単価</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {weeklyRows.map((r, i) => (
-                    <tr key={i} className="border-b border-zinc-50">
-                      <td className="px-2 py-1.5 font-bold text-zinc-700">{weeklyWeekLabel(r.weekStart)}</td>
-                      {!weeklyAreaFilter ? null : <td className="px-2 py-1.5 text-zinc-500">{r.assignee || '—'}</td>}
-                      <td className="px-2 py-1.5 text-right font-mono">{yen(weeklyNum(r.recruitingCost))}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.applicants)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.interviews)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.hires)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.resignations)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyHireRate(weeklyNum(r.hires), weeklyNum(r.applicants))}</td>
-                      <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyUnitCost(weeklyNum(r.recruitingCost), weeklyNum(r.hires))}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-zinc-200 bg-zinc-50">
-                    <td className="px-2 py-1.5 font-black text-zinc-700">合計</td>
-                    {!weeklyAreaFilter ? null : <td className="px-2 py-1.5" />}
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{yen(weeklyTotals.recruitingCost)}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.applicants}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.interviews}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.hires}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.resignations}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyHireRate(weeklyTotals.hires, weeklyTotals.applicants)}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyUnitCost(weeklyTotals.recruitingCost, weeklyTotals.hires)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-
-          <div className="h-px bg-zinc-100 my-3" />
-          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">週次データを追加（数字だけ入力すればOK）</p>
-          <div className="flex flex-wrap gap-2 items-end">
-            <select
-              value={newWeekly.areaId}
-              onChange={(e) => setNewWeekly((w) => ({ ...w, areaId: e.target.value }))}
-              className="px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-            >
-              {AREAS.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
-            </select>
-            <select
-              value={newWeekly.assignee}
-              onChange={(e) => setNewWeekly((w) => ({ ...w, assignee: e.target.value }))}
-              className="px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-            >
-              <option value="">担当者（任意）</option>
-              {ASSIGNEES.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-            <input
-              type="date"
-              value={newWeekly.weekStart}
-              onChange={(e) => setNewWeekly((w) => ({ ...w, weekStart: e.target.value }))}
-              className="px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-            />
-            {([
-              ['recruitingCost', '募集費'], ['applicants', '応募数'], ['interviews', '面接数'],
-              ['hires', '入職数'], ['resignations', '退職数'],
-            ] as const).map(([key, label]) => (
-              <input
-                key={key}
-                type="number"
-                value={newWeekly[key]}
-                onChange={(e) => setNewWeekly((w) => ({ ...w, [key]: e.target.value }))}
-                placeholder={label}
-                className="w-24 px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-              />
-            ))}
-            <button
-              onClick={handleAddWeekly}
-              disabled={weeklyApiStatus !== 'ready' || weeklyAdding || !newWeekly.weekStart}
-              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition shrink-0"
-            >
-              {weeklyAdding ? '追加中…' : '+ 追加'}
-            </button>
-          </div>
-          <p className="text-[10px] text-zinc-400 mt-2">週は開始日（例: 7/1・7/6・7/13・7/20・7/27）で入力。担当者・エリアはプルダウン選択のみで入力できます。</p>
         </Card>
 
         {/* ── トピックス ───────────────────────────── */}
