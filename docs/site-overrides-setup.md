@@ -10,10 +10,11 @@
 5. **RecruitingHistory**: 現場ごとの掲載履歴（募集費・原稿URL）
 6. **Projects**: ダッシュボード大元「トピックス・プロジェクト」の参照URL
 7. **NewSites**: 新規現場の一覧（案件番号つき）。コードを直さなくてもエリアページに一覧表示されます
+8. **WeeklyRecruiting**: 週次の応募対応（募集費・応募数・採用数・入職率など）。ダッシュボード大元に全社／エリア別で表示
 
 ## 1. スプレッドシートを作成
 
-新しいGoogleスプレッドシートを1つ作成し、以下の7枚のシートを作ってください（シート名は正確に）。
+新しいGoogleスプレッドシートを1つ作成し、以下の8枚のシートを作ってください（シート名は正確に）。
 
 ### シート `SiteOverrides`（1行目ヘッダー）
 ```
@@ -77,6 +78,17 @@ siteId	name	areaId	prefecture	lifecycle	note	createdAt
   自動的に表示されます。損益・稼働人数などの実データが揃った段階で、通常の現場マスタ（コード）に
   昇格させる運用を想定しています
 
+### シート `WeeklyRecruiting`（1行目ヘッダー）
+```
+id	areaId	weekStart	recruitingCost	applicants	hires	inProgress	awaitingJoin	declined	createdAt
+```
+- `areaId` は `kanto` / `chubu` / `kansai` / `osaka`
+- `weekStart` はその週の開始日（例: `2026-07-14`）。ダッシュボード側で「7/14週」のように表示されます
+- `recruitingCost`（募集費）・`applicants`（応募数）・`hires`（採用数）・`inProgress`（対応中）・
+  `awaitingJoin`（入職待ち）・`declined`（辞退・不採用）は件数・金額の入力値
+- 入職率（採用数÷応募数）・採用単価（募集費÷採用数）はアプリ側で自動計算されるため、シートには入力不要です
+- ダッシュボード大元の「週次 応募対応」カードで、全社（週ごとに全エリア合算）／エリア別を切り替えて表示されます
+
 ## 2. Apps Scriptを設置
 
 スプレッドシートのメニューから「拡張機能」→「Apps Script」を開き、`Code.gs` の中身を全部消して以下を貼り付けてください。
@@ -90,6 +102,7 @@ const SHEETS = {
   recruitinghistory: { name: 'RecruitingHistory', key: 'id', headers: ['id', 'siteId', 'postingPeriod', 'costSpent', 'costBudget', 'adUrl', 'note', 'createdAt'] },
   projects:   { name: 'Projects',      key: 'projectId', headers: ['projectId', 'url', 'note', 'updatedAt'] },
   newsites:   { name: 'NewSites',      key: 'siteId',    headers: ['siteId', 'name', 'areaId', 'prefecture', 'lifecycle', 'note', 'createdAt'] },
+  weeklyrecruiting: { name: 'WeeklyRecruiting', key: 'id', headers: ['id', 'areaId', 'weekStart', 'recruitingCost', 'applicants', 'hires', 'inProgress', 'awaitingJoin', 'declined', 'createdAt'] },
 };
 
 function getSheetConfig(key) {
@@ -102,8 +115,8 @@ function doGet(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(cfg.name);
   const rows = sheet.getDataRange().getValues();
 
-  if (which === 'schedule' || which === 'attacklist' || which === 'recruitinghistory' || which === 'newsites') {
-    // Schedule/AttackList/RecruitingHistory/NewSitesは配列で返す（一覧表示のため）
+  if (which === 'schedule' || which === 'attacklist' || which === 'recruitinghistory' || which === 'newsites' || which === 'weeklyrecruiting') {
+    // Schedule/AttackList/RecruitingHistory/NewSites/WeeklyRecruitingは配列で返す（一覧表示のため）
     const list = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
@@ -161,6 +174,9 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'siteId is required' })).setMimeType(ContentService.MimeType.JSON);
     }
     rowKey = (r) => r[0] === body.siteId;
+  } else if (which === 'weeklyrecruiting') {
+    if (!body.id) body.id = 'wr_' + new Date().getTime();
+    rowKey = (r) => r[0] === body.id;
   } else {
     if (!body.siteId) {
       return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'siteId is required' })).setMimeType(ContentService.MimeType.JSON);
