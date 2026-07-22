@@ -80,15 +80,14 @@ siteId	name	areaId	prefecture	lifecycle	note	createdAt
 
 ### シート `WeeklyRecruiting`（1行目ヘッダー）
 ```
-id	areaId	assignee	weekStart	recruitingCost	applicants	interviews	hires	resignations	createdAt
+id	areaId	assignee	month	weekOfMonth	recruitingCost	applicants	hires	resignations	createdAt
 ```
 - `areaId` は `kanto` / `chubu` / `kansai` / `osaka`
 - `assignee` は `田中`/`谷口`/`岩田`/`山口`/`五十嵐`/`貴子`（任意入力）
-- `weekStart` はその週の開始日（例: `2026-07-01` `2026-07-06` `2026-07-13` `2026-07-20` `2026-07-27`）。
-  ダッシュボード側で「7/1週〜」のように表示されます
-- `recruitingCost`（募集費）・`applicants`（応募数）・`interviews`（面接数）・`hires`（入職数）・
-  `resignations`（退職数）は件数・金額の入力値
-- 入職率（入職数÷応募数）・採用単価（募集費÷入職数）はアプリ側で自動計算されるため、シートには入力不要です
+- `month` はダッシュボードの月表記（例: `7月進捗` `8月予定`）。ダッシュボードで選択中の月のデータだけが表に表示されます
+- `weekOfMonth` はその月の第何週か（`1`〜`4`）。ダッシュボード側で「1週目」のように表示されます
+- `recruitingCost`（募集費）・`applicants`（応募数）・`hires`（入職数）・`resignations`（退職数）は件数・金額の入力値
+- 純増数（入職数－退職数）・応募単価（募集費÷応募数）・入職単価（募集費÷入職数）はアプリ側で自動計算されるため、シートには入力不要です
 - ダッシュボード大元の「週次 応募対応」カードで、全社（週ごとに全エリア合算）／エリア別を切り替えて表示されます。
   Googleスプレッドシート側で直接行を追加・編集しても、アプリ側の表にそのまま反映されます
   （エリア・担当者の列にはスプレッドシートのデータ入力規則でプルダウンを設定しておくと運用しやすくなります）
@@ -106,7 +105,7 @@ const SHEETS = {
   recruitinghistory: { name: 'RecruitingHistory', key: 'id', headers: ['id', 'siteId', 'postingPeriod', 'costSpent', 'costBudget', 'adUrl', 'note', 'createdAt'] },
   projects:   { name: 'Projects',      key: 'projectId', headers: ['projectId', 'url', 'note', 'updatedAt'] },
   newsites:   { name: 'NewSites',      key: 'siteId',    headers: ['siteId', 'name', 'areaId', 'prefecture', 'lifecycle', 'note', 'createdAt'] },
-  weeklyrecruiting: { name: 'WeeklyRecruiting', key: 'id', headers: ['id', 'areaId', 'assignee', 'weekStart', 'recruitingCost', 'applicants', 'interviews', 'hires', 'resignations', 'createdAt'] },
+  weeklyrecruiting: { name: 'WeeklyRecruiting', key: 'id', headers: ['id', 'areaId', 'assignee', 'month', 'weekOfMonth', 'recruitingCost', 'applicants', 'hires', 'resignations', 'createdAt'] },
 };
 
 function getSheetConfig(key) {

@@ -70,15 +70,15 @@ export default function GlobalDashboard() {
     }
   };
 
-  // ── 週次 応募対応（募集費・応募数・面接数・入職数・退職数・入職率など、Sheets連携） ──
+  // ── 週次 応募対応（1週目〜4週目 × 応募数・入職数・退職数・募集費、Sheets連携） ──
   interface WeeklyRecruitingEntry {
-    id: string; areaId: string; assignee: string; weekStart: string;
-    recruitingCost: number; applicants: number; interviews: number; hires: number; resignations: number;
+    id: string; areaId: string; assignee: string; month: string; weekOfMonth: number;
+    recruitingCost: number; applicants: number; hires: number; resignations: number;
   }
   const [weeklyRecruiting, setWeeklyRecruiting] = useState<WeeklyRecruitingEntry[]>([]);
   const [weeklyApiStatus, setWeeklyApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
   const [weeklyAreaFilter, setWeeklyAreaFilter] = useState<string>('');
-  const [newWeekly, setNewWeekly] = useState({ areaId: 'kanto', assignee: '', weekStart: '', recruitingCost: '', applicants: '', interviews: '', hires: '', resignations: '' });
+  const [newWeekly, setNewWeekly] = useState({ areaId: 'kanto', assignee: '', weekOfMonth: '1', recruitingCost: '', applicants: '', hires: '', resignations: '' });
   const [weeklyAdding, setWeeklyAdding] = useState(false);
   const loadWeeklyRecruiting = () => {
     fetch('/api/weekly-recruiting').then((r) => r.json()).then((data) => {
@@ -89,64 +89,56 @@ export default function GlobalDashboard() {
   };
   useEffect(() => { loadWeeklyRecruiting(); }, []);
   const handleAddWeekly = async () => {
-    if (!newWeekly.weekStart) return;
     setWeeklyAdding(true);
     try {
       await fetch('/api/weekly-recruiting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          areaId: newWeekly.areaId, assignee: newWeekly.assignee, weekStart: newWeekly.weekStart,
+          areaId: newWeekly.areaId, assignee: newWeekly.assignee,
+          month: activeMonth, weekOfMonth: Number(newWeekly.weekOfMonth),
           recruitingCost: numOrNull(newWeekly.recruitingCost) ?? 0,
           applicants: numOrNull(newWeekly.applicants) ?? 0,
-          interviews: numOrNull(newWeekly.interviews) ?? 0,
           hires: numOrNull(newWeekly.hires) ?? 0,
           resignations: numOrNull(newWeekly.resignations) ?? 0,
         }),
       });
-      setNewWeekly({ areaId: newWeekly.areaId, assignee: newWeekly.assignee, weekStart: '', recruitingCost: '', applicants: '', interviews: '', hires: '', resignations: '' });
+      setNewWeekly({ areaId: newWeekly.areaId, assignee: newWeekly.assignee, weekOfMonth: newWeekly.weekOfMonth, recruitingCost: '', applicants: '', hires: '', resignations: '' });
       loadWeeklyRecruiting();
     } finally {
       setWeeklyAdding(false);
     }
   };
   const weeklyNum = (v: unknown) => Number(v) || 0;
-  const weeklyWeekLabel = (iso: string) => {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return isNaN(d.getTime()) ? iso : `${d.getMonth() + 1}/${d.getDate()}週〜`;
-  };
   const weeklyRows = (() => {
-    const filtered = weeklyRecruiting.filter((e) => !weeklyAreaFilter || e.areaId === weeklyAreaFilter);
+    const filtered = weeklyRecruiting.filter((e) => e.month === activeMonth && (!weeklyAreaFilter || e.areaId === weeklyAreaFilter));
     if (weeklyAreaFilter) {
-      return [...filtered]
-        .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
-        .map((e) => ({ ...e }));
+      return [...filtered].sort((a, b) => weeklyNum(a.weekOfMonth) - weeklyNum(b.weekOfMonth));
     }
-    const byWeek = new Map<string, Omit<WeeklyRecruitingEntry, 'id' | 'areaId' | 'assignee'>>();
+    const byWeek = new Map<number, Omit<WeeklyRecruitingEntry, 'id' | 'areaId' | 'assignee' | 'month'>>();
     for (const e of filtered) {
-      const cur = byWeek.get(e.weekStart) ?? { weekStart: e.weekStart, recruitingCost: 0, applicants: 0, interviews: 0, hires: 0, resignations: 0 };
+      const wk = weeklyNum(e.weekOfMonth);
+      const cur = byWeek.get(wk) ?? { weekOfMonth: wk, recruitingCost: 0, applicants: 0, hires: 0, resignations: 0 };
       cur.recruitingCost += weeklyNum(e.recruitingCost);
       cur.applicants += weeklyNum(e.applicants);
-      cur.interviews += weeklyNum(e.interviews);
       cur.hires += weeklyNum(e.hires);
       cur.resignations += weeklyNum(e.resignations);
-      byWeek.set(e.weekStart, cur);
+      byWeek.set(wk, cur);
     }
-    return [...byWeek.values()].sort((a, b) => a.weekStart.localeCompare(b.weekStart)).map((r) => ({ ...r, assignee: '' }));
+    return [...byWeek.values()].sort((a, b) => a.weekOfMonth - b.weekOfMonth).map((r) => ({ ...r, assignee: '' }));
   })();
   const weeklyTotals = weeklyRows.reduce(
     (acc, r) => ({
       recruitingCost: acc.recruitingCost + weeklyNum(r.recruitingCost),
       applicants: acc.applicants + weeklyNum(r.applicants),
-      interviews: acc.interviews + weeklyNum(r.interviews),
       hires: acc.hires + weeklyNum(r.hires),
       resignations: acc.resignations + weeklyNum(r.resignations),
     }),
-    { recruitingCost: 0, applicants: 0, interviews: 0, hires: 0, resignations: 0 }
+    { recruitingCost: 0, applicants: 0, hires: 0, resignations: 0 }
   );
-  const weeklyHireRate = (hires: number, applicants: number) => (applicants > 0 ? `${((hires / applicants) * 100).toFixed(1)}%` : '—');
-  const weeklyUnitCost = (cost: number, hires: number) => (hires > 0 ? yen(Math.round(cost / hires)) : '—');
+  const weeklyNetChange = (hires: number, resignations: number) => hires - resignations;
+  const weeklyApplicantUnitCost = (cost: number, applicants: number) => (applicants > 0 ? yen(Math.round(cost / applicants)) : '—');
+  const weeklyHireUnitCost = (cost: number, hires: number) => (hires > 0 ? yen(Math.round(cost / hires)) : '—');
 
   // 7月は関東・中部（現場実績を自動集計）＋関西・大阪支店（自社システムの実数値）の
   // 全4エリア合算で全社実績を算出する。見通し（salesForecast）が全4エリア計のため、
@@ -478,8 +470,8 @@ export default function GlobalDashboard() {
           )}
         </Card>
 
-        {/* ── 週次 応募対応（募集費・入職率） ────────── */}
-        <Card eyebrow="Recruiting" title="週次 応募対応（募集費・入職率）">
+        {/* ── 週次 応募対応（応募単価・入職単価・純増数） ────────── */}
+        <Card eyebrow="Recruiting" title={`週次 応募対応（${monthLabel(activeMonth)}）`}>
           {weeklyApiStatus === 'unconfigured' && (
             <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 -mt-1 mb-3">
               共有保存基盤（Google Sheets連携）が未設定のため、週次応募対応の追加・保存はまだできません。docs/site-overrides-setup.md をご参照ください。
@@ -504,49 +496,54 @@ export default function GlobalDashboard() {
           </div>
 
           {weeklyRows.length === 0 ? (
-            <p className="text-xs text-zinc-400 mb-3">登録されている週次データはありません</p>
+            <p className="text-xs text-zinc-400 mb-3">{monthLabel(activeMonth)}の週次データはまだ登録されていません</p>
           ) : (
             <div className="overflow-x-auto -mx-1 mb-3">
-              <table className="min-w-[720px] w-full text-xs">
+              <table className="min-w-[640px] w-full text-xs">
                 <thead>
                   <tr className="text-zinc-400 border-b border-zinc-100">
                     <th className="text-left font-bold px-2 py-1.5">週</th>
                     {!weeklyAreaFilter ? null : <th className="text-left font-bold px-2 py-1.5">担当者</th>}
-                    <th className="text-right font-bold px-2 py-1.5">募集費</th>
                     <th className="text-right font-bold px-2 py-1.5">応募数</th>
-                    <th className="text-right font-bold px-2 py-1.5">面接数</th>
                     <th className="text-right font-bold px-2 py-1.5">入職数</th>
                     <th className="text-right font-bold px-2 py-1.5">退職数</th>
-                    <th className="text-right font-bold px-2 py-1.5">入職率</th>
-                    <th className="text-right font-bold px-2 py-1.5">採用単価</th>
+                    <th className="text-right font-bold px-2 py-1.5">純増数</th>
+                    <th className="text-right font-bold px-2 py-1.5">募集費</th>
+                    <th className="text-right font-bold px-2 py-1.5">応募単価</th>
+                    <th className="text-right font-bold px-2 py-1.5">入職単価</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {weeklyRows.map((r, i) => (
-                    <tr key={i} className="border-b border-zinc-50">
-                      <td className="px-2 py-1.5 font-bold text-zinc-700">{weeklyWeekLabel(r.weekStart)}</td>
-                      {!weeklyAreaFilter ? null : <td className="px-2 py-1.5 text-zinc-500">{r.assignee || '—'}</td>}
-                      <td className="px-2 py-1.5 text-right font-mono">{yen(weeklyNum(r.recruitingCost))}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.applicants)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.interviews)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.hires)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.resignations)}</td>
-                      <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyHireRate(weeklyNum(r.hires), weeklyNum(r.applicants))}</td>
-                      <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyUnitCost(weeklyNum(r.recruitingCost), weeklyNum(r.hires))}</td>
-                    </tr>
-                  ))}
+                  {weeklyRows.map((r, i) => {
+                    const net = weeklyNetChange(weeklyNum(r.hires), weeklyNum(r.resignations));
+                    return (
+                      <tr key={i} className="border-b border-zinc-50">
+                        <td className="px-2 py-1.5 font-bold text-zinc-700">{r.weekOfMonth}週目</td>
+                        {!weeklyAreaFilter ? null : <td className="px-2 py-1.5 text-zinc-500">{r.assignee || '—'}</td>}
+                        <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.applicants)}</td>
+                        <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.hires)}</td>
+                        <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.resignations)}</td>
+                        <td className={`px-2 py-1.5 text-right font-mono font-bold ${net > 0 ? 'text-emerald-600' : net < 0 ? 'text-rose-600' : 'text-zinc-500'}`}>{net > 0 ? `+${net}` : net}</td>
+                        <td className="px-2 py-1.5 text-right font-mono">{yen(weeklyNum(r.recruitingCost))}</td>
+                        <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyApplicantUnitCost(weeklyNum(r.recruitingCost), weeklyNum(r.applicants))}</td>
+                        <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{weeklyHireUnitCost(weeklyNum(r.recruitingCost), weeklyNum(r.hires))}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-zinc-200 bg-zinc-50">
                     <td className="px-2 py-1.5 font-black text-zinc-700">合計</td>
                     {!weeklyAreaFilter ? null : <td className="px-2 py-1.5" />}
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{yen(weeklyTotals.recruitingCost)}</td>
                     <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.applicants}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.interviews}</td>
                     <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.hires}</td>
                     <td className="px-2 py-1.5 text-right font-mono font-black">{weeklyTotals.resignations}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyHireRate(weeklyTotals.hires, weeklyTotals.applicants)}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyUnitCost(weeklyTotals.recruitingCost, weeklyTotals.hires)}</td>
+                    <td className={`px-2 py-1.5 text-right font-mono font-black ${weeklyTotals.hires - weeklyTotals.resignations > 0 ? 'text-emerald-600' : weeklyTotals.hires - weeklyTotals.resignations < 0 ? 'text-rose-600' : 'text-zinc-500'}`}>
+                      {(() => { const n = weeklyTotals.hires - weeklyTotals.resignations; return n > 0 ? `+${n}` : n; })()}
+                    </td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black">{yen(weeklyTotals.recruitingCost)}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyApplicantUnitCost(weeklyTotals.recruitingCost, weeklyTotals.applicants)}</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{weeklyHireUnitCost(weeklyTotals.recruitingCost, weeklyTotals.hires)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -571,15 +568,15 @@ export default function GlobalDashboard() {
               <option value="">担当者（任意）</option>
               {ASSIGNEES.map((a) => <option key={a} value={a}>{a}</option>)}
             </select>
-            <input
-              type="date"
-              value={newWeekly.weekStart}
-              onChange={(e) => setNewWeekly((w) => ({ ...w, weekStart: e.target.value }))}
-              className="px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-            />
+            <select
+              value={newWeekly.weekOfMonth}
+              onChange={(e) => setNewWeekly((w) => ({ ...w, weekOfMonth: e.target.value }))}
+              className="px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+            >
+              {['1', '2', '3', '4'].map((w) => <option key={w} value={w}>{w}週目</option>)}
+            </select>
             {([
-              ['recruitingCost', '募集費'], ['applicants', '応募数'], ['interviews', '面接数'],
-              ['hires', '入職数'], ['resignations', '退職数'],
+              ['applicants', '応募数'], ['hires', '入職数'], ['resignations', '退職数'], ['recruitingCost', '募集費'],
             ] as const).map(([key, label]) => (
               <input
                 key={key}
@@ -592,13 +589,13 @@ export default function GlobalDashboard() {
             ))}
             <button
               onClick={handleAddWeekly}
-              disabled={weeklyApiStatus !== 'ready' || weeklyAdding || !newWeekly.weekStart}
+              disabled={weeklyApiStatus !== 'ready' || weeklyAdding}
               className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition shrink-0"
             >
               {weeklyAdding ? '追加中…' : '+ 追加'}
             </button>
           </div>
-          <p className="text-[10px] text-zinc-400 mt-2">週は開始日（例: 7/1・7/6・7/13・7/20・7/27）で入力。担当者・エリアはプルダウン選択のみで入力できます。</p>
+          <p className="text-[10px] text-zinc-400 mt-2">週目・エリア・担当者はプルダウン選択のみ。応募数・入職数・退職数・募集費の数字だけ入力すればOKです（純増数・応募単価・入職単価は自動計算）。</p>
         </Card>
 
         {/* ── タスク管理（追加・ステータス変更） ────── */}
