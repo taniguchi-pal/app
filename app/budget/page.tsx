@@ -110,10 +110,12 @@ export default function GlobalDashboard() {
     }
   };
   const weeklyNum = (v: unknown) => Number(v) || 0;
+  // weekOfMonthは1〜4週目のほか、週次で拾えない現場（大阪支店など）向けに0=「月次まとめ」を許容する
+  const weeklySortKey = (wk: number) => (wk === 0 ? 99 : wk);
   const weeklyRows = (() => {
     const filtered = weeklyRecruiting.filter((e) => e.month === activeMonth && (!weeklyAreaFilter || e.areaId === weeklyAreaFilter));
     if (weeklyAreaFilter) {
-      return [...filtered].sort((a, b) => weeklyNum(a.weekOfMonth) - weeklyNum(b.weekOfMonth));
+      return [...filtered].sort((a, b) => weeklySortKey(weeklyNum(a.weekOfMonth)) - weeklySortKey(weeklyNum(b.weekOfMonth)));
     }
     const byWeek = new Map<number, Omit<WeeklyRecruitingEntry, 'id' | 'areaId' | 'assignee' | 'month'>>();
     for (const e of filtered) {
@@ -125,8 +127,9 @@ export default function GlobalDashboard() {
       cur.resignations += weeklyNum(e.resignations);
       byWeek.set(wk, cur);
     }
-    return [...byWeek.values()].sort((a, b) => a.weekOfMonth - b.weekOfMonth).map((r) => ({ ...r, assignee: '' }));
+    return [...byWeek.values()].sort((a, b) => weeklySortKey(a.weekOfMonth) - weeklySortKey(b.weekOfMonth)).map((r) => ({ ...r, assignee: '' }));
   })();
+  const weeklyRowLabel = (wk: number) => (wk === 0 ? '月次まとめ' : `${wk}週目`);
   const weeklyTotals = weeklyRows.reduce(
     (acc, r) => ({
       recruitingCost: acc.recruitingCost + weeklyNum(r.recruitingCost),
@@ -518,7 +521,7 @@ export default function GlobalDashboard() {
                     const net = weeklyNetChange(weeklyNum(r.hires), weeklyNum(r.resignations));
                     return (
                       <tr key={i} className="border-b border-zinc-50">
-                        <td className="px-2 py-1.5 font-bold text-zinc-700">{r.weekOfMonth}週目</td>
+                        <td className="px-2 py-1.5 font-bold text-zinc-700">{weeklyRowLabel(r.weekOfMonth)}</td>
                         {!weeklyAreaFilter ? null : <td className="px-2 py-1.5 text-zinc-500">{r.assignee || '—'}</td>}
                         <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.applicants)}</td>
                         <td className="px-2 py-1.5 text-right font-mono">{weeklyNum(r.hires)}</td>
@@ -555,7 +558,10 @@ export default function GlobalDashboard() {
           <div className="flex flex-wrap gap-2 items-end">
             <select
               value={newWeekly.areaId}
-              onChange={(e) => setNewWeekly((w) => ({ ...w, areaId: e.target.value }))}
+              onChange={(e) => {
+                const areaId = e.target.value;
+                setNewWeekly((w) => ({ ...w, areaId, weekOfMonth: areaId === 'osaka' ? '0' : w.weekOfMonth === '0' ? '1' : w.weekOfMonth }));
+              }}
               className="px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
             >
               {AREAS.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
@@ -574,6 +580,7 @@ export default function GlobalDashboard() {
               className="px-2 py-1.5 text-xs font-bold bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
             >
               {['1', '2', '3', '4'].map((w) => <option key={w} value={w}>{w}週目</option>)}
+              <option value="0">月次まとめ（週次不可）</option>
             </select>
             {([
               ['applicants', '応募数'], ['hires', '入職数'], ['resignations', '退職数'], ['recruitingCost', '募集費'],
