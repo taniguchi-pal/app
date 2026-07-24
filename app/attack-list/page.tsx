@@ -191,6 +191,21 @@ export default function AttackListPage() {
   const overallWon = entries.filter((e) => WON_STATUSES.includes(e.status)).length;
   const overallConversion = overallTotal > 0 ? (overallWon / overallTotal) * 100 : 0;
 
+  // ── 営業KPI（アプローチ→受注ファネル、一般的な人材派遣・人材紹介営業のKPI水準を参考値として併記） ──
+  const QUOTE_OR_LATER = ['見積提示', '成約', '稼働中'];
+  const funnelApproach = entries.length;
+  const funnelMeeting = entries.filter((e) => !!e.status).length;
+  const funnelQuote = entries.filter((e) => QUOTE_OR_LATER.includes(e.status)).length;
+  const funnelOrder = entries.filter((e) => WON_STATUSES.includes(e.status)).length;
+  const pct = (n: number, d: number) => (d > 0 ? (n / d) * 100 : 0);
+  const FUNNEL_STAGES: { label: string; count: number; rateFromPrev: number | null; benchmarkLabel: string; benchmarkRange: string }[] = [
+    { label: 'アプローチ数', count: funnelApproach, rateFromPrev: null, benchmarkLabel: '', benchmarkRange: '' },
+    { label: '商談化（商談数）', count: funnelMeeting, rateFromPrev: pct(funnelMeeting, funnelApproach), benchmarkLabel: '商談化率', benchmarkRange: '10〜20%' },
+    { label: '見積提示（見積数）', count: funnelQuote, rateFromPrev: pct(funnelQuote, funnelMeeting), benchmarkLabel: '見積提示率', benchmarkRange: '40〜60%' },
+    { label: '受注（受注数）', count: funnelOrder, rateFromPrev: pct(funnelOrder, funnelQuote), benchmarkLabel: '受注率', benchmarkRange: '20〜40%' },
+  ];
+  const overallFunnelConversion = pct(funnelOrder, funnelApproach);
+
   // ── 次回訪問予定（近い順） ──
   const upcomingVisits = entries
     .filter((e) => e.nextVisitDate)
@@ -212,6 +227,30 @@ export default function AttackListPage() {
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
               共有保存基盤（Google Sheets連携）が未設定です。docs/site-overrides-setup.md の手順で「AttackList」シートを追加し、`.env.local`にURLを設定してください。
             </p>
+          </Card>
+        )}
+
+        {entries.length > 0 && (
+          <Card eyebrow="KPI" title="営業KPI（アプローチ→受注ファネル）">
+            <p className="text-[10px] text-zinc-400 -mt-1 mb-3">一般的な人材派遣・人材紹介営業のKPI水準を参考値として併記しています</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+              {FUNNEL_STAGES.map((s, i) => (
+                <div key={s.label} className="p-3 rounded-xl bg-zinc-50 border border-zinc-100">
+                  <p className="text-[10px] font-bold text-zinc-400">{s.label}</p>
+                  <p className="text-xl font-black text-zinc-800 font-mono mt-0.5">{s.count}</p>
+                  {i > 0 && (
+                    <p className="text-[10px] font-bold text-blue-700 mt-1">
+                      {s.rateFromPrev!.toFixed(1)}%
+                      <span className="text-zinc-400 font-normal ml-1">（{s.benchmarkLabel} 参考 {s.benchmarkRange}）</span>
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between items-center px-3 py-2 rounded-xl bg-blue-50 border border-blue-100">
+              <span className="text-xs font-bold text-blue-900">総合コンバージョン（アプローチ→受注）</span>
+              <span className="text-sm font-black text-blue-800 font-mono">{overallFunnelConversion.toFixed(1)}%<span className="text-[10px] font-normal text-blue-600 ml-1">（参考 2〜5%）</span></span>
+            </div>
           </Card>
         )}
 
