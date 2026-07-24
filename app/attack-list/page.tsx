@@ -178,6 +178,25 @@ export default function AttackListPage() {
     (!statusFilter || e.status === statusFilter) && (!repFilter || e.salesRep === repFilter)
   );
 
+  // ── 担当者別 営業活動サマリー（件数・コンバージョン） ──
+  const WON_STATUSES = ['成約', '稼働中'];
+  const repStats = repOptions.map((rep) => {
+    const repEntries = entries.filter((e) => e.salesRep === rep);
+    const total = repEntries.length;
+    const won = repEntries.filter((e) => WON_STATUSES.includes(e.status)).length;
+    const byStatus = Object.fromEntries(STATUS_OPTIONS.map((s) => [s, repEntries.filter((e) => e.status === s).length]));
+    return { rep, total, won, byStatus, conversionRate: total > 0 ? (won / total) * 100 : 0 };
+  }).sort((a, b) => b.total - a.total);
+  const overallTotal = entries.length;
+  const overallWon = entries.filter((e) => WON_STATUSES.includes(e.status)).length;
+  const overallConversion = overallTotal > 0 ? (overallWon / overallTotal) * 100 : 0;
+
+  // ── 次回訪問予定（近い順） ──
+  const upcomingVisits = entries
+    .filter((e) => e.nextVisitDate)
+    .sort((a, b) => a.nextVisitDate.localeCompare(b.nextVisitDate))
+    .slice(0, 8);
+
   return (
     <Shell agvColor="#1e40af">
       <header className="px-4 md:px-10 pt-6 pb-4">
@@ -193,6 +212,58 @@ export default function AttackListPage() {
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
               共有保存基盤（Google Sheets連携）が未設定です。docs/site-overrides-setup.md の手順で「AttackList」シートを追加し、`.env.local`にURLを設定してください。
             </p>
+          </Card>
+        )}
+
+        {entries.length > 0 && (
+          <Card eyebrow="Summary" title="担当者別 営業活動サマリー">
+            <div className="overflow-x-auto -mx-1 mb-1">
+              <table className="min-w-[640px] w-full text-xs">
+                <thead>
+                  <tr className="text-zinc-400 border-b border-zinc-100">
+                    <th className="text-left font-bold px-2 py-1.5">担当Sales</th>
+                    <th className="text-right font-bold px-2 py-1.5">件数</th>
+                    {STATUS_OPTIONS.map((s) => <th key={s} className="text-right font-bold px-2 py-1.5">{s}</th>)}
+                    <th className="text-right font-bold px-2 py-1.5">コンバージョン</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {repStats.map((r) => (
+                    <tr key={r.rep} className="border-b border-zinc-50">
+                      <td className="px-2 py-1.5 font-bold text-zinc-700">{r.rep}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{r.total}</td>
+                      {STATUS_OPTIONS.map((s) => <td key={s} className="px-2 py-1.5 text-right font-mono">{r.byStatus[s] || 0}</td>)}
+                      <td className="px-2 py-1.5 text-right font-mono font-bold text-blue-700">{r.conversionRate.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-zinc-200 bg-zinc-50">
+                    <td className="px-2 py-1.5 font-black text-zinc-700">全体</td>
+                    <td className="px-2 py-1.5 text-right font-mono font-black">{overallTotal}</td>
+                    {STATUS_OPTIONS.map((s) => (
+                      <td key={s} className="px-2 py-1.5 text-right font-mono font-black">{entries.filter((e) => e.status === s).length}</td>
+                    ))}
+                    <td className="px-2 py-1.5 text-right font-mono font-black text-blue-800">{overallConversion.toFixed(1)}%</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <p className="text-[10px] text-zinc-400 mt-1">コンバージョン ＝（成約＋稼働中）÷ 件数</p>
+          </Card>
+        )}
+
+        {upcomingVisits.length > 0 && (
+          <Card eyebrow="Schedule" title="次回訪問予定（近い順）">
+            <ul className="space-y-1.5">
+              {upcomingVisits.map((e) => (
+                <li key={e.id} className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-zinc-700">{e.company}</span>
+                  <span className="text-zinc-400">{e.salesRep || '担当未設定'}</span>
+                  <span className="font-mono font-bold text-blue-700">{e.nextVisitDate}</span>
+                </li>
+              ))}
+            </ul>
           </Card>
         )}
 
