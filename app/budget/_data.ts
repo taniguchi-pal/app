@@ -555,7 +555,7 @@ export const SITES: Record<string, SiteData> = {
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(399.90, 332.42, 414.93),
   },
-  '835-1': placeholderSite('835-1', '有限会社黒岩運輸', 'kanto', { lifecycle: '新規現場' }),
+  '835-1': placeholderSite('835-1', '有限会社黒岩運輸', 'kanto', { active: false, lifecycle: '失注（先方充足により契約に至らず）' }),
 
   // ── 中部 ──────────────────────────────────────────────
   // 7月実績は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月）のスクリーンショットより反映。
