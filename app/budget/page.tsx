@@ -171,7 +171,7 @@ export default function GlobalDashboard() {
       avgHours: b.avgHours == null && staffSums.hoursFilled > 0 && staffSums.filled > 0
         ? Math.round((staffSums.hoursSum / staffSums.sum) * 100) / 100
         : b.avgHours,
-      topics: ['関東・中部・関西・大阪支店の管轄現場実績を自動集計した全社速報値です'],
+      topics: ['関東・中部・関西・大阪支店の管轄現場実績を自動集計した全社速報値です', ...b.topics],
     };
   })();
   const ov = monthlyOverrides[`company__${activeMonth}`];

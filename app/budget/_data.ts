@@ -219,10 +219,14 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
   },
   // 稼働人数・平均工数・受注残・salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新
   // （全体=関東+中部+関西+大阪支店）。見通しは予算とは別枠の着地見込みとして並記。
+  // 入職・退職・応募状況は7/28 10:15時点の実績（応募93件＝直接投稿82件+Q-mate11件）より。
   '7月進捗': {
     ...plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 16, stackupPotential: 2410700 }),
-    activeStaff: 193, avgHours: 117.04,
+    activeStaff: 193, avgHours: 117.04, joined: 6, resigned: 2,
     salesForecast: 49226862, gpForecast: 6819522,
+    topics: [
+      '7/28 10:15時点 応募93件（内訳: 直接投稿82件・Q-mate11件）、入職6件・退職2名',
+    ],
   },
   '8月予定': { ...plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 41053925 },
   '9月予定': { ...plannedCompany(53000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 42095120 },
