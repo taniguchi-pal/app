@@ -219,13 +219,17 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
   },
   // 稼働人数・平均工数・受注残・salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新
   // （全体=関東+中部+関西+大阪支店）。見通しは予算とは別枠の着地見込みとして並記。
-  // 入職・退職・応募状況は7/28 10:15時点の実績（応募93件＝直接投稿82件+Q-mate11件）より。
+  // 入職・退職・応募状況は7/28 10:15時点の実績より。入職12名の内訳（6月応募→7月入職も含め全て7月分として計上）:
+  // 西鉄運輸加古川(二橋・葉石)、福山通運東海支店セリア(伊藤・杉江)、昭和冷蔵小牧(長尾・国部)、
+  // 昭和冷蔵犬山(舟橋)、福山通運大阪支店(2名)、HMKロジ南港RW(川島未来)、HMKロジ西神戸(河野弓真)、任天堂京都(高橋実乃梨)。
+  // 応募93件＝直接投稿82件+Q-mate11件。
   '7月進捗': {
     ...plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 16, stackupPotential: 2410700 }),
-    activeStaff: 193, avgHours: 117.04, joined: 6, resigned: 2,
+    activeStaff: 193, avgHours: 117.04, joined: 12, resigned: 2,
     salesForecast: 49226862, gpForecast: 6819522,
     topics: [
-      '7/28 10:15時点 応募93件（内訳: 直接投稿82件・Q-mate11件）、入職6件・退職2名',
+      '7/28 10:15時点 応募93件（内訳: 直接投稿82件・Q-mate11件）、入職12名・退職2名',
+      '入職内訳: 西鉄運輸加古川2名・セリア2名・昭和冷蔵小牧2名・昭和冷蔵犬山1名・大阪支店2名・HMKロジ南港1名・HMKロジ西神戸1名・任天堂1名',
     ],
   },
   '8月予定': { ...plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 41053925 },
@@ -250,11 +254,11 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '4月実績': { salesBudget: 7452000, salesActual: 7480000, yoyLastYear: 15494000, gpBudget: 999747, gpActual: 1232567, activeStaff: 36, avgHours: 104.43, joined: 0, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '5月実績': { salesBudget: 7100000, salesActual: 6878370, yoyLastYear: 13848000, gpBudget: 1174255, gpActual: 1015258, activeStaff: 36, avgHours: 94.42, joined: 0, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7490000, salesActual: 7500000, yoyLastYear: 13701000, gpBudget: 1232684, gpActual: 1079448, activeStaff: 36, avgHours: 101.71, joined: 3, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
-    // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 所属部署: 人ソ（関東））より反映。
+    // 7月実績は7/28 10:15時点のP&L実績（現場積み上げ）より反映。
     // 稼働人数・総工数、salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
     '7月進捗': {
-      salesBudget: 7632000, salesActual: 7799828, yoyLastYear: null,
-      gpBudget: 1244779, gpActual: 1329319,
+      salesBudget: 7632000, salesActual: 7425450, yoyLastYear: null,
+      gpBudget: 1244779, gpActual: 1193199,
       activeStaff: 34, avgHours: 113.88, joined: null, resigned: null,
       heat: null, siteCount: 5, funnel: null,
       salesForecast: 7684658, gpForecast: 1342521,
@@ -483,15 +487,15 @@ export const POSTING_PERIOD_OPTIONS = ['1週間', '2週間', '1ヶ月', '2ヶ月
 
 export const SITES: Record<string, SiteData> = {
   // ── 関東 ──────────────────────────────────────────────
-  // 7月実績は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関東）より反映。
+  // 7月実績は7/28 10:15時点のP&L実績（売上合計・労務費・有給金額・粗利益2）より反映。
   // budgetは月次予算表（現場名で突合）の7月列。
   '811-1': {
     active: true,
     id: '811-1', name: '福山通運 八千代支店 メニコン', areaId: 'kanto', prefecture: '千葉県',
-    sales: { actual: 4167141, budget: 3952000 },
-    cost: { actual: 3049701 },
-    paidLeave: { actual: 87770 },
-    opProfit: { actual: 619170 },
+    sales: { actual: 3967107, budget: 3952000 },
+    cost: { actual: 2903307 },
+    paidLeave: { actual: 98250 },
+    opProfit: { actual: 562022 },
     monthlyBudget: budgetSeries(3952000, 3800000, 3800000, 3952000, 3800000, 3648000, 3952000, 3648000, 3800000, 3496000, 3496000, 3800000),
     staffCountByMonth: monthSeries3(26, 26, 26),
     totalHoursByMonth: monthSeries3(2138.75, 2030.50, 2083.75),
@@ -499,10 +503,10 @@ export const SITES: Record<string, SiteData> = {
   '116-1': {
     active: true,
     id: '116-1', name: 'PCS 関東（重工田町ビル）', areaId: 'kanto', prefecture: '東京都',
-    sales: { actual: 732888, budget: 580000 },
-    cost: { actual: 446880 },
+    sales: { actual: 651568, budget: 580000 },
+    cost: { actual: 393680 },
     paidLeave: { actual: 10640 },
-    opProfit: { actual: 151926 },
+    opProfit: { actual: 123966 },
     monthlyBudget: budgetSeries(520000, 510000, 570000, 580000, 450000, 540000, 600000, 480000, 550000, 510000, 500000, 520000),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(306.00, 271.50, 320.00),
@@ -521,10 +525,10 @@ export const SITES: Record<string, SiteData> = {
   '657-1': {
     active: true,
     id: '657-1', name: 'PCS 関東（重工丸の内）', areaId: 'kanto', prefecture: '東京都',
-    sales: { actual: 682010, budget: 560000 },
-    cost: { actual: 446220 },
+    sales: { actual: 632902, budget: 560000 },
+    cost: { actual: 435500 },
     paidLeave: { actual: 10720 },
-    opProfit: { actual: 141371 },
+    opProfit: { actual: 103404 },
     monthlyBudget: budgetSeries(550000, 490000, 560000, 560000, 410000, 540000, 610000, 450000, 510000, 510000, 480000, 440000),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(304.00, 256.00, 320.00),
@@ -532,10 +536,10 @@ export const SITES: Record<string, SiteData> = {
   '715-1': {
     active: true,
     id: '715-1', name: 'PCS 関東（豊洲）', areaId: 'kanto', prefecture: '東京都',
-    sales: { actual: 1478196, budget: 1190000 },
-    cost: { actual: 1033164 },
+    sales: { actual: 1418738, budget: 1190000 },
+    cost: { actual: 991576 },
     paidLeave: { actual: 30400 },
-    opProfit: { actual: 262319 },
+    opProfit: { actual: 244593 },
     monthlyBudget: budgetSeries(1240000, 1130000, 1210000, 1190000, 1230000, 1390000, 1270000, 1100000, 1110000, 1100000, 1050000, 1150000),
     staffCountByMonth: monthSeries3(3, 3, 3),
     totalHoursByMonth: monthSeries3(474.75, 396.58, 506.83),
@@ -543,11 +547,11 @@ export const SITES: Record<string, SiteData> = {
   '648-1': {
     active: true,
     id: '648-1', name: 'ネオヴィア・ロジ 相模原部品センター', areaId: 'kanto', prefecture: '神奈川県',
-    sales: { actual: 739593, budget: 1000000 },
-    cost: { actual: 532827 },
+    sales: { actual: 755135, budget: 1000000 },
+    cost: { actual: 543656 },
     paidLeave: { actual: 10800 },
     monthlyBudget: budgetSeries(900000, 900000, 1000000, 1000000, 720000, 880000, 1000000, 850000, 900000, 900000, 850000, 1000000),
-    opProfit: { actual: 154533 },
+    opProfit: { actual: 159214 },
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(399.90, 332.42, 414.93),
   },
