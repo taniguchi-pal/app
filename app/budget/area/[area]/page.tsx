@@ -144,7 +144,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
       <main className="px-4 md:px-10 space-y-5">
 
         {isAutoAggregated && activeMonth === CURRENT_ACTUAL_MONTH && (
-          <p className="text-[10px] text-emerald-600 font-bold">✓ この月の売上高・営業利益は管轄現場{sumSitesActual(areaId).siteCount}件の実績を自動集計しています（現場データ更新で自動反映）</p>
+          <p className="text-[10px] text-emerald-600 font-bold">✓ この月の売上高・粗利益②は管轄現場{sumSitesActual(areaId).siteCount}件の実績を自動集計しています（現場データ更新で自動反映）</p>
         )}
 
         {/* ── エリア管理数値 ドン ──────────────────── */}
@@ -329,8 +329,8 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
             { value: 'recruiting', label: '採用中（掲載中）現場', test: (s) => effectiveRecruiting(s) },
             { value: 'active', label: '稼働中現場', test: (s) => s.active },
             { value: 'inactive', label: '終了現場・非稼働現場', test: (s) => !s.active },
-            { value: 'margin9', label: '営業利益率9%以上現場', test: (s) => { const m = siteMargin(s); return m != null && m >= 9; } },
-            { value: 'unprofitable', label: '不採算現場（営業利益マイナス）', test: (s) => (s.opProfit?.actual ?? 0) < 0 },
+            { value: 'margin9', label: '粗利率②9%以上現場', test: (s) => { const m = siteMargin(s); return m != null && m >= 9; } },
+            { value: 'unprofitable', label: '不採算現場（粗利益②マイナス）', test: (s) => (s.opProfit?.actual ?? 0) < 0 },
             { value: 'staff1', label: '派遣人数1名現場', test: (s) => effectiveStaffN(s) === 1 },
           ];
           let filteredSites = repFilter
@@ -366,7 +366,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                     className="text-xs font-bold px-2 py-1.5 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
                   >
                     <option value="">並び順（デフォルト）</option>
-                    <option value="marginDesc">営業利益率順（高い順）</option>
+                    <option value="marginDesc">粗利率②順（高い順）</option>
                   </select>
                   {repOptions.length > 0 && (
                     <select

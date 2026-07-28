@@ -15,12 +15,13 @@ const ACTION_COLOR: Record<ActionType, string> = {
   課題: 'text-rose-700 bg-rose-50 border-rose-100',
 };
 
-// 売上高は金額規模が大きく、売上総利益/営業利益と同じ軸だと後者が潰れて見えるため、
-// 売上高=左軸、粗利・営業利益=右軸の2軸グラフにする。
+// 売上高は金額規模が大きく、売上総利益/粗利益②と同じ軸だと後者が潰れて見えるため、
+// 売上高=左軸、粗利・粗利益②=右軸の2軸グラフにする。
+// 粗利益②(opProfit)は本部費配賦前の現場側データのため、標準勘定科目の「営業利益」とは別物として扱う
+// （PL_ACCOUNTSには含めず、site.opProfitを直接参照する）。
 const CHART_METRIC_LABELS: { label: string; color: string; axis: 'left' | 'right' }[] = [
   { label: '売上高', color: '#2563eb', axis: 'left' },
   { label: '売上総利益', color: '#059669', axis: 'right' },
-  { label: '営業利益', color: '#d97706', axis: 'right' },
 ];
 // PL_ACCOUNTS内で一意なラベルなので、対応するPLAccountDefを引く
 const CHART_METRICS: { account: PLAccountDef; color: string; axis: 'left' | 'right' }[] = CHART_METRIC_LABELS.map(({ label, color, axis }) => ({
@@ -28,6 +29,7 @@ const CHART_METRICS: { account: PLAccountDef; color: string; axis: 'left' | 'rig
   color,
   axis,
 }));
+const GP2_COLOR = '#d97706';
 
 const NEGOTIATION_OPTIONS: NegotiationStatus[] = ['未着手', '交渉中', '合意済', '見送り'];
 
@@ -184,11 +186,16 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
     }
   })();
   const actionLog = [...(site.actionLog ?? []), ...linkedContactLog];
-  const opProfitAccount = PL_ACCOUNTS.find((a) => a.label === '営業利益')!;
+  // 粗利益②(opProfit)は本部費配賦前の現場側実績で、正式な「営業利益」（翌月7営業日に確定）とは別物。
   const salesAccount = PL_ACCOUNTS.find((a) => a.label === '売上高')!;
-  const opProfitRow = getPLRow(site, opProfitAccount);
   const salesRow = getPLRow(site, salesAccount);
-  const opMarginRate = opProfitRow?.actual != null && salesRow?.actual ? (opProfitRow.actual / salesRow.actual) * 100 : null;
+  const gp2Actual = site.opProfit?.actual ?? null;
+  const gp2Trend = MONTHS.map((mk) => ({
+    name: `${monthCalendar(mk).month}月`,
+    予算: null,
+    当月実績: mk === CURRENT_ACTUAL_MONTH ? gp2Actual : null,
+  }));
+  const opMarginRate = gp2Actual != null && salesRow?.actual ? (gp2Actual / salesRow.actual) * 100 : null;
 
   // 配置人数・総工数はSheets入力（週次更新）が無ければ、直近の確定実績月（6月→5月→4月）にフォールバックする。
   const latestHistorical = (['6月進捗', '5月実績', '4月実績'] as const)
@@ -319,6 +326,23 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                   </div>
                 );
               })}
+              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100">
+                <p className="text-xs font-bold text-zinc-500 text-center">粗利益②</p>
+                <p className="text-2xl font-black text-center mt-1 font-mono" style={{ color: GP2_COLOR }}>
+                  {gp2Actual != null ? yen(gp2Actual) : '—'}
+                </p>
+                <p className="text-[10px] text-zinc-400 text-center mb-1">当月実績</p>
+                <ResponsiveContainer width="100%" height={140}>
+                  <LineChart data={gp2Trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
+                    <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#a1a1aa" />
+                    <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} tickCount={8} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
+                    <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                    <Line type="monotone" dataKey="当月実績" stroke={GP2_COLOR} strokeWidth={2} connectNulls dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+                <p className="text-[9px] text-zinc-400 text-center mt-1">月次予算データ未登録（当月実績のみ表示） ・ 本部費配賦前の現場実績（営業利益とは別枠）</p>
+              </div>
             </div>
           )}
         </Card>
@@ -358,16 +382,17 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           )}
         </Card>
 
-        {/* ── 収益性（営業利益・営業利益率） ────────── */}
+        {/* ── 収益性（粗利益②・粗利率②） ────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card eyebrow="Profit" title="営業利益（当月実績）">
-            <p className="text-2xl font-black text-zinc-800 font-mono">{opProfitRow?.actual != null ? yen(opProfitRow.actual) : 'データ未登録'}</p>
+          <Card eyebrow="Profit" title="粗利益②（当月実績）">
+            <p className="text-2xl font-black text-zinc-800 font-mono">{gp2Actual != null ? yen(gp2Actual) : 'データ未登録'}</p>
+            <p className="text-[10px] text-zinc-400 mt-1">本部費配賦前の現場実績（営業利益は翌月7営業日確定の正式な損益書より別枠で反映）</p>
           </Card>
-          <Card eyebrow="Margin" title="営業利益率（マージン率）">
+          <Card eyebrow="Margin" title="粗利率②（マージン率）">
             <p className={`text-2xl font-black font-mono ${opMarginRate != null && opMarginRate < 0 ? 'text-rose-600' : 'text-zinc-800'}`}>
               {opMarginRate != null ? `${opMarginRate.toFixed(1)}%` : 'データ未登録'}
             </p>
-            <p className="text-[10px] text-zinc-400 mt-1">営業利益 ÷ 売上高 ・ {ratesUpdatedLabel()}</p>
+            <p className="text-[10px] text-zinc-400 mt-1">粗利益② ÷ 売上高 ・ {ratesUpdatedLabel()}</p>
           </Card>
         </div>
 

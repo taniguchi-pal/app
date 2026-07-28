@@ -157,7 +157,10 @@ export default function GlobalDashboard() {
     const osakaMonth = AREA_MONTHLY.osaka[CURRENT_ACTUAL_MONTH];
     const salesBudget = kanto.salesBudget + chubu.salesBudget + kansaiMonth.salesBudget + osakaMonth.salesBudget;
     const salesActual = kanto.salesActual + chubu.salesActual + (kansaiMonth.salesActual ?? 0) + (osakaMonth.salesActual ?? 0);
-    const opActual = kanto.opProfitActual + chubu.opProfitActual + (kansaiMonth.gpActual ?? 0) + (osakaMonth.gpActual ?? 0);
+    // 粗利②（gpActual）は現場積み上げの実数値として当月も追える。営業利益（opActual）は
+    // 本部費配賦後の正式な損益書が翌月7営業日にならないと確定しないため、当月は空欄のままにする
+    // （粗利②と営業利益は別物として扱い、当月中は粗利②で数字管理する）。
+    const gpActualComputed = kanto.opProfitActual + chubu.opProfitActual + (kansaiMonth.gpActual ?? 0) + (osakaMonth.gpActual ?? 0);
     const gpBudget = (kantoMonth.gpBudget ?? 0) + (chubuMonth.gpBudget ?? 0) + (kansaiMonth.gpBudget ?? 0) + (osakaMonth.gpBudget ?? 0);
     return {
       ...b,
@@ -165,8 +168,8 @@ export default function GlobalDashboard() {
       salesBudget,
       salesActual,
       gpBudget,
+      gpActual: gpActualComputed,
       opBudget: Math.round(salesBudget * (ANNUAL_GOAL.opRate / 100)),
-      opActual,
       activeStaff: b.activeStaff == null && staffSums.filled > 0 ? staffSums.sum : b.activeStaff,
       avgHours: b.avgHours == null && staffSums.hoursFilled > 0 && staffSums.filled > 0
         ? Math.round((staffSums.hoursSum / staffSums.sum) * 100) / 100
@@ -373,8 +376,8 @@ export default function GlobalDashboard() {
             <div className="space-y-3">
               {[
                 { name: '売上高', budget: current.salesBudget, actual: current.salesActual },
-                { name: '売上総利益', budget: current.gpBudget, actual: current.gpActual },
-                { name: '営業利益', budget: current.opBudget, actual: current.opActual },
+                { name: '粗利益②', budget: current.gpBudget, actual: current.gpActual },
+                { name: '営業利益（翌月確定）', budget: current.opBudget, actual: current.opActual },
               ].map((item, idx) => {
                 const hasActual = item.actual != null && item.budget != null;
                 const rate = hasActual ? (item.actual! / item.budget!) * 100 : null;

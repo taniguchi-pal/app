@@ -1027,11 +1027,12 @@ export const statusOf = (rate: number): 'ok' | 'watch' | 'alert' => (rate >= 100
 
 // 既存の簡易サマリー項目（sales/cost/paidLeave/opProfit）を、詳細PL未登録の現場でも
 // 該当する勘定科目行にフォールバック表示するためのマッピング。
+// 「営業利益」は本部費配賦後の正式な値で現場側データには無いため、粗利益②(opProfit)を
+// フォールバックさせない（粗利②と営業利益は別物のため混同を避ける）。
 const SUMMARY_FALLBACK: Record<string, keyof Pick<SiteData, 'sales' | 'cost' | 'paidLeave' | 'opProfit'>> = {
   '売上高': 'sales',
   '売上原価': 'cost',
   '有給': 'paidLeave',
-  '営業利益': 'opProfit',
 };
 
 // 勘定科目名は「支払手数料」のように複数セクションで重複するため、
