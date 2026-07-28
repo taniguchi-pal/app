@@ -68,8 +68,8 @@ export function AGVLineVertical({ color = '#22d3ee', left = '6%' }: { color?: st
   );
 }
 
-export function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="text-[10px] md:text-xs font-bold text-blue-600 font-montserrat tracking-[0.15em] uppercase">{children}</p>;
+export function Eyebrow({ children, color = 'text-blue-600' }: { children: React.ReactNode; color?: string }) {
+  return <p className={`text-[10px] md:text-xs font-bold ${color} font-montserrat tracking-[0.15em] uppercase`}>{children}</p>;
 }
 
 export function BackLink({ href, label }: { href: string; label: string }) {
@@ -93,13 +93,13 @@ export function Breadcrumb({ items }: { items: { label: string; href?: string }[
   );
 }
 
-export function Card({ title, eyebrow, right, children, className = '' }: { title?: string; eyebrow?: string; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
+export function Card({ title, eyebrow, eyebrowColor, right, children, className = '' }: { title?: string; eyebrow?: string; eyebrowColor?: string; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <div className={`bg-white rounded-2xl border border-zinc-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] p-4 ${className}`}>
       {(title || eyebrow) && (
         <div className="flex items-center justify-between mb-3">
           <div>
-            {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+            {eyebrow && <Eyebrow color={eyebrowColor}>{eyebrow}</Eyebrow>}
             {title && <h2 className="text-sm font-bold text-zinc-900 mt-0.5">{title}</h2>}
           </div>
           {right}
