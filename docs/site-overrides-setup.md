@@ -27,8 +27,13 @@ scope	month	salesBudget	salesActual	salesForecast	yoyLastYear	gpBudget	gpActual	
 ```
 - `scope` は `company` / `kanto` / `chubu` / `kansai` / `osaka` のいずれか。1行 = 1つの `scope` × `month`
 - `month` は `4月実績`〜`3月予定`（アプリ内の表記と揃えてください。4-6月は既に確定値があるため通常は7月以降を入力）
-- 予算・実績・見通し: `salesBudget`/`salesActual`/`salesForecast`（見通し）/`yoyLastYear`（前年同月）/
-  `gpBudget`/`gpActual`/`gpForecast`（粗利②）/`opBudget`/`opActual`（営業利益、companyのみ想定）
+- 予算・実績・見通し: `salesBudget`/`salesActual`/`salesForecast`（見通し）/`yoyLastYear`（前年同月）
+- **粗利②と営業利益は別物として別々に管理します**（混同しないよう注意）:
+  - `gpBudget`/`gpActual`/`gpForecast`＝粗利②。本部費配賦前の現場積み上げ実績なので、当月中でも
+    随時更新して構いません（現状はダッシュボード側で現場データから自動集計）
+  - `opBudget`/`opActual`＝正式な営業利益（本部費配賦後）。`opActual`は正式な損益書が確定する
+    **翌月7営業日以降**に入力してください。それまでは空欄のままにし、ダッシュボードには
+    「実績未確定」と表示されます（companyのみ想定、粗利②の代用値を入れないでください）
 - KPI進捗: `activeStaff`（稼働人数）/`targetStaff`（目標人数、companyのみ）/`siteCount`（稼働現場数）/
   `totalHours`（総工数h）/`avgHours`（1人当たり工数h）/`joined`（入職）/`resigned`（退職）
   - 1人当たり売上・1顧客当たり売上はアプリ側で `salesActual ÷ activeStaff` / `salesActual ÷ siteCount` から自動計算するため、シートへの入力は不要です
@@ -44,7 +49,8 @@ scope	month	salesBudget	salesActual	salesForecast	yoyLastYear	gpBudget	gpActual	
 siteId	month	salesActual	salesBudget	cost	paidLeave	opProfit	staffCount	totalHours	recruitingCostSpent	recruitingCostBudget	updatedAt
 ```
 - `siteId` は現場の案件コード、`month` は対象月（`4月実績`〜`3月予定`）。1行 = 1つの `siteId` × `month`
-- `salesActual`/`salesBudget`（売上）・`cost`（原価）・`paidLeave`（有給）・`opProfit`（営業利益/粗利益2）が損益書の主要項目
+- `salesActual`/`salesBudget`（売上）・`cost`（原価）・`paidLeave`（有給）・`opProfit`（粗利益②。現場データは
+  本部費配賦前のため、正式な「営業利益」ではなく粗利益②として扱います）が損益書の主要項目
 - `staffCount`（配置人数）・`totalHours`（総工数）はその月の確定値（過去月のアーカイブ用）
 - `recruitingCostSpent`/`recruitingCostBudget`（募集費の実績・予算）
 - **SiteOverridesとの違い**: SiteMonthlyは「月ごとに確定した実績のアーカイブ」（過去月も含めて何行でも追加可）、
@@ -311,7 +317,7 @@ Vercel本番にも同じ環境変数を追加してください（Vercelダッ�
 | RecruitingHistory（`logType=posting`） | `/api/recruiting-history` | ✅ 反映済み（現場カルテの掲載履歴） |
 | Projects | `/api/projects` | ✅ 反映済み（トピックス・プロジェクトの参照URL） |
 | NewSites | `/api/new-sites` | ✅ 反映済み（エリアページの新規現場一覧） |
-| KPI（`scope`×`month`） | `/api/monthly-data` | 🟡 一部反映（7月以降の salesBudget/salesActual/gpBudget/gpActual/opBudget/opActual/activeStaff/avgHours/joined/resigned/siteCount/heat のみ）。今回追加した salesForecast/yoyLastYear/gpForecast/targetStaff/totalHours/orderBacklog/backlogStackupPotential/funnel系/so系/topics 列は次のアップデートで画面に反映します |
+| KPI（`scope`×`month`） | `/api/monthly-data` | 🟡 一部反映（7月以降の salesBudget/salesActual/gpBudget/gpActual/opBudget/opActual/activeStaff/avgHours/joined/resigned/siteCount/heat のみ）。**opActualは翌月7営業日以降にのみ入力**（それまで空欄）、gpActualは随時更新可。今回追加した salesForecast/yoyLastYear/gpForecast/targetStaff/totalHours/orderBacklog/backlogStackupPotential/funnel系/so系/topics 列は次のアップデートで画面に反映します |
 | SiteMonthly | `/api/site-monthly`（新設） | ⬜ 未反映（API疎通のみ）。現場の月次損益を確定値としてアーカイブするための新しい仕組みで、現場カルテの表示に組み込むのは次のアップデートで対応します |
 
 スプレッドシートを作成いただいたら、まずURLを教えてください。疎通確認と合わせて、🟡・⬜の項目を優先順位を聞きながら順次アプリに反映していきます。
