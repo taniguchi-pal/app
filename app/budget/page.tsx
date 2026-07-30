@@ -286,7 +286,7 @@ export default function GlobalDashboard() {
         {/* ── 事業部の管理数値 ドン ─────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <HeroStat
-            eyebrow={`予実管理 (${monthLabel(activeMonth)})`}
+            eyebrow={`🐷 予実管理 (${monthLabel(activeMonth)})`}
             value={current.salesActual == null ? `${yen(current.salesBudget)}（予算）` : yen(current.salesActual)}
             sub={
               <div className="space-y-0.5">
@@ -306,7 +306,7 @@ export default function GlobalDashboard() {
             }
           />
           <HeroStat
-            eyebrow="KPI進捗（稼働人数）"
+            eyebrow="🌟 KPI進捗（稼働人数）"
             value={current.activeStaff == null ? '—' : `${current.activeStaff} / ${current.targetStaff}名`}
             sub={
               activeMonth === CURRENT_ACTUAL_MONTH && COMPANY_MONTHLY[activeMonth].activeStaff == null && staffSums.filled > 0 ? (
@@ -371,7 +371,7 @@ export default function GlobalDashboard() {
         </div>
 
         {/* ── KPIの詳細 ────────────────────────────── */}
-        <Card eyebrow="KPI Detail" title="全社 予実管理・KPI詳細">
+        <Card eyebrow="KPI Detail" title="🐷 全社 予実管理・KPI詳細">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-3">
               {[
@@ -426,7 +426,7 @@ export default function GlobalDashboard() {
         </Card>
 
         {/* ── 年間スケジュール ─────────────────────── */}
-        <Card eyebrow="Roadmap" title="第27期 年間スケジュール・コミットメント">
+        <Card eyebrow="Roadmap" title="🎀 第27期 年間スケジュール・コミットメント">
           <p className="text-xs text-zinc-500 -mt-2 mb-3">通期目標: 売上 {yen(ANNUAL_GOAL.sales)} ／ 粗利②目標 {ANNUAL_GOAL.gpRate}% ／ 営業利益率 {ANNUAL_GOAL.opRate}%</p>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             {ANNUAL_SCHEDULE.map((q, idx) => (
@@ -477,7 +477,7 @@ export default function GlobalDashboard() {
         </Card>
 
         {/* ── 週次 応募対応（応募単価・入職単価・純増数） ────────── */}
-        <Card eyebrow="Recruiting" title={`週次 応募対応（${monthLabel(activeMonth)}）`}>
+        <Card eyebrow="Recruiting" title={`🐣 週次 応募対応（${monthLabel(activeMonth)}）`}>
           {weeklyApiStatus === 'unconfigured' && (
             <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 -mt-1 mb-3">
               共有保存基盤（Google Sheets連携）が未設定のため、週次応募対応の追加・保存はまだできません。docs/site-overrides-setup.md をご参照ください。
@@ -609,7 +609,7 @@ export default function GlobalDashboard() {
         </Card>
 
         {/* ── タスク管理（追加・ステータス変更） ────── */}
-        <Card eyebrow="Tasks" title="スケジュール・タスク管理">
+        <Card eyebrow="Tasks" title="🐾 スケジュール・タスク管理">
           {taskApiStatus === 'unconfigured' && (
             <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 -mt-1 mb-3">
               共有保存基盤（Google Sheets連携）が未設定のため、タスクの追加・保存はまだできません。docs/site-overrides-setup.md をご参照ください。

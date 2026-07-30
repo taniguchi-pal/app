@@ -293,7 +293,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* ── 主要指標 推移（4月〜3月、指標ごとに折れ線グラフを分離） ── */}
-        <Card eyebrow="P&L Analysis" title="主要指標 推移（4月〜3月）">
+        <Card eyebrow="P&L Analysis" title="🐷 主要指標 推移（4月〜3月）">
           {!hasFinancials ? (
             <div className="h-40 border-2 border-dashed border-zinc-200 rounded-2xl flex flex-col items-center justify-center gap-1">
               <p className="text-xs font-bold text-zinc-400">損益データ未登録</p>
@@ -318,8 +318,8 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                         <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#a1a1aa" />
                         <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} tickCount={8} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
                         <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                        {hasBudgetSeries && <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />}
-                        <Line type="monotone" dataKey="当月実績" stroke={m.color} strokeWidth={2} connectNulls dot={{ r: 3 }} />
+                        {hasBudgetSeries && <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={2} connectNulls dot={{ r: 2 }} />}
+                        <Line type="monotone" dataKey="当月実績" stroke={m.color} strokeWidth={3} connectNulls dot={{ r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
                     {!hasBudgetSeries && <p className="text-[9px] text-zinc-400 text-center mt-1">月次予算データ未登録（当月実績のみ表示）</p>}
@@ -338,7 +338,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                     <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#a1a1aa" />
                     <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} tickCount={8} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
                     <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                    <Line type="monotone" dataKey="当月実績" stroke={GP2_COLOR} strokeWidth={2} connectNulls dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="当月実績" stroke={GP2_COLOR} strokeWidth={3} connectNulls dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
                 <p className="text-[9px] text-zinc-400 text-center mt-1">月次予算データ未登録（当月実績のみ表示） ・ 本部費配賦前の現場実績（営業利益とは別枠）</p>
@@ -439,7 +439,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
         )}
 
         {/* ── 担当者・募集状況（手入力・チーム共有） ── */}
-        <Card eyebrow="Assignment" title="担当者・募集状況">
+        <Card eyebrow="Assignment" title="🐣 担当者・募集状況">
           {apiStatus === 'unconfigured' && (
             <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 -mt-1 mb-3">
               共有保存基盤（Google Sheets連携）が未設定です。docs/site-overrides-setup.md の手順で設定すると、この項目がチーム全員に共有されます。

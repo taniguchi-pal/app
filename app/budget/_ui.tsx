@@ -7,7 +7,19 @@ import Link from 'next/link';
 export function Shell({ children, agvColor }: { children: React.ReactNode; agvColor?: string }) {
   return (
     <div className="relative min-h-screen bg-[#f0f2f5] text-zinc-800 font-noto pb-10">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(26,54,110,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(26,54,110,0.04)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
+      {/* 方眼紙風の背景（細線20px + 太線100pxごとの2重グリッド） */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(26,54,110,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(26,54,110,0.05) 1px, transparent 1px),
+            linear-gradient(rgba(26,54,110,0.11) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(26,54,110,0.11) 1px, transparent 1px)
+          `,
+          backgroundSize: '20px 20px, 20px 20px, 100px 100px, 100px 100px',
+        }}
+      />
       {agvColor && <AGVLineVertical color={agvColor} />}
       <div className="relative z-10">{children}</div>
     </div>
@@ -24,19 +36,19 @@ export function AGVLine({ color = '#93c5fd' }: { color?: string }) {
         @keyframes budget-scan-line-${id} { 0% { transform: translateX(-10%); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateX(110%); opacity: 0; } }
         @keyframes budget-agv-dot-${id} { 0% { left: -3%; } 100% { left: 103%; } }
       `}} />
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[2px] overflow-hidden pointer-events-none">
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-px overflow-hidden pointer-events-none opacity-50">
         <div
           className="absolute top-0 h-full w-1/3"
           style={{
             background: `linear-gradient(to right, transparent, ${color}, transparent)`,
-            boxShadow: `0 0 8px ${color}99`,
+            boxShadow: `0 0 4px ${color}55`,
             animation: `budget-scan-line-${id} 6s ease-in-out infinite`,
           }}
         />
       </div>
       <div
-        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-sm pointer-events-none"
-        style={{ background: color, boxShadow: `0 0 6px ${color}b3`, animation: `budget-agv-dot-${id} 6s linear infinite` }}
+        className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-sm pointer-events-none opacity-50"
+        style={{ background: color, boxShadow: `0 0 3px ${color}66`, animation: `budget-agv-dot-${id} 6s linear infinite` }}
       />
     </>
   );
@@ -60,10 +72,10 @@ export function AGVLineVertical({ color = '#22d3ee', left = '6%' }: { color?: st
         @keyframes agv-travel-${id} { 0% { top: -12%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { top: 108%; opacity: 0; } }
       `}} />
       {/* 床の走行ライン（点線） */}
-      <div className="absolute inset-y-0 left-0 w-px" style={{ background: `repeating-linear-gradient(to bottom, ${color}33 0, ${color}33 10px, transparent 10px, transparent 20px)` }} />
+      <div className="absolute inset-y-0 left-0 w-px" style={{ background: `repeating-linear-gradient(to bottom, ${color}22 0, ${color}22 10px, transparent 10px, transparent 20px)` }} />
       {/* 走行するAGVの光跡 */}
-      <div className="absolute left-1/2 -translate-x-1/2 w-2 h-16 rounded-full blur-[2px]" style={{ background: `linear-gradient(to bottom, transparent, ${color}aa, transparent)`, animation: `agv-travel-${id} 9s ease-in-out infinite` }} />
-      <div className="absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full" style={{ background: color, boxShadow: `0 0 8px 2px ${color}`, animation: `agv-travel-${id} 9s ease-in-out infinite` }} />
+      <div className="absolute left-1/2 -translate-x-1/2 w-1.5 h-14 rounded-full blur-[3px] opacity-60" style={{ background: `linear-gradient(to bottom, transparent, ${color}66, transparent)`, animation: `agv-travel-${id} 9s ease-in-out infinite` }} />
+      <div className="absolute left-1/2 -translate-x-1/2 w-1 h-1 rounded-full opacity-60" style={{ background: color, boxShadow: `0 0 4px 1px ${color}99`, animation: `agv-travel-${id} 9s ease-in-out infinite` }} />
     </div>
   );
 }

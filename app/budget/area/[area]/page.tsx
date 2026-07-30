@@ -151,7 +151,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <HeroStat
             areaId={areaId}
-            eyebrow={`予実管理 (${monthLabel(activeMonth)})`}
+            eyebrow={`🐷 予実管理 (${monthLabel(activeMonth)})`}
             value={current.salesActual == null ? `${yen(current.salesBudget)}（予算）` : yen(current.salesActual)}
             sub={
               <div className="space-y-0.5">
@@ -164,7 +164,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
           />
           <HeroStat
             areaId={areaId}
-            eyebrow="KPI（稼働人数・工数）"
+            eyebrow="🌟 KPI（稼働人数・工数）"
             value={current.activeStaff == null ? '—' : `${current.activeStaff}名`}
             sub={
               activeMonth === CURRENT_ACTUAL_MONTH && monthly[activeMonth].activeStaff == null && staffSums.filled > 0 ? (
@@ -245,10 +245,10 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                 <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickCount={9} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
                 <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="前年" stroke="#a855f7" strokeDasharray="4 3" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="先月" stroke="#f59e0b" strokeWidth={1.5} connectNulls dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="当月実績" stroke={(AREA_THEME[areaId] || AREA_THEME.kanto).from} strokeWidth={2.5} connectNulls dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={2} connectNulls dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="前年" stroke="#a855f7" strokeDasharray="4 3" strokeWidth={2} connectNulls dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="先月" stroke="#f59e0b" strokeWidth={2} connectNulls dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="当月実績" stroke={(AREA_THEME[areaId] || AREA_THEME.kanto).from} strokeWidth={3} connectNulls dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </Card>
@@ -261,7 +261,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
           const num = (v?: number, unit = '') => (v != null ? `${v.toLocaleString()}${unit}` : 'データ未登録');
           const yenv = (v?: number) => (v != null ? yen(v) : 'データ未登録');
           return (
-            <Card eyebrow="SO Management" title="SO管理KPI（採用・稼働管理）">
+            <Card eyebrow="SO Management" title="🐣 SO管理KPI（採用・稼働管理）">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <MiniStat label="残業超過人数" value={num(so?.overtimeExcessCount, '名')} />
                 <MiniStat label="当日欠勤率" value={so?.dailyAbsenceRate != null ? `${so.dailyAbsenceRate.toFixed(1)}%` : 'データ未登録'} />

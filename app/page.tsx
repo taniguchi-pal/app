@@ -27,8 +27,19 @@ export default function LoginPage() {
         }
       `}} />
 
-      {/* 🌐 背景サイバーグリッドとアニメーション */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(26,54,110,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(26,54,110,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      {/* 🌐 背景方眼紙グリッドとアニメーション */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(26,54,110,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(26,54,110,0.05) 1px, transparent 1px),
+            linear-gradient(rgba(26,54,110,0.11) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(26,54,110,0.11) 1px, transparent 1px)
+          `,
+          backgroundSize: '20px 20px, 20px 20px, 100px 100px, 100px 100px',
+        }}
+      />
       <div className="absolute w-3 h-3 bg-blue-800 rounded-sm shadow-[0_0_15px_rgba(29,78,216,0.6)] animate-[agv-path_15s_linear_infinite] flex items-center justify-center z-0">
         <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
       </div>
