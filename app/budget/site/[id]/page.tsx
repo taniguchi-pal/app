@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Shell, Eyebrow, Card, BackLink, Breadcrumb, AREA_THEME, AGVLine, AGV_PASTEL } from '../../_ui';
-import { SITES, AREAS, MONTHS, MonthKey, monthCalendar, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef, ratesUpdatedLabel, effectiveMinimumWage, MINIMUM_WAGE_SOURCE_LABEL, effectiveMarketHourlyWage, MARKET_HOURLY_WAGE_SOURCE_LABEL } from '../../_data';
+import { Shell, Eyebrow, Card, BackLink, Breadcrumb, AREA_THEME, AGVLine, AGV_PASTEL, niceTicks } from '../../_ui';
+import { SITES, AREAS, MONTHS, MonthKey, monthCalendar, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef, ratesUpdatedLabel, effectiveMinimumWage, MINIMUM_WAGE_SOURCE_LABEL, effectiveMarketHourlyWage, MARKET_HOURLY_WAGE_SOURCE_LABEL, deriveUnitPrices } from '../../_data';
 
 // 現在、現場ごとの実績スクリーンショットが反映されている対象月（自社システム反映分は7月進捗）
 const CURRENT_ACTUAL_MONTH: MonthKey = '7月進捗';
@@ -15,13 +15,11 @@ const ACTION_COLOR: Record<ActionType, string> = {
   課題: 'text-rose-700 bg-rose-50 border-rose-100',
 };
 
-// 売上高は金額規模が大きく、売上総利益/粗利益②と同じ軸だと後者が潰れて見えるため、
-// 売上高=左軸、粗利・粗利益②=右軸の2軸グラフにする。
+// 現場カルテのグラフは売上高・粗利益②の2本のみ（売上総利益は使わないので非表示）。
 // 粗利益②(opProfit)は本部費配賦前の現場側データのため、標準勘定科目の「営業利益」とは別物として扱う
 // （PL_ACCOUNTSには含めず、site.opProfitを直接参照する）。
 const CHART_METRIC_LABELS: { label: string; color: string; axis: 'left' | 'right' }[] = [
   { label: '売上高', color: '#2563eb', axis: 'left' },
-  { label: '売上総利益', color: '#059669', axis: 'right' },
 ];
 // PL_ACCOUNTS内で一意なラベルなので、対応するPLAccountDefを引く
 const CHART_METRICS: { account: PLAccountDef; color: string; axis: 'left' | 'right' }[] = CHART_METRIC_LABELS.map(({ label, color, axis }) => ({
@@ -51,6 +49,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
   const area = AREAS.find((a) => a.id === site.areaId);
   const minWage = effectiveMinimumWage(site);
   const marketWage = effectiveMarketHourlyWage(site);
+  const unitPrices = deriveUnitPrices(site);
 
   const [form, setForm] = useState<EditableForm>({
     salesRep: site.salesRep ?? '',
@@ -63,9 +62,6 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
     staffCount: site.staffCount != null ? String(site.staffCount) : '',
     totalHours: site.totalHours != null ? String(site.totalHours) : '',
   });
-  const [apiStatus, setApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-
   // ── アタックリストで成約済み現場として紐づけられた場合、コンタクト履歴・ステータスを連動表示 ──
   const [linkedAttack, setLinkedAttack] = useState<any>(null);
   useEffect(() => {
@@ -107,13 +103,14 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
     }
   };
 
+  // 担当者・配置人数・総工数・掲載状況は「担当者・募集状況」カード廃止後もsite-overrides（SO入力）から読み取り続ける。
+  // （このページに編集フォームは無いが、他経路で更新された値があればここに反映される）
   useEffect(() => {
     let cancelled = false;
     fetch('/api/site-overrides')
       .then((r) => r.json())
       .then((data) => {
-        if (cancelled) return;
-        if (data?.error) { setApiStatus('unconfigured'); return; }
+        if (cancelled || data?.error) return;
         const o = data[id];
         if (o) {
           setForm((f) => ({
@@ -128,37 +125,10 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
             totalHours: o.totalHours ? String(o.totalHours) : f.totalHours,
           }));
         }
-        setApiStatus('ready');
       })
-      .catch(() => { if (!cancelled) setApiStatus('error'); });
+      .catch(() => {});
     return () => { cancelled = true; };
   }, [id]);
-
-  const handleSave = async () => {
-    setSaveState('saving');
-    try {
-      const res = await fetch('/api/site-overrides', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          siteId: id,
-          salesRep: form.salesRep,
-          soRep: form.soRep,
-          negotiationStatus: form.negotiationStatus,
-          recruitingActive: form.recruitingActive,
-          recruitingCostSpent: form.recruitingCostSpent,
-          recruitingCostBudget: form.recruitingCostBudget,
-          postingPeriod: form.postingPeriod,
-          staffCount: form.staffCount,
-          totalHours: form.totalHours,
-        }),
-      });
-      const data = await res.json();
-      setSaveState(data?.ok ? 'saved' : 'error');
-    } catch {
-      setSaveState('error');
-    }
-  };
 
   const hasFinancials = hasAnyPLData(site);
   // 縦軸=各指標の金額、横軸=4月〜3月の通期。売上高は月次予算表の実データ(4-9月)を予算線として使える一方、
@@ -195,6 +165,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
     予算: null,
     当月実績: mk === CURRENT_ACTUAL_MONTH ? gp2Actual : null,
   }));
+  const gp2Ticks = niceTicks(Math.max(0, gp2Actual ?? 0));
   const opMarginRate = gp2Actual != null && salesRow?.actual ? (gp2Actual / salesRow.actual) * 100 : null;
 
   // 配置人数・総工数はSheets入力（週次更新）が無ければ、直近の確定実績月（6月→5月→4月）にフォールバックする。
@@ -292,6 +263,37 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           </Card>
         </div>
 
+        {/* ── 職種別 請求単価・支給単価（レート表） ── */}
+        {site.roleRates && site.roleRates.length > 0 && (
+          <Card eyebrow="Rate Card" title="職種別 請求単価・時給単価・粗利①">
+            <p className="text-[10px] text-zinc-400 -mt-1 mb-2">{ratesUpdatedLabel()}</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs whitespace-nowrap">
+                <thead>
+                  <tr className="text-zinc-400 text-[10px]">
+                    <th className="text-left font-bold pb-1">職種・シフト</th>
+                    <th className="text-right font-bold pb-1">請求単価</th>
+                    <th className="text-right font-bold pb-1">時給単価</th>
+                    <th className="text-right font-bold pb-1">粗利①</th>
+                    <th className="text-right font-bold pb-1">粗利率①</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {site.roleRates.map((r, i) => (
+                    <tr key={i} className="border-t border-zinc-100">
+                      <td className="py-1.5 font-bold text-zinc-700">{r.label ?? '—'}</td>
+                      <td className="py-1.5 text-right font-mono">{r.billingRate != null ? `¥${r.billingRate.toLocaleString()}` : '—'}</td>
+                      <td className="py-1.5 text-right font-mono">{r.payRate != null ? `¥${r.payRate.toLocaleString()}` : '—'}</td>
+                      <td className="py-1.5 text-right font-mono">{r.profit != null ? `¥${r.profit.toLocaleString()}` : '—'}</td>
+                      <td className="py-1.5 text-right font-mono font-bold">{r.marginRate != null ? `${r.marginRate.toFixed(1)}%` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
         {/* ── 主要指標 推移（4月〜3月、指標ごとに折れ線グラフを分離） ── */}
         <Card eyebrow="P&L Analysis" title="🐷 主要指標 推移（4月〜3月）">
           {!hasFinancials ? (
@@ -300,11 +302,13 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
               <p className="text-[10px] text-zinc-400">現場ごとの損益書をご提供いただき次第、反映します</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {CHART_METRICS.map((m) => {
                 const row = getPLRow(site, m.account);
                 const trend = metricTrend(m.account);
                 const hasBudgetSeries = m.account.label === '売上高' && !!site.monthlyBudget;
+                const metricMax = Math.max(0, ...trend.flatMap((r) => [r.予算, r.当月実績].filter((v): v is number => v != null)));
+                const metricTicks = niceTicks(metricMax);
                 return (
                   <div key={m.account.label} className="p-3 rounded-xl bg-zinc-50 border border-zinc-100">
                     <p className="text-xs font-bold text-zinc-500 text-center">{m.account.label}</p>
@@ -316,7 +320,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                       <LineChart data={trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
                         <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#a1a1aa" />
-                        <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} tickCount={8} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
+                        <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} ticks={metricTicks} interval={0} domain={[0, metricTicks[metricTicks.length - 1]]} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
                         <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
                         {hasBudgetSeries && <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={2} connectNulls dot={{ r: 2 }} />}
                         <Line type="monotone" dataKey="当月実績" stroke={m.color} strokeWidth={3} connectNulls dot={{ r: 3 }} />
@@ -336,7 +340,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                   <LineChart data={gp2Trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
                     <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#a1a1aa" />
-                    <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} tickCount={8} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
+                    <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} ticks={gp2Ticks} interval={0} domain={[0, gp2Ticks[gp2Ticks.length - 1]]} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
                     <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
                     <Line type="monotone" dataKey="当月実績" stroke={GP2_COLOR} strokeWidth={3} connectNulls dot={{ r: 3 }} />
                   </LineChart>
@@ -399,11 +403,11 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
         {/* ── 単価情報 & 賃金相場 ──────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <Card eyebrow="Unit Price" title="リフト単価">
-            <p className="text-2xl font-black text-zinc-800 font-mono">{site.liftUnitPrice == null ? 'データ未登録' : `¥${site.liftUnitPrice.toLocaleString()}`}{site.liftUnitPrice != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
+            <p className="text-2xl font-black text-zinc-800 font-mono">{unitPrices.liftUnitPrice == null ? 'データ未登録' : `¥${unitPrices.liftUnitPrice.toLocaleString()}`}{unitPrices.liftUnitPrice != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
             <p className="text-[10px] text-zinc-400 mt-1">フォークリフト作業員 請求単価</p>
           </Card>
           <Card eyebrow="Unit Price" title="作業員単価">
-            <p className="text-2xl font-black text-zinc-800 font-mono">{site.workerUnitPrice != null ? `¥${site.workerUnitPrice.toLocaleString()}` : 'データ未登録'}{site.workerUnitPrice != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
+            <p className="text-2xl font-black text-zinc-800 font-mono">{unitPrices.workerUnitPrice != null ? `¥${unitPrices.workerUnitPrice.toLocaleString()}` : 'データ未登録'}{unitPrices.workerUnitPrice != null && <span className="text-xs font-normal ml-1">/h</span>}</p>
             <p className="text-[10px] text-zinc-400 mt-1">一般作業員 請求単価</p>
           </Card>
           <Card eyebrow="Reference" title="時給相場（エリア相場）">
@@ -438,128 +442,11 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
           </Card>
         )}
 
-        {/* ── 担当者・募集状況（手入力・チーム共有） ── */}
-        <Card eyebrow="Assignment" title="🐣 担当者・募集状況">
-          {apiStatus === 'unconfigured' && (
-            <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 -mt-1 mb-3">
-              共有保存基盤（Google Sheets連携）が未設定です。docs/site-overrides-setup.md の手順で設定すると、この項目がチーム全員に共有されます。
-            </p>
-          )}
-          {apiStatus === 'error' && (
-            <p className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-1 -mt-1 mb-3">共有データの取得に失敗しました。時間をおいて再度お試しください。</p>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400">担当Sales</label>
-                <input
-                  value={form.salesRep}
-                  onChange={(e) => setForm((f) => ({ ...f, salesRep: e.target.value }))}
-                  placeholder="未設定"
-                  className="w-full mt-1 px-2 py-1.5 text-sm font-bold text-zinc-700 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400">担当SO</label>
-                <input
-                  value={form.soRep}
-                  onChange={(e) => setForm((f) => ({ ...f, soRep: e.target.value }))}
-                  placeholder="未設定"
-                  className="w-full mt-1 px-2 py-1.5 text-sm font-bold text-zinc-700 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-[10px] font-bold text-zinc-400">価格交渉ステータス</label>
-                <select
-                  value={form.negotiationStatus}
-                  onChange={(e) => setForm((f) => ({ ...f, negotiationStatus: e.target.value as NegotiationStatus }))}
-                  className="w-full mt-1 px-2 py-1.5 text-sm font-bold text-zinc-700 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-                >
-                  <option value="">未設定</option>
-                  {NEGOTIATION_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400">配置人数（SOが入職・退職を反映）</label>
-                <input
-                  value={form.staffCount}
-                  onChange={(e) => setForm((f) => ({ ...f, staffCount: e.target.value.replace(/[^0-9]/g, '') }))}
-                  placeholder="未設定"
-                  inputMode="numeric"
-                  className="w-full mt-1 px-2 py-1.5 text-sm font-bold text-zinc-700 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400">総工数（週次更新）</label>
-                <input
-                  value={form.totalHours}
-                  onChange={(e) => setForm((f) => ({ ...f, totalHours: e.target.value.replace(/[^0-9.]/g, '') }))}
-                  placeholder="未設定"
-                  inputMode="decimal"
-                  className="w-full mt-1 px-2 py-1.5 text-sm font-bold text-zinc-700 bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-                />
-                <p className="text-[9px] text-zinc-400 mt-0.5">配置人数とあわせて1人当たり工数を自動算出します</p>
-              </div>
-            </div>
-            <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-2">
-              <label className="flex items-center gap-2 text-xs font-bold text-zinc-600">
-                <input type="checkbox" checked={form.recruitingActive} onChange={(e) => setForm((f) => ({ ...f, recruitingActive: e.target.checked }))} />
-                掲載（採用募集）中
-              </label>
-              {form.recruitingActive && (
-                <>
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-zinc-400 w-16 shrink-0">募集費進捗</span>
-                    <input
-                      value={form.recruitingCostSpent}
-                      onChange={(e) => setForm((f) => ({ ...f, recruitingCostSpent: e.target.value }))}
-                      placeholder="使用額"
-                      inputMode="numeric"
-                      className="w-full px-2 py-1 font-mono bg-white border border-zinc-200 rounded outline-none focus:border-blue-400"
-                    />
-                    <span className="text-zinc-400">/</span>
-                    <input
-                      value={form.recruitingCostBudget}
-                      onChange={(e) => setForm((f) => ({ ...f, recruitingCostBudget: e.target.value }))}
-                      placeholder="予算額"
-                      inputMode="numeric"
-                      className="w-full px-2 py-1 font-mono bg-white border border-zinc-200 rounded outline-none focus:border-blue-400"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-zinc-400 w-16 shrink-0">掲載期間</span>
-                    <select
-                      value={form.postingPeriod}
-                      onChange={(e) => setForm((f) => ({ ...f, postingPeriod: e.target.value }))}
-                      className="w-full px-2 py-1 font-bold bg-white border border-zinc-200 rounded outline-none focus:border-blue-400"
-                    >
-                      <option value="">未設定</option>
-                      {POSTING_PERIOD_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-3 mt-4">
-            <button
-              onClick={handleSave}
-              disabled={apiStatus !== 'ready' || saveState === 'saving'}
-              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition"
-            >
-              {saveState === 'saving' ? '保存中…' : '保存する'}
-            </button>
-            {saveState === 'saved' && <span className="text-xs font-bold text-emerald-600">✓ 保存しました（全員に共有されます）</span>}
-            {saveState === 'error' && <span className="text-xs font-bold text-rose-600">保存に失敗しました</span>}
-          </div>
-        </Card>
-
         {/* ── 掲載履歴（募集費・原稿URL） ────────────── */}
         <Card eyebrow="Postings" title="掲載履歴">
           {form.recruitingActive && (
             <p className="text-[11px] text-zinc-500 mb-3">
               当月の募集費進捗: <span className="font-bold text-zinc-700 font-mono">{form.recruitingCostSpent || '—'}</span> / <span className="font-bold text-zinc-700 font-mono">{form.recruitingCostBudget || '—'}</span>
-              {' '}（担当者・募集状況カードで編集）
             </p>
           )}
           {recruitingApiStatus === 'unconfigured' && (

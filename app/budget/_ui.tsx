@@ -3,6 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { dashboardUpdatedLabel } from './_data';
 
 export function Shell({ children, agvColor }: { children: React.ReactNode; agvColor?: string }) {
   return (
@@ -21,6 +22,11 @@ export function Shell({ children, agvColor }: { children: React.ReactNode; agvCo
         }}
       />
       {agvColor && <AGVLineVertical color={agvColor} />}
+      <div className="fixed top-2 right-2 md:top-3 md:right-3 z-30 pointer-events-none">
+        <span className="inline-flex items-center gap-1 text-[9px] md:text-[10px] font-bold text-zinc-500 bg-white/80 backdrop-blur border border-zinc-200 rounded-full px-2.5 py-1 shadow-sm">
+          <span aria-hidden>🕒</span>{dashboardUpdatedLabel()}
+        </span>
+      </div>
       <div className="relative z-10">{children}</div>
     </div>
   );
@@ -123,29 +129,46 @@ export function Card({ title, eyebrow, eyebrowColor, right, children, className 
 }
 
 // エリア別アクセントカラー（関東=水色 / 中部=黄緑 / 関西=ピンク / 大阪支店=琥珀）
+// 彩度・明度を抑えた「くすみカラー」。以前は原色に近く目に刺さる配色だったため、少し淡く落ち着いたトーンに調整。
 export const AREA_THEME: Record<string, { from: string; to: string; soft: string; text: string }> = {
-  kanto: { from: '#0e7490', to: '#164e63', soft: '#cffafe', text: '#0e7490' },
-  chubu: { from: '#4d7c0f', to: '#365314', soft: '#ecfccb', text: '#4d7c0f' },
-  kansai: { from: '#be185d', to: '#831843', soft: '#fce7f3', text: '#be185d' },
-  osaka: { from: '#b45309', to: '#78350f', soft: '#fef3c7', text: '#b45309' },
+  kanto: { from: '#3d94a8', to: '#2a6d7c', soft: '#e3f4f7', text: '#2a6d7c' },
+  chubu: { from: '#84a352', to: '#61793c', soft: '#eff5e4', text: '#61793c' },
+  kansai: { from: '#c56c8f', to: '#a14e70', soft: '#f8e9ef', text: '#a14e70' },
+  osaka: { from: '#c39355', to: '#9c723c', soft: '#f6ede1', text: '#9c723c' },
 };
 const BLUE_THEME = { from: '#1e40af', to: '#1e3a8a', soft: '#dbeafe', text: '#1e40af' };
 
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ガラス細工風（グラスモーフィズム）: 背景をやや透過させて方眼紙を透かし、backdrop-blurですりガラス感を出す。
+// 上部に薄いハイライト帯を重ねてガラスの反射っぽさを演出。
 export function HeroStat({ eyebrow, value, sub, areaId }: { eyebrow: string; value: React.ReactNode; sub?: React.ReactNode; areaId?: string }) {
   const t = (areaId && AREA_THEME[areaId]) || BLUE_THEME;
   const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-4 text-white shadow-lg"
-      style={{ backgroundImage: `linear-gradient(135deg, ${t.from}, ${t.to})`, boxShadow: `0 10px 30px -8px ${t.from}66` }}
+      className="relative overflow-hidden rounded-2xl p-4 text-white shadow-lg border"
+      style={{
+        backgroundImage: `linear-gradient(135deg, ${hexToRgba(t.from, 0.7)}, ${hexToRgba(t.to, 0.78)})`,
+        borderColor: 'rgba(255,255,255,0.35)',
+        boxShadow: `0 8px 32px -10px ${t.from}66, inset 0 1px 0 rgba(255,255,255,0.3)`,
+        backdropFilter: 'blur(16px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+      }}
     >
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes sheen-${uid} { 0% { transform: translateX(-120%) skewX(-15deg); } 100% { transform: translateX(220%) skewX(-15deg); } }
       `}} />
+      {/* ガラス上部の反射ハイライト */}
+      <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent pointer-events-none" />
       {/* つやのある光の帯が定期的に通過 */}
       <div className="absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" style={{ animation: `sheen-${uid} 5s ease-in-out infinite` }} />
       <p className="relative text-[10px] font-bold text-white/70 font-montserrat tracking-[0.15em] uppercase">{eyebrow}</p>
-      <p className="relative mt-2 text-2xl md:text-3xl font-black tracking-tight font-mono">{value}</p>
+      <p className="relative mt-2 text-2xl md:text-3xl font-black tracking-tight font-mono" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>{value}</p>
       {sub && <div className="relative mt-2 text-xs font-bold text-white/70">{sub}</div>}
     </div>
   );
@@ -221,6 +244,21 @@ export function MiniStat({ label, value, unit, sub, danger }: { label: string; v
       {sub && <p className={`text-[9px] mt-1 font-bold ${danger ? 'text-rose-500' : 'text-zinc-400'}`}>{sub}</p>}
     </div>
   );
+}
+
+// 折れ線グラフのY軸目盛りを、データの規模（現場ごとの売上~数十万円〜エリア全体の数千万円まで様々）に応じて
+// キリのいい間隔（1・2・5×10^n）に自動調整する。tickCountだけに頼ると半端な数値の目盛りになりやすいため、
+// 実際の最大値から目盛り本数targetCount本ぶんの「きれいな刻み幅」を逆算してticks配列を生成する。
+export function niceTicks(maxValue: number, targetCount = 6): number[] {
+  const max = Math.max(maxValue, 1);
+  const rawStep = max / Math.max(targetCount, 1);
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const normalized = rawStep / magnitude;
+  const niceMultiplier = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  const step = niceMultiplier * magnitude;
+  const ticks: number[] = [0];
+  while (ticks[ticks.length - 1] < max) ticks.push(ticks[ticks.length - 1] + step);
+  return ticks;
 }
 
 export function ProgressBar({ rate, color = 'bg-blue-600' }: { rate: number | null; color?: string }) {

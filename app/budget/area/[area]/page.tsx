@@ -3,15 +3,15 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME, AGVLine, AGV_PASTEL } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, effectiveStaffCount, effectiveTotalHours, SITE_SALES_TARGET, yen } from '../../_data';
+import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME, AGVLine, AGV_PASTEL, niceTicks } from '../../_ui';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, currentCalendarMonthKey, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, effectiveStaffCount, effectiveTotalHours, SITE_SALES_TARGET, RECRUITING_LAST_YEAR, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
 export default function AreaDashboard({ params }: { params: Promise<{ area: string }> }) {
   const { area: areaId } = React.use(params);
   const area = AREAS.find((a) => a.id === areaId) ?? AREAS[0];
-  const [activeMonth, setActiveMonth] = useState<MonthKey>(CURRENT_ACTUAL_MONTH);
+  const [activeMonth, setActiveMonth] = useState<MonthKey>(currentCalendarMonthKey());
   const monthIndex = MONTHS.indexOf(activeMonth);
 
   // ── 7月以降の実績はSheetsの値があれば上書き ──
@@ -102,6 +102,8 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
       先月: prevRow?.salesActual ?? null,
     };
   });
+  const salesTrendMax = Math.max(0, ...salesTrend.flatMap((r) => [r.予算, r.当月実績, r.前年, r.先月].filter((v): v is number => v != null)));
+  const salesTrendTicks = niceTicks(salesTrendMax);
 
   const topics: { text: string; tone: 'default' | 'alert' | 'notice' }[] = [];
   if (rate != null && gap != null) topics.push({ text: `売上 予算比 ${rate.toFixed(1)}%（GAP ${gap > 0 ? '+' : ''}¥${gap.toLocaleString()}）`, tone: 'default' });
@@ -158,6 +160,12 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                 <div className="flex justify-between"><span>予算 {yen(current.salesBudget)}</span><span>{rate == null ? '計画中' : `${rate.toFixed(1)}%`}</span></div>
                 {current.salesForecast != null && (
                   <div className="flex justify-between text-white/70"><span>見通し {yen(current.salesForecast)}</span><span>{((current.salesForecast / current.salesBudget) * 100).toFixed(1)}%</span></div>
+                )}
+                {current.paidLeaveForecast != null && (
+                  <div className="flex justify-between text-white/70">
+                    <span>有給見通し {yen(current.paidLeaveForecast)}</span>
+                    {current.paidLeaveForecastNote && <span className="text-[10px]">{current.paidLeaveForecastNote}</span>}
+                  </div>
                 )}
               </div>
             }
@@ -242,7 +250,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
               <LineChart data={salesTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="#a1a1aa" />
-                <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} tickCount={15} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
+                <YAxis tick={{ fontSize: 10 }} stroke="#a1a1aa" width={56} ticks={salesTrendTicks} interval={0} domain={[0, salesTrendTicks[salesTrendTicks.length - 1]]} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
                 <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={2} connectNulls dot={{ r: 2 }} />
@@ -260,6 +268,14 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
           const rate = (a?: number, b?: number) => (a != null && b) ? `${((a / b) * 100).toFixed(1)}%` : '—';
           const num = (v?: number, unit = '') => (v != null ? `${v.toLocaleString()}${unit}` : 'データ未登録');
           const yenv = (v?: number) => (v != null ? yen(v) : 'データ未登録');
+          const yoy = RECRUITING_LAST_YEAR[areaId]?.[activeMonth];
+          const yoyLabel = (current?: number, last?: number | null, unit = '名') => {
+            if (last == null) return '前年同月データ未登録';
+            if (current == null) return `前年同月 ${last.toLocaleString()}${unit}`;
+            const diff = current - last;
+            const sign = diff > 0 ? '+' : '';
+            return `前年同月 ${last.toLocaleString()}${unit}（${sign}${diff}）`;
+          };
           return (
             <Card eyebrow="SO Management" title="🐣 SO管理KPI（採用・稼働管理）">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -269,14 +285,17 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                 <MiniStat label="応募単価" value={yenv(so?.applicantUnitCost)} />
                 <MiniStat label="有効リソース単価" value={yenv(so?.validResourceUnitCost)} />
                 <MiniStat label="入職単価" value={yenv(so?.hireUnitCost)} />
-                <MiniStat label="総応募者数" value={num(so?.totalApplicants, '名')} />
+                <MiniStat label="総応募者数" value={num(so?.totalApplicants, '名')} sub={yoyLabel(so?.totalApplicants, yoy?.totalApplicants)} />
                 <MiniStat label="有効応募数" value={num(so?.validApplicants, '名')} sub={`有効応募率 ${rate(so?.validApplicants, so?.totalApplicants)}`} />
                 <MiniStat label="有効リソース数" value={num(so?.validResources, '名')} sub={`有効リソース率 ${rate(so?.validResources, so?.validApplicants)}`} />
                 <MiniStat label="候補者数" value={num(so?.candidates, '名')} />
-                <MiniStat label="入職者数" value={num(so?.hires, '名')} sub={`入職率 ${rate(so?.hires, so?.totalApplicants)} ／ 候補入職率 ${rate(so?.hires, so?.candidates)}`} />
-                <MiniStat label="月内退職者数" value={num(so?.midMonthResignations, '名')} />
+                <MiniStat label="入職者数" value={num(so?.hires, '名')} sub={yoyLabel(so?.hires, yoy?.hires)} />
+                <MiniStat label="月内退職者数" value={num(so?.midMonthResignations, '名')} sub={yoyLabel(so?.midMonthResignations, yoy?.midMonthResignations)} />
                 <MiniStat label="月末退職者数" value={num(so?.endMonthResignations, '名')} />
               </div>
+              {yoy?.hireRate != null && (
+                <p className="text-[10px] text-zinc-400 mt-2">前年同月 入職率 {yoy.hireRate.toFixed(1)}%（{monthLabel(activeMonth)}時点比較）</p>
+              )}
             </Card>
           );
         })()}
@@ -385,7 +404,8 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
               )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredSites.map((site) => {
-            const hasFinancials = site.sales?.actual != null && site.sales?.budget != null;
+            const hasSales = site.sales?.actual != null;
+            const hasFinancials = hasSales && site.sales?.budget != null;
             const siteRate = hasFinancials ? (site.sales!.actual! / site.sales!.budget!) * 100 : null;
             const monthStaff = site.staffCountByMonth?.[activeMonth];
             const siteStaffCount = monthStaff != null
@@ -413,9 +433,13 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                     </div>
                     <p className="text-[10px] text-zinc-400 mt-0.5">{site.prefecture ?? '所在地未登録'} ・ 案件コード {site.id}</p>
                   </div>
-                  {hasFinancials ? <AchieveBadge rate={siteRate} /> : <span className="text-[10px] font-bold text-zinc-400 bg-zinc-100 px-2 py-1 rounded shrink-0">データ未登録</span>}
+                  {hasFinancials ? <AchieveBadge rate={siteRate} /> : (
+                    <span className="text-[10px] font-bold text-zinc-400 bg-zinc-100 px-2 py-1 rounded shrink-0">
+                      {hasSales ? '予算未登録' : 'データ未登録'}
+                    </span>
+                  )}
                 </div>
-                {hasFinancials && (
+                {hasSales && (
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-zinc-400">当月売上{site.sales!.actual! >= SITE_SALES_TARGET
                       ? <span className="ml-1 text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 py-0.5">✓ 150万達成</span>
@@ -436,7 +460,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
                     </div>
                   </>
                 )}
-                {!hasFinancials && siteStaffCount == null && siteTotalHours == null && (
+                {!hasSales && siteStaffCount == null && siteTotalHours == null && (
                   <p className="text-xs text-zinc-400">損益データはまだ登録されていません</p>
                 )}
                 {(site.backlogCount != null || site.expectedImpact != null) && (

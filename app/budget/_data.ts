@@ -33,11 +33,25 @@ export function monthLabels(keys: readonly MonthKey[], now: Date = new Date()): 
   return Object.fromEntries(keys.map((k) => [k, monthLabel(k, now)]));
 }
 
+// ページ初期表示で選ぶ「今月」のMONTHSキーを「今日」から動的に算出する。
+// CURRENT_ACTUAL_MONT（実績データの反映が済んでいる最新月）とは別物：
+// あちらは手動更新のデータ鮮度マーカーで、日付が進んでも自動では動かない。
+export function currentCalendarMonthKey(now: Date = new Date()): MonthKey {
+  const y = now.getFullYear(), m = now.getMonth() + 1;
+  return MONTHS.find((k) => { const c = monthCalendar(k); return c.year === y && c.month === m; }) ?? MONTHS[MONTHS.length - 1];
+}
+
 // 最低賃金・時給相場・マージン率は週次で確認・更新する運用。最終更新日をダッシュボード各所に小さく表示する。
-export const RATES_UPDATED_AT = '2026-07-13';
+export const RATES_UPDATED_AT = '2026-08-01';
 export function ratesUpdatedLabel(): string {
   const d = new Date(RATES_UPDATED_AT);
   return `最終更新 ${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}（週次更新）`;
+}
+
+// P&L・KPI等ダッシュボード掲載数値の反映時点（現場からの報告都度、手動更新）。右上バッジに表示。
+export const DASHBOARD_DATA_UPDATED_AT = '2026/8/5 14:32';
+export function dashboardUpdatedLabel(): string {
+  return `${DASHBOARD_DATA_UPDATED_AT}更新`;
 }
 
 // 地域別最低賃金（令和7年度・厚生労働省公表、2025年10〜11月発効）。都道府県ごとに一元管理し、
@@ -76,6 +90,82 @@ export const ANNUAL_SCHEDULE = [
   { period: 'Q4', range: '1–3月', title: '通期目標達成期', desc: '年間売上6.2億円、営業利益率6.87%の必達。次期に向けたリーダー育成。' },
 ];
 
+// 「年間スケジュール・イベント」シート（人ソ実績一覧・年間スケジュール.xlsx）の定型タスクを
+// Sheets連携未設定時のローカル既定値として登録。四半期クリックの月別タスク一覧に表示される。
+export interface DefaultScheduleTask {
+  id: string; title: string; period: string; status: string; note: string; area: string; site: string; assignee: string; createdAt: string;
+}
+const dTask = (id: string, title: string, period: string, assignee: '営業' | 'SO', note = ''): DefaultScheduleTask => (
+  { id, title, period, status: '未着手', note, area: '', site: '', assignee, createdAt: '' }
+);
+export const DEFAULT_SCHEDULE_TASKS: DefaultScheduleTask[] = [
+  // ── 営業 ──
+  dTask('sched-eigyo-1', '有料職業紹介事業報告書', '4月', '営業', '前年度1年間で、紹介予定派遣や直雇用に切替があった際に報告する（丸全 福留さん 令和6年度）'),
+  dTask('sched-eigyo-2', '衛生委員会', '4月', '営業'),
+  dTask('sched-eigyo-3', '西鉄運輸<短期>掲載・採用', '4月', '営業'),
+  dTask('sched-eigyo-4', '衛生委員会', '5月', '営業'),
+  dTask('sched-eigyo-5', '暑さ対策グッズ準備・発送', '5月', '営業'),
+  dTask('sched-eigyo-6', 'HMK<短期>掲載・採用', '5月', '営業'),
+  dTask('sched-eigyo-7', '派遣事業報告書', '6月', '営業'),
+  dTask('sched-eigyo-8', '衛生委員会', '6月', '営業'),
+  dTask('sched-eigyo-9', '西鉄運輸<短期> 稼働', '6月', '営業'),
+  dTask('sched-eigyo-10', '衛生委員会', '7月', '営業'),
+  dTask('sched-eigyo-11', 'HMK<短期>掲載・採用', '7月', '営業'),
+  dTask('sched-eigyo-12', 'HMK<短期> 稼働（7月中旬〜お盆まで）', '7月', '営業'),
+  dTask('sched-eigyo-13', '衛生委員会', '8月', '営業'),
+  dTask('sched-eigyo-14', '同労賃情報収集', '8月', '営業'),
+  dTask('sched-eigyo-15', '任天堂<短期>掲載・採用', '8月', '営業'),
+  dTask('sched-eigyo-16', '上期振り返り・下期見通し資料作成', '9月', '営業'),
+  dTask('sched-eigyo-17', '衛生委員会', '9月', '営業'),
+  dTask('sched-eigyo-18', '同労賃・地域指数マスタ シス部にコア取り込み依頼', '9月', '営業', '「2 該当職種の平均的な賃金」「3 〜地域の指数」「4 〜算出した金額」など同労賃地域マスタ取り込み依頼。地域指数などの情報（同労賃マスタのシート）を坂中さん・まさしさんに共有'),
+  dTask('sched-eigyo-19', '同労賃一発目 資料提示', '10月', '営業'),
+  dTask('sched-eigyo-20', '衛生委員会', '10月', '営業'),
+  dTask('sched-eigyo-21', 'HMK<短期> 稼働', '10月', '営業'),
+  dTask('sched-eigyo-22', '任天堂<短期> 稼働（10月上旬〜1月上旬まで）', '10月', '営業'),
+  dTask('sched-eigyo-23', '同労賃見積書ご提示', '11月', '営業'),
+  dTask('sched-eigyo-24', '来期予算作成', '11月', '営業'),
+  dTask('sched-eigyo-25', '衛生委員会', '11月', '営業'),
+  dTask('sched-eigyo-26', '同労賃回答〆切', '12月', '営業'),
+  dTask('sched-eigyo-27', '衛生委員会', '12月', '営業'),
+  dTask('sched-eigyo-28', 'お年賀周り', '1月', '営業'),
+  dTask('sched-eigyo-29', '来期予算・修正①', '1月', '営業'),
+  dTask('sched-eigyo-30', '労働者代表選出', '2月', '営業'),
+  dTask('sched-eigyo-31', '衛生委員会', '2月', '営業'),
+  dTask('sched-eigyo-32', '同労賃時給変更（WF 3月上旬）', '3月', '営業'),
+  dTask('sched-eigyo-33', '衛生委員会', '3月', '営業'),
+  // ── SO ──
+  dTask('sched-so-1', '交通費運賃改正', '4月', 'SO'),
+  dTask('sched-so-2', '障害者手帳所持者調査', '4月', 'SO'),
+  dTask('sched-so-3', '衛生委員会', '4月', 'SO'),
+  dTask('sched-so-4', '衛生委員会', '5月', 'SO'),
+  dTask('sched-so-5', '暑さ対策グッズ準備・発送', '5月', 'SO', '塩飴は消耗品／空調服は福利厚生費／送料塩飴1件270円。準備は4/23〜開始'),
+  dTask('sched-so-6', '雇用契約書類発送（20日過ぎ頃）', '6月', 'SO'),
+  dTask('sched-so-7', '衛生委員会', '6月', 'SO'),
+  dTask('sched-so-8', '暑さ対策グッズ準備・発送［6月以降新規入職スタッフ分対応］', '6月', 'SO', '塩飴は消耗品／空調服は福利厚生費／送料塩飴1件270円'),
+  dTask('sched-so-9', '夏季休業期間についてお知らせメール', '7月', 'SO'),
+  dTask('sched-so-10', '衛生委員会', '7月', 'SO'),
+  dTask('sched-so-11', 'PALMEE全現場導入', '7月', 'SO'),
+  dTask('sched-so-12', '衛生委員会', '8月', 'SO'),
+  dTask('sched-so-13', 'PALMEE試験運用', '8月', 'SO'),
+  dTask('sched-so-14', '今年定年迎えるスタッフ確認（定年再雇用手続き準備）', '9月', 'SO'),
+  dTask('sched-so-15', '雇用契約書類発送（20日過ぎ頃）', '9月', 'SO'),
+  dTask('sched-so-16', '衛生委員会', '9月', 'SO'),
+  dTask('sched-so-17', '交通費運賃改正', '10月', 'SO'),
+  dTask('sched-so-18', '事業所抵触日更新', '10月', 'SO'),
+  dTask('sched-so-19', '冬季休業期間についてお知らせメール', '11月', 'SO'),
+  dTask('sched-so-20', '衛生委員会', '11月', 'SO'),
+  dTask('sched-so-21', '雇用契約書類発送（20日過ぎ頃）', '12月', 'SO'),
+  dTask('sched-so-22', '衛生委員会', '12月', 'SO'),
+  dTask('sched-so-23', '衛生委員会', '1月', 'SO'),
+  dTask('sched-so-24', 'PALMEE速払い切り替えスタート', '1月', 'SO'),
+  dTask('sched-so-25', '労働者代表選出・任命', '2月', 'SO'),
+  dTask('sched-so-26', '衛生委員会', '2月', 'SO'),
+  dTask('sched-so-27', '障害者手帳所持者調査', '2月', 'SO'),
+  dTask('sched-so-28', '雇用契約書類発送（20日過ぎ頃）', '3月', 'SO'),
+  dTask('sched-so-29', '労働者代表選出完了・労務連携', '3月', 'SO'),
+  dTask('sched-so-30', '被扶養者異動の確認', '3月', 'SO'),
+];
+
 export const AREAS: { id: string; title: string }[] = [
   { id: 'kanto', title: '関東' },
   { id: 'chubu', title: '中部' },
@@ -87,11 +177,20 @@ export const AREAS: { id: string; title: string }[] = [
 export const ASSIGNEES = ['田中', '谷口', '岩田', '山口', '五十嵐', '貴子'] as const;
 
 // ダッシュボード大元「トピックス・プロジェクト」で参照URLを貼れる進行中プロジェクト
-export const PROJECTS: { id: string; name: string; note?: string }[] = [
-  { id: 'fukuyama', name: '福山通運様PJ' },
-  { id: 'palmee', name: 'PALMEE PJ', note: '運用アップデート：勤怠表の紙ベース終了承認問題のフェーズへ' },
-  { id: 'so-flow', name: 'SO業務フロー改善' },
-  { id: 'ai-agent', name: 'AIエージェント' },
+// PJごとに雰囲気の違うアイコン・テーマカラーを割り当てる（内容に応じて自由に）。
+export const PROJECTS: { id: string; name: string; note?: string; icon: string; color: string }[] = [
+  { id: 'fukuyama', name: '福山通運様PJ', icon: '🚚', color: '#2563eb' },
+  { id: 'palmee', name: 'PALMEE PJ', note: '運用アップデート：勤怠表の紙ベース終了承認問題のフェーズへ', icon: '📱', color: '#059669' },
+  { id: 'so-flow', name: 'SO業務フロー改善', icon: '🔄', color: '#d97706' },
+  { id: 'ai-agent', name: 'AIエージェント', icon: '🤖', color: '#7c3aed' },
+];
+
+// プロジェクトごとに貼れる参照URLの種類（ドライブ・Asana・NotebookLM）。
+export interface ProjectLinkField { key: 'driveUrl' | 'asanaUrl' | 'notebookLmUrl'; label: string; icon: string }
+export const PROJECT_LINK_FIELDS: ProjectLinkField[] = [
+  { key: 'driveUrl', label: 'ドライブ', icon: '🗂️' },
+  { key: 'asanaUrl', label: 'Asana', icon: '✅' },
+  { key: 'notebookLmUrl', label: 'NotebookLM', icon: '🧠' },
 ];
 
 const AREA_WEIGHT: Record<string, number> = { kanto: 0.140, chubu: 0.1447, kansai: 0.3312, osaka: 0.3841 };
@@ -134,6 +233,52 @@ export interface SOMetrics {
   dailyAbsenceRate?: number; // 当日欠勤率（%、入力値）
 }
 
+// 前年（26期・2025年4月〜2026年3月）の採用KPI実績。エリア別の月次前年比表示に使用。
+// 出典: 営業進捗まとめシート「【人ソ】営業進捗まとめシート」。大阪支店は同シートに個別行が無いため未登録。
+export interface RecruitingYoyMonth {
+  totalApplicants: number | null; // 総応募者数
+  hires: number | null; // 入職者数
+  midMonthResignations: number | null; // 月内退職者数
+  hireRate: number | null; // 入職率（%、分母は有効応募数）
+}
+function buildRecruitingYoY(
+  totalApplicants: (number | null)[],
+  hires: (number | null)[],
+  midMonthResignations: (number | null)[],
+  hireRate: (number | null)[]
+): Partial<Record<MonthKey, RecruitingYoyMonth>> {
+  const out: Partial<Record<MonthKey, RecruitingYoyMonth>> = {};
+  MONTHS.forEach((mk, i) => {
+    out[mk] = {
+      totalApplicants: totalApplicants[i] ?? null,
+      hires: hires[i] ?? null,
+      midMonthResignations: midMonthResignations[i] ?? null,
+      hireRate: hireRate[i] ?? null,
+    };
+  });
+  return out;
+}
+export const RECRUITING_LAST_YEAR: Record<string, Partial<Record<MonthKey, RecruitingYoyMonth>>> = {
+  kanto: buildRecruitingYoY(
+    [46, 31, 26, 31, 31, 33, 23, 9, 8, 10, 12, null],
+    [7, 1, 2, 3, 3, 12, 5, 1, 2, 1, 2, null],
+    [1, 5, 5, 0, 2, 6, 3, 2, 1, 6, 2, null],
+    [26.92, 6.25, 10.53, 11.11, 16.67, 63.16, 35.71, 12.50, 28.57, 20.00, 40.00, null]
+  ),
+  chubu: buildRecruitingYoY(
+    [17, 8, 16, 16, 17, 19, 6, 7, 2, 0, null, null],
+    [1, 4, 5, 1, 2, 3, 1, 2, 0, 0, null, null],
+    [0, 2, 1, 0, 1, 1, 0, 1, 0, 0, null, null],
+    [7.14, 66.67, 35.71, 8.33, 13.33, 21.43, 25.00, 40.00, null, null, null, null]
+  ),
+  kansai: buildRecruitingYoY(
+    [55, 37, 48, 45, 21, 25, 84, 50, 7, 23, null, null],
+    [11, 4, 12, 12, 0, 1, 8, 15, 1, 1, null, null],
+    [2, 2, 9, 8, 1, 1, 3, 0, 0, 3, null, null],
+    [22.92, 12.90, 32.43, 30.77, 0.00, 4.00, 11.27, 32.61, 14.29, 4.55, null, null]
+  ),
+};
+
 export interface AreaMonth {
   salesBudget: number; salesActual: number | null; yoyLastYear: number | null;
   gpBudget: number | null; gpActual: number | null;
@@ -146,6 +291,8 @@ export interface AreaMonth {
   // 見通し（予算とは別に、進捗を踏まえて更新される着地見込み）。予算を上書きせず並記する。
   salesForecast?: number | null;
   gpForecast?: number | null;
+  paidLeaveForecast?: number | null; // 有給金額の見通し
+  paidLeaveForecastNote?: string | null; // 補足（例: 仮の退職有給を含む、など）
 }
 
 function plannedCompany(budget: number, quarterDesc: string, backlog?: { orderBacklog: number; stackupPotential: number }): CompanyMonth {
@@ -232,7 +379,8 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
       '入職内訳: 西鉄運輸加古川2名・セリア2名・昭和冷蔵小牧2名・昭和冷蔵犬山1名・大阪支店2名・HMKロジ南港1名・HMKロジ西神戸1名・任天堂1名',
     ],
   },
-  '8月予定': { ...plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 41053925 },
+  // 入職・退職は8/6時点の速報値（月末まで変動あり）。
+  '8月予定': { ...plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc), joined: 3, resigned: 2, salesForecast: 41053925 },
   '9月予定': { ...plannedCompany(53000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 42095120 },
   '10月予定': plannedCompany(54000000, ANNUAL_SCHEDULE[2].desc),
   '11月予定': plannedCompany(55000000, ANNUAL_SCHEDULE[2].desc),
@@ -305,8 +453,8 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
       salesForecast: 14386426, gpForecast: 2015538,
     },
     // 8-9月の予算は現場積み上げ(現場マスタ登録分)＋関西新規枠(月次6,500,000、未登録の新規現場分)の合計。
-    '8月予定': { ...plannedArea(17290000), salesForecast: 10510000 },
-    '9月予定': { ...plannedArea(17720000), salesForecast: 10290000 },
+    '8月予定': { ...plannedArea(17290000), salesForecast: 9308883, paidLeaveForecast: 308160 },
+    '9月予定': { ...plannedArea(17720000), salesForecast: 9620000, paidLeaveForecast: 300000 },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kansai) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
   osaka: {
@@ -323,8 +471,8 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
       heat: null, siteCount: 1, funnel: null,
       salesForecast: 19175778, gpForecast: 2096883,
     },
-    '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 17308925 },
-    '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 18325120 },
+    '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 17308925, paidLeaveForecast: 1050000, paidLeaveForecastNote: '仮の退職有給18万円を含む' },
+    '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 18325120, paidLeaveForecast: 880000, paidLeaveForecastNote: '仮の退職有給18万円を含む' },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.osaka) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
 };
@@ -433,12 +581,24 @@ export interface SiteRole {
   actionLog?: ActionLogEntry[];
 }
 
+// 職種・シフト別の請求単価・支給単価・利益・利益率①（2026年7月時点の職種別レート表より）。
+// 同一現場に複数職種がある場合は配列で全件保持し、情報を欠落させない。
+export interface RoleRate {
+  label: string | null; // 職種・シフト名（例: 日勤／夜勤／フォークリフト）。単一職種の現場はnull
+  billingRate: number | null; // 請求単価（円/h）
+  payRate: number | null; // 支給単価（円/h）
+  profit: number | null; // 利益（請求単価-支給単価、円/h）
+  marginRate: number | null; // 利益率①（%）
+}
+
 export interface SiteData {
   id: string; name: string; areaId: string; prefecture: string | null;
   active: boolean; lifecycle?: string;
   roles?: SiteRole[]; // 事業所内の役割別内訳（案件番号つき）
   sales?: Partial<SiteFinancial>; cost?: Partial<SiteFinancial>; paidLeave?: Partial<SiteFinancial>; opProfit?: Partial<SiteFinancial>;
   monthlyBudget?: Partial<Record<MonthKey, number>>; // 現場ごとの月次売上予算（4-9月予算表より。10月以降は未確定）
+  salesYoyByMonth?: Partial<Record<MonthKey, number>>; // 前年（26期）月次売上実績（営業進捗まとめシートより。現場名突合、未登録現場は無し）
+  roleRates?: RoleRate[]; // 職種別レート表（2026年7月時点、関西・大阪支店・中部分より突合。関東分は未登録）
   staffCountByMonth?: Partial<Record<MonthKey, number>>; // 現場ごとの月次派遣人数（実績、4-6月）
   totalHoursByMonth?: Partial<Record<MonthKey, number>>; // 現場ごとの月次総工数（実績、4-6月）
   plDetail?: Record<string, Partial<SiteFinancial>>; // PL_ACCOUNTSのlabelをキーとした明細（実データ提供後に充実予定）
@@ -460,6 +620,18 @@ function placeholderSite(id: string, name: string, areaId: string, opts?: { acti
 
 function role(code: string, label: string, isNew?: boolean): SiteRole {
   return { code, label, isNew };
+}
+
+// リフト単価・作業員単価は元々サイトごとの単一値だったが、職種別レート表（roleRates）の方が
+// 新しく・粒度も細かいため、roleRatesがあればそちらの請求単価から自動算出する（無ければ旧手入力値にフォールバック）。
+export function deriveUnitPrices(site: Pick<SiteData, 'roleRates' | 'liftUnitPrice' | 'workerUnitPrice'>): { liftUnitPrice: number | null; workerUnitPrice: number | null } {
+  const roles = site.roleRates ?? [];
+  const liftRole = roles.find((r) => r.label && /リフト/.test(r.label) && r.billingRate != null);
+  const workerRole = roles.find((r) => r.billingRate != null && (!r.label || !/リフト/.test(r.label)));
+  return {
+    liftUnitPrice: liftRole?.billingRate ?? site.liftUnitPrice ?? null,
+    workerUnitPrice: workerRole?.billingRate ?? site.workerUnitPrice ?? null,
+  };
 }
 
 // 4-9月の月次予算表（現場名で突合）から、現場ごとの月次売上予算シリーズを組み立てる。10月以降は未確定のため含めない。
@@ -488,28 +660,33 @@ export const POSTING_PERIOD_OPTIONS = ['1週間', '2週間', '1ヶ月', '2ヶ月
 export const SITES: Record<string, SiteData> = {
   // ── 関東 ──────────────────────────────────────────────
   // 7月実績は7/28 10:15時点のP&L実績（売上合計・労務費・有給金額・粗利益2）より反映。
+  // 売上高は後日、確定数字（検索システム 対象年月2026年07月・人ソ（関東）画面）で上書き反映（2026/8/5）。
   // budgetは月次予算表（現場名で突合）の7月列。
   '811-1': {
     active: true,
     id: '811-1', name: '福山通運 八千代支店 メニコン', areaId: 'kanto', prefecture: '千葉県',
-    sales: { actual: 3967107, budget: 3952000 },
+    sales: { actual: 4044078, budget: 3952000 },
     cost: { actual: 2903307 },
     paidLeave: { actual: 98250 },
     opProfit: { actual: 562022 },
     monthlyBudget: budgetSeries(3952000, 3800000, 3800000, 3952000, 3800000, 3648000, 3952000, 3648000, 3800000, 3496000, 3496000, 3800000),
+    salesYoyByMonth: budgetSeries(2923422, 2852963, 2740535, 2565959, 3011561, 3409905, 4087594, 3860975, 4609539, 3972974, 3874528, 4609974),
     staffCountByMonth: monthSeries3(26, 26, 26),
     totalHoursByMonth: monthSeries3(2138.75, 2030.50, 2083.75),
+    roleRates: [{ label: null, billingRate: 1790, payRate: 1310, profit: 480, marginRate: 26.8 }],
   },
   '116-1': {
     active: true,
     id: '116-1', name: 'PCS 関東（重工田町ビル）', areaId: 'kanto', prefecture: '東京都',
-    sales: { actual: 651568, budget: 580000 },
+    sales: { actual: 666824, budget: 580000 },
     cost: { actual: 393680 },
     paidLeave: { actual: 10640 },
     opProfit: { actual: 123966 },
     monthlyBudget: budgetSeries(520000, 510000, 570000, 580000, 450000, 540000, 600000, 480000, 550000, 510000, 500000, 520000),
+    salesYoyByMonth: budgetSeries(527904, 513240, 571896, 586560, 454584, 542568, 600308, 489411, 542568, 557232, 527904, 601224),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(306.00, 271.50, 320.00),
+    roleRates: [{ label: null, billingRate: 2033, payRate: 1330, profit: 703, marginRate: 34.6 }],
   },
   '115-1': {
     active: false,
@@ -519,103 +696,191 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(290000, 270000, 350000, 350000, 250000, 300000, 340000, 290000, 300000, 320000, 290000, 350000),
+    salesYoyByMonth: budgetSeries(708800, 599520, 909010, 1083250, 499380, 850570, 682080, 511560, 617120, 243600, 278110, 341040),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(136.00, 112.00, 16.00),
+    roleRates: [{ label: null, billingRate: 0, payRate: null, profit: null, marginRate: null }],
   },
   '657-1': {
     active: true,
     id: '657-1', name: 'PCS 関東（重工丸の内）', areaId: 'kanto', prefecture: '東京都',
-    sales: { actual: 632902, budget: 560000 },
+    sales: { actual: 649600, budget: 560000 },
     cost: { actual: 435500 },
     paidLeave: { actual: 10720 },
     opProfit: { actual: 103404 },
     monthlyBudget: budgetSeries(550000, 490000, 560000, 560000, 410000, 540000, 610000, 450000, 510000, 510000, 480000, 440000),
+    salesYoyByMonth: budgetSeries(539340, 484160, 555360, 555360, 398720, 526880, 598080, 441440, 541120, 469920, 498400, 541120),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(304.00, 256.00, 320.00),
+    roleRates: [{ label: null, billingRate: 2030, payRate: 1340, profit: 690, marginRate: 34.0 }],
   },
   '715-1': {
     active: true,
     id: '715-1', name: 'PCS 関東（豊洲）', areaId: 'kanto', prefecture: '東京都',
-    sales: { actual: 1418738, budget: 1190000 },
+    sales: { actual: 1493050, budget: 1190000 },
     cost: { actual: 991576 },
     paidLeave: { actual: 30400 },
     opProfit: { actual: 244593 },
     monthlyBudget: budgetSeries(1240000, 1130000, 1210000, 1190000, 1230000, 1390000, 1270000, 1100000, 1110000, 1100000, 1050000, 1150000),
+    salesYoyByMonth: budgetSeries(1249113, 1135716, 1212101, 1193724, 1232991, 1393451, 1277206, 1106832, 1296240, 991885, 1039084, 1254645),
     staffCountByMonth: monthSeries3(3, 3, 3),
     totalHoursByMonth: monthSeries3(474.75, 396.58, 506.83),
   },
   '648-1': {
     active: true,
     id: '648-1', name: 'ネオヴィア・ロジ 相模原部品センター', areaId: 'kanto', prefecture: '神奈川県',
-    sales: { actual: 755135, budget: 1000000 },
+    sales: { actual: 800743, budget: 1000000 },
     cost: { actual: 543656 },
     paidLeave: { actual: 10800 },
     monthlyBudget: budgetSeries(900000, 900000, 1000000, 1000000, 720000, 880000, 1000000, 850000, 900000, 900000, 850000, 1000000),
+    salesYoyByMonth: budgetSeries(1605793, 1406949, 1410253, 1569316, 996414, 1333691, 1004533, 881094, 978409, 905459, 905647, 1030612),
     opProfit: { actual: 159214 },
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(399.90, 332.42, 414.93),
+    roleRates: [
+      { label: '作業員', billingRate: 1850, payRate: 1350, profit: 500, marginRate: 27.0 },
+      { label: 'リフト', billingRate: 2050, payRate: 1450, profit: 600, marginRate: 29.3 },
+    ],
   },
   '835-1': placeholderSite('835-1', '有限会社黒岩運輸', 'kanto', { active: false, lifecycle: '失注（先方充足により契約に至らず）' }),
+
+  // ── 関東（2026年8月時点の職種別レート表・価格交渉状況シートで新たに判明した現場。案件コード未確定のため暫定ID） ──
+  'fujisawa-1': {
+    active: true,
+    id: 'fujisawa-1', name: '福山通運 藤沢支店', areaId: 'kanto', prefecture: '神奈川県',
+    lifecycle: '案件コード未確定（暫定ID）',
+    sales: { actual: 0 },
+    roleRates: [{ label: null, billingRate: 1750, payRate: 1271, profit: 479, marginRate: 27.4 }],
+    negotiationStatus: '見送り',
+    actionLog: [
+      { date: '2026-08', type: '価格交渉', text: '同労賃対象。交渉決裂。資料提示10/27（作成済）、回答期限12/04（済）。資料: https://docs.google.com/presentation/d/1t8AtQY9zGac-9cOte0PF_YcLRDf6eGuDOVX20X_DF70/edit?slide=id.p#slide=id.p' },
+    ],
+  },
+  'takizaki-1': {
+    active: true,
+    id: 'takizaki-1', name: 'タキザキロジスティクス 板橋HUBセンター', areaId: 'kanto', prefecture: '東京都',
+    lifecycle: '案件コード未確定（暫定ID）。現状スタッフ0名',
+    negotiationStatus: '未着手',
+    actionLog: [
+      { date: '2026-08', type: '価格交渉', text: '同労賃対象。交渉前。資料提示10/24（作成済）、済。アスクルのランサムウェア問題で今後の展開が見えない。現状スタッフも0名。' },
+    ],
+  },
+  'jaylog-1': {
+    active: true,
+    id: 'jaylog-1', name: 'ジェイロジ イオン関東RDCセンター', areaId: 'kanto', prefecture: null,
+    lifecycle: '案件コード未確定（暫定ID）。2026年3月現場終了予定',
+    negotiationStatus: '見送り',
+    actionLog: [
+      { date: '2026-08', type: '価格交渉', text: '対象外。交渉決裂（作成済／済）。￥450円回答なし。11月中に返答・基本合意なし。12/3訪問→3月現場終了予定。' },
+    ],
+  },
+  'meitetsu-saitama-1': {
+    active: true,
+    id: 'meitetsu-saitama-1', name: '名鉄運輸 埼玉支店', areaId: 'kanto', prefecture: '埼玉県',
+    lifecycle: '案件コード未確定（暫定ID）。撤退対象（9月末撤退予定、有給3カ月按分）',
+    actionLog: [
+      { date: '2026-08', type: '価格交渉', text: '対象外。撤退対象。9月末撤退完了予定、有給3カ月で按分。' },
+    ],
+  },
+  'mitsui-tsurumi-1': {
+    active: true,
+    id: 'mitsui-tsurumi-1', name: '三井物産流通グループ 常温鶴見センター（旧物産ロジ）', areaId: 'kanto', prefecture: '神奈川県',
+    lifecycle: '案件コード未確定（暫定ID）。2026年3月終了予定',
+    negotiationStatus: '見送り',
+    actionLog: [
+      { date: '2026-08', type: '価格交渉', text: '対象外。交渉決裂（作成済／済）。200円単価交渉決裂で撤退予定、今期中。12/4訪問→3月終了予定。' },
+    ],
+  },
+  'sanwa-suisan-1': placeholderSite('sanwa-suisan-1', '三和水産加工センター 本社', 'kanto', { lifecycle: '案件コード未確定（暫定ID）。詳細情報なし' }),
+  'lxpantos-1': {
+    active: true,
+    id: 'lxpantos-1', name: 'LX PANTOS Japan株式会社', areaId: 'kanto', prefecture: null,
+    lifecycle: '案件コード未確定（暫定ID）。7月確定売上は突合ソース未提供のため未反映',
+    roleRates: [{ label: null, billingRate: 2970, payRate: 2070, profit: 900, marginRate: 30.3 }],
+  },
 
   // ── 中部 ──────────────────────────────────────────────
   // 7月実績は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月）のスクリーンショットより反映。
   // budgetは別途共有された月次予算表（現場名で突合、シート上のコードは不一致のため無視）の7月列。
+  // 売上高は後日、確定数字（検索システム 対象年月2026年07月・人ソ（中部）画面）で上書き反映（2026/8/5）。
   '142-3': {
     active: true,
     id: '142-3', name: '福山通運 名古屋南流通センター', areaId: 'chubu', prefecture: '愛知県',
-    sales: { actual: 359360, budget: 350000 },
+    sales: { actual: 368661, budget: 350000 },
     cost: { actual: 260810 },
     paidLeave: { actual: 10160 },
     opProfit: { actual: 42249 },
     monthlyBudget: budgetSeries(350000, 300000, 300000, 350000, 300000, 330000),
+    salesYoyByMonth: budgetSeries(350939, 350939, 336938, 371504, 289568, 312651, 373038, 313198, 337155, 317683, 306523, 349516),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(177.50, 146.75, 165.50),
+    roleRates: [{ label: null, billingRate: 1750, payRate: 1270, profit: 480, marginRate: 27.4 }],
   },
   '548-1': {
     active: true,
     id: '548-1', name: '福山通運 東海支店（セリア）', areaId: 'chubu', prefecture: '愛知県',
-    sales: { actual: 2276321, budget: 2200000 },
+    sales: { actual: 2216417, budget: 2200000 },
     cost: { actual: 1570455 },
     paidLeave: { actual: 94965 },
     opProfit: { actual: 376231 },
     monthlyBudget: budgetSeries(2450000, 2200000, 2200000, 2200000, 2200000, 2200000),
+    salesYoyByMonth: budgetSeries(2720895, 2676926, 2436321, 2654557, 2255189, 2485878, 2295839, 2102241, 2394320, 2125118, 2072738, 2364164),
     staffCountByMonth: monthSeries3(17, 15, 15),
     totalHoursByMonth: monthSeries3(1212.75, 1226.75, 1137.50),
+    roleRates: [
+      { label: 'セリア便①', billingRate: 1780, payRate: 1230, profit: 550, marginRate: 30.9 },
+      { label: 'セリア便②', billingRate: 1900, payRate: 1300, profit: 600, marginRate: 31.6 },
+    ],
   },
   '505-1': {
     active: true,
     id: '505-1', name: '岐阜アグリフーズ 本社・工場（食鳥部鶏肉加工課）', areaId: 'chubu', prefecture: '岐阜県',
-    sales: { actual: 413575, budget: 420000 },
+    sales: { actual: 408455, budget: 420000 },
     cost: { actual: 286275 },
     paidLeave: { actual: 9760 },
     opProfit: { actual: 82960 },
     monthlyBudget: budgetSeries(400000, 404000, 450000, 420000, 414000, 456000),
+    salesYoyByMonth: budgetSeries(420560, 457408, 447132, 348677, 394842, 391909, 472254, 472254, 439721, 403460, 351984, 326515),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(226.85, 221.75, 219.30),
+    roleRates: [
+      { label: '加工課①', billingRate: 1740, payRate: 1220, profit: 520, marginRate: 29.9 },
+      { label: '加工課②', billingRate: 1720, payRate: 1220, profit: 500, marginRate: 29.1 },
+    ],
   },
-  '675-1': placeholderSite('675-1', 'AFS中部センター', 'chubu'),
+  '675-1': { ...placeholderSite('675-1', 'AFS中部センター', 'chubu'), sales: { actual: 69600 } },
   '510-2': {
     active: true,
     id: '510-2', name: 'afs 中部XD（派遣）', areaId: 'chubu', prefecture: '愛知県',
-    sales: { actual: 343766, budget: 300000 },
+    sales: { actual: 384939, budget: 300000 },
     cost: { actual: 236249 },
     paidLeave: { actual: 20800 },
     opProfit: { actual: 47768 },
     monthlyBudget: budgetSeries(300000, 300000, 300000, 300000, 300000, 300000),
+    salesYoyByMonth: budgetSeries(663135, 615368, 637794, 654918, 426422, 354223, 363022, 374645, 371621, 320547, 328693, 278673),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(193.58, 170.02, 187.05),
+    roleRates: [{ label: null, billingRate: 1880, payRate: 1300, profit: 580, marginRate: 30.9 }],
   },
   '790-1': {
     active: true,
     id: '790-1', name: '昭和冷蔵 小牧センター', areaId: 'chubu', prefecture: '愛知県',
     roles: [role('790-1', 'リフト'), role('790-2', '倉庫内仕分け作業')],
-    sales: { actual: 3009658, budget: 2600000 },
+    sales: { actual: 3024466, budget: 2600000 },
     cost: { actual: 2193820 },
     paidLeave: { actual: 39200 },
     opProfit: { actual: 566064 },
     monthlyBudget: budgetSeries(2500000, 2500000, 2600000, 2600000, 2600000, 2600000),
+    salesYoyByMonth: budgetSeries(2321484, 2332881, 2767859, 2461779, 2882392, 2832738, 3074571, 3005007, 3187568, 2919888, 2569444, 3098243),
     staffCountByMonth: monthSeries3(10, 11, 11),
     totalHoursByMonth: monthSeries3(1136.08, 969.08, 1188.00),
+    roleRates: [
+      { label: '冷凍リーダー', billingRate: 2660, payRate: 1900, profit: 760, marginRate: 28.6 },
+      { label: '冷凍サブリーダー', billingRate: 2580, payRate: 1850, profit: 730, marginRate: 28.3 },
+      { label: '冷凍リフト', billingRate: 2500, payRate: 1800, profit: 700, marginRate: 28.0 },
+      { label: '冷蔵リフト', billingRate: 2300, payRate: 1700, profit: 600, marginRate: 26.1 },
+      { label: '冷蔵作業員', billingRate: 2000, payRate: 1500, profit: 500, marginRate: 25.0 },
+    ],
   },
   '833-1': placeholderSite('833-1', '摂津倉庫株式会社 春日井営業所', 'chubu', {
     lifecycle: '新規現場',
@@ -624,13 +889,14 @@ export const SITES: Record<string, SiteData> = {
   '834-1': {
     active: true,
     id: '834-1', name: '昭和冷蔵 犬山ドライセンター', areaId: 'chubu', prefecture: '愛知県', lifecycle: '新規現場',
-    sales: { actual: 983952, budget: 1200000 },
+    sales: { actual: 997156, budget: 1200000 },
     cost: { actual: 716400 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 224652 },
     monthlyBudget: budgetSeries(null, null, 1200000, 1200000, 1200000, 1200000),
     staffCountByMonth: monthSeries3(1, 1, 2),
     totalHoursByMonth: monthSeries3(233.50, 235.00, 196.00),
+    roleRates: [{ label: null, billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 }],
   },
   '038-1': {
     active: false,
@@ -640,32 +906,55 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(370000, 350000, 340000, 250000, 230000, 270000),
+    salesYoyByMonth: budgetSeries(779875, 692875, 386875, 435500, 401875, 484250, 463750, 440625, 396125, 421550, 462177, 421550),
     staffCountByMonth: monthSeries3(1, 1, 0),
     totalHoursByMonth: monthSeries3(198.25, 59.00, 0),
   },
   '301-1': {
     active: true,
     id: '301-1', name: '昭和冷蔵 名古屋センター', areaId: 'chubu', prefecture: '愛知県',
-    sales: { actual: 600004, budget: 300000 },
+    sales: { actual: 642197, budget: 300000 },
     cost: { actual: 442803 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 61831 },
     monthlyBudget: budgetSeries(400000, 300000, 350000, 300000, 300000, 300000),
+    salesYoyByMonth: budgetSeries(0, 0, 0, 0, 0, 0, 0, 0, 0, 483754, 423441, 474066),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(202.75, 219.75, 214.00),
+    roleRates: [{ label: null, billingRate: 2500, payRate: 1800, profit: 700, marginRate: 28.0 }],
+  },
+  // ↓ 2026年8月時点の職種別レート表・価格交渉状況シートで新たに判明した現場（案件コード未確定のため暫定ID）
+  'logimedical-obu-1': {
+    active: true,
+    id: 'logimedical-obu-1', name: 'ロジメディカル 大府営業所', areaId: 'chubu', prefecture: '愛知県',
+    lifecycle: '案件コード未確定（暫定ID）。撤退対象',
+    roleRates: [{ label: null, billingRate: 1850, payRate: 1350, profit: 500, marginRate: 27.0 }],
+    negotiationStatus: '見送り',
+    actionLog: [{ date: '2026-08', type: '価格交渉', text: '対象外。撤退対象。' }],
+  },
+  'tokaizukemono-1': {
+    active: true,
+    id: 'tokaizukemono-1', name: '東海漬物株式会社 中京物流センター', areaId: 'chubu', prefecture: '愛知県',
+    lifecycle: '案件コード未確定（暫定ID）。撤退対象',
+    roleRates: [{ label: null, billingRate: 1750, payRate: 1270, profit: 480, marginRate: 27.4 }],
+    negotiationStatus: '見送り',
+    actionLog: [{ date: '2026-08', type: '価格交渉', text: '対象外。撤退対象。' }],
   },
 
   // ── 関西 ──────────────────────────────────────────────
   // 7月実績は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西）より反映。
   // budgetは月次予算表（現場名で突合）の7月列。
+  // 売上高は後日、確定数字（検索システム 対象年月2026年07月・人ソ（関西）画面）で上書き反映（2026/8/5）。
   '543-3': {
     active: true,
     id: '543-3', name: 'フェリシモ エスパス（選別作業）', areaId: 'kansai', prefecture: '兵庫県',
-    sales: { actual: 2751260, budget: 3000000 },
+    sales: { actual: 2721820, budget: 3000000 },
     cost: { actual: 1854110 },
     paidLeave: { actual: 74400 },
     opProfit: { actual: 542279 },
     monthlyBudget: budgetSeries(3000000, 2800000, 3000000, 3000000, 2800000, 3000000),
+    salesYoyByMonth: budgetSeries(3998924, 3406797, 3722231, 3690344, 3010988, 4174596, 3481151, 3086883, 3517877, 3346630, 3178479, 3147507),
+    roleRates: [{ label: '選別作業', billingRate: 1840, payRate: 1240, profit: 600, marginRate: 32.6 }],
     staffCountByMonth: monthSeries3(22, 20, 19),
     totalHoursByMonth: monthSeries3(1610.00, 1222.50, 1429.50),
   },
@@ -677,6 +966,7 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(190000, 190000, 190000, 190000, 190000, 190000),
+    salesYoyByMonth: budgetSeries(198240, 188505, 199125, 215940, 182310, 199125, 223020, 189390, 209745, 207975, 193815, 212400),
     staffCountByMonth: monthSeries3(1, 0, 1),
     totalHoursByMonth: monthSeries3(126.00, 0, 120.00),
   },
@@ -685,6 +975,7 @@ export const SITES: Record<string, SiteData> = {
     id: '543-5', name: 'フェリシモ エスパス（伝票管理業務）', areaId: 'kansai', prefecture: '兵庫県',
     staffCountByMonth: monthSeries3(0, 1, 0),
     totalHoursByMonth: monthSeries3(0, 94.50, 0),
+    salesYoyByMonth: budgetSeries(199125, 201780, 220365, 177443, 176115, 210630, 215055, 195585, 209745, 169920, 159300, 201780),
   },
   '595-1': {
     active: false,
@@ -692,17 +983,21 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 0, budget: 380000 },
     cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(380000, 380000, 380000, 380000, 380000, 380000),
+    salesYoyByMonth: budgetSeries(463313, 417113, 440213, 464626, 384042, 421052, 468565, 418426, 353727, 452694, 356354, 503488),
+    roleRates: [{ label: null, billingRate: 0, payRate: null, profit: null, marginRate: null }],
     staffCountByMonth: monthSeries3(1, 1, 0),
     totalHoursByMonth: monthSeries3(188.00, 56.25, 0),
   },
   '136-1': {
     active: true,
     id: '136-1', name: '日生トーム 高槻事業所（軽作業）', areaId: 'kansai', prefecture: '大阪府',
-    sales: { actual: 533260, budget: 380000 },
+    sales: { actual: 343070, budget: 380000 },
     cost: { actual: 357460 },
     paidLeave: { actual: 16470 },
     opProfit: { actual: 105277 },
     monthlyBudget: budgetSeries(380000, 250000, 380000, 380000, 380000, 380000),
+    salesYoyByMonth: budgetSeries(436020, 282510, 470420, 505250, 430000, 482998, 427850, 433870, 351310, 185330, 244240, 255850),
+    roleRates: [{ label: null, billingRate: 1820, payRate: 1220, profit: 600, marginRate: 33.0 }],
     staffCountByMonth: monthSeries3(3, 3, 3),
     totalHoursByMonth: monthSeries3(157.50, 169.00, 186.00),
   },
@@ -710,22 +1005,29 @@ export const SITES: Record<string, SiteData> = {
     active: true,
     id: '533-1', name: '任天堂販売 京都物流センター', areaId: 'kansai', prefecture: '京都府',
     roles: [role('533-1', 'リフト'), role('533-2', '軽作業')],
-    sales: { actual: 867375, budget: 320000 },
+    sales: { actual: 932295, budget: 320000 },
     cost: { actual: 602325 },
     paidLeave: { actual: 15120 },
     opProfit: { actual: 179725 },
     monthlyBudget: budgetSeries(320000, 320000, 320000, 320000, 320000, 320000),
+    salesYoyByMonth: budgetSeries(553015, 1618063, 1348105, 598803, 335406, 485266, 741206, 980269, 921767, 581878, 634071, 708067),
+    roleRates: [
+      { label: '軽作業', billingRate: 1830, payRate: 1260, profit: 570, marginRate: 31.1 },
+      { label: 'フォークリフト', billingRate: 2170, payRate: 1530, profit: null, marginRate: null },
+    ],
     staffCountByMonth: monthSeries3(3, 2, 3),
     totalHoursByMonth: monthSeries3(249.75, 188.00, 347.75),
   },
   '570-1': {
     active: true,
     id: '570-1', name: '加茂商事［軽作業］（株式会社マラカナ・加茂商事）', areaId: 'kansai', prefecture: null,
-    sales: { actual: 638042, budget: 600000 },
+    sales: { actual: 606300, budget: 600000 },
     cost: { actual: 443334 },
     paidLeave: { actual: 21600 },
     opProfit: { actual: 78065 },
     monthlyBudget: budgetSeries(600000, 600000, 600000, 600000, 420000, 600000),
+    salesYoyByMonth: budgetSeries(844832, 674851, 651073, 674103, 434280, 485266, 659763, 587032, 601600, 575634, 558244, 752950),
+    roleRates: [{ label: null, billingRate: 1880, payRate: 1350, profit: 530, marginRate: 28.2 }],
     staffCountByMonth: monthSeries3(2, 2, 0),
     totalHoursByMonth: monthSeries3(374.00, 307.42, 0),
   },
@@ -733,23 +1035,34 @@ export const SITES: Record<string, SiteData> = {
   '530-1': {
     active: true,
     id: '530-1', name: 'PCS 関西（神戸）［配達作業員］', areaId: 'kansai', prefecture: null,
-    sales: { actual: 211680, budget: 250000 },
+    sales: { actual: 352800, budget: 250000 },
     cost: { actual: 122880 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 48271 },
     monthlyBudget: budgetSeries(250000, 250000, 250000, 250000, 250000, 250000),
+    salesYoyByMonth: budgetSeries(293400, 288000, 245400, 341400, 240000, 309400, 256000, 261400, 309400, 288000, 245400, 341400),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(144.00, 128.00, 176.00),
+    roleRates: [{ label: null, billingRate: 2100, payRate: 1280, profit: 820, marginRate: 39.0 }],
   },
-  '723-1': placeholderSite('723-1', '阪菱企業 茨木', 'kansai', { roles: [role('723-1', 'リフト'), role('723-2', '軽作業')] }),
+  '723-1': {
+    ...placeholderSite('723-1', '阪菱企業 茨木', 'kansai', { roles: [role('723-1', 'リフト'), role('723-2', '軽作業')] }),
+    sales: { actual: 0 }, // 「阪菱企業 第一（6、7、8、15…）」行として突合（暫定）。要確認
+    roleRates: [
+      { label: 'フォークリフト', billingRate: 2100, payRate: 1520, profit: 580, marginRate: 27.6 },
+      { label: '一般', billingRate: 1780, payRate: 1280, profit: 500, marginRate: 28.1 },
+    ],
+  },
   '815-1': {
     active: true,
     id: '815-1', name: '阪菱企業 西神現業所［軽作業］', areaId: 'kansai', prefecture: null,
     sales: { actual: 0, budget: 200000 },
     cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
+    salesYoyByMonth: budgetSeries(253880, 229011, 269015, 393684, 202628, 233335, 266420, 213872, 269670, 206035, 218050, 199360),
     staffCountByMonth: monthSeries3(1, 0, 0),
     totalHoursByMonth: monthSeries3(120.50, 0, 0),
+    roleRates: [{ label: '一般', billingRate: 1780, payRate: 1280, profit: 500, marginRate: 28.1 }],
   },
   '753-1': {
     active: false,
@@ -757,8 +1070,10 @@ export const SITES: Record<string, SiteData> = {
     sales: { actual: 0, budget: 350000 },
     cost: { actual: 0 }, paidLeave: { actual: 0 }, opProfit: { actual: 0 },
     monthlyBudget: budgetSeries(350000, 300000, 350000, 350000, 300000, 350000),
+    salesYoyByMonth: budgetSeries(390382, 323832, 360155, 395014, 296900, 362214, 414016, 319280, 417648, 337552, 355968, 412944),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(220.00, 146.75, 184.25),
+    roleRates: [{ label: '（現状データなし）', billingRate: 0, payRate: null, profit: null, marginRate: null }],
   },
   '801-1': {
     active: true,
@@ -768,19 +1083,23 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: -42070 },
     monthlyBudget: budgetSeries(350000, 380000, 350000, 350000, 350000, 350000),
+    salesYoyByMonth: budgetSeries(373147, 430408, 369432, 377012, 375684, 365831, 445718, 336545, 320967, 303529, 328822, 64966),
     staffCountByMonth: monthSeries3(0, 0, 0),
     totalHoursByMonth: monthSeries3(0, 0, 0),
+    roleRates: [{ label: null, billingRate: 2130, payRate: 1500, profit: 630, marginRate: 29.6 }],
   },
   '633-1': {
     active: true,
     id: '633-1', name: '尾家産業 阪南支店（派遣）（ドライバー）', areaId: 'kansai', prefecture: null,
-    sales: { actual: 339000, budget: 300000 },
+    sales: { actual: 339250, budget: 300000 },
     cost: { actual: 250862 },
     paidLeave: { actual: 35520 },
     opProfit: { actual: 12694 },
     monthlyBudget: budgetSeries(300000, 300000, 300000, 300000, 300000, 300000),
+    salesYoyByMonth: budgetSeries(354593, 307210, 328942, 359697, 299845, 355540, 323598, 327754, 386653, 311365, 314811, 361835),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(194.25, 166.75, 178.25),
+    roleRates: [{ label: null, billingRate: 2000, payRate: 1480, profit: 520, marginRate: 26.0 }],
   },
   '782-1': placeholderSite('782-1', 'SHUUEI物流 高槻センター［リフト］', 'kansai'),
   '606-3': placeholderSite('606-3', 'SHUUEI物流 枚方センター［リフト］短期', 'kansai'),
@@ -788,13 +1107,20 @@ export const SITES: Record<string, SiteData> = {
     active: true,
     id: '808-1', name: '西鉄運輸株式会社 枚方センター', areaId: 'kansai', prefecture: null,
     roles: [role('808-1', '軽作業'), role('808-2', '軽作業（短期）')],
-    sales: { actual: 1534098, budget: 600000 },
+    sales: { actual: 1546235, budget: 600000 },
     cost: { actual: 1100100 },
     paidLeave: { actual: 35440 },
     opProfit: { actual: 290134 },
     monthlyBudget: budgetSeries(600000, 550000, 600000, 600000, 600000, 600000),
+    salesYoyByMonth: budgetSeries(882662, 764188, 745450, 656789, 640747, 575902, 600136, 853054, 1083884, 602636, 580467, 678154),
     staffCountByMonth: monthSeries3(2, 3, 5),
     totalHoursByMonth: monthSeries3(337.42, 403.50, 565.50),
+    roleRates: [
+      { label: 'リーダー（フォークリフト兼務）', billingRate: 2130, payRate: 1550, profit: 580, marginRate: 27.2 },
+      { label: 'サブリーダー', billingRate: 1850, payRate: 1330, profit: 520, marginRate: 28.1 },
+      { label: '作業員', billingRate: 1800, payRate: 1300, profit: 500, marginRate: 27.8 },
+      { label: '作業員（短期）', billingRate: 1980, payRate: 1400, profit: 580, marginRate: 29.3 },
+    ],
   },
   '805-1': {
     active: true,
@@ -804,42 +1130,55 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 55842 },
     monthlyBudget: budgetSeries(400000, 380000, 400000, 400000, 400000, 400000),
+    salesYoyByMonth: budgetSeries(447000, 409250, 478775, 536525, 464475, 444400, 435050, 401500, 451275, 388850, 374000, 377025),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(211.50, 193.50, 184.50),
+    roleRates: [{ label: 'フォークリフト', billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 }],
   },
   '720-1': {
     active: true,
     id: '720-1', name: 'HMKロジサービス 西神戸センター［軽作業］', areaId: 'kansai', prefecture: null,
     staffCountByMonth: monthSeries3(0, 0, 7),
     totalHoursByMonth: monthSeries3(0, 0, 214.00),
+    salesYoyByMonth: budgetSeries(0, 0, 328440, 435120, 0, 0, 0, 549360, 726180, 0, 0, 0),
+    roleRates: [{ label: '短期', billingRate: 1710, payRate: 1260, profit: 450, marginRate: 26.3 }],
   },
   '828-1': {
     active: true,
     id: '828-1', name: '摂津倉庫 京田辺', areaId: 'kansai', prefecture: '京都府',
     roles: [role('828-1', '軽作業'), role('828-2', 'リフト')],
-    sales: { actual: 693197, budget: 580000 },
+    sales: { actual: 731296, budget: 580000 },
     cost: { actual: 497557 },
     monthlyBudget: budgetSeries(580000, 560000, 580000, 580000, 580000, 580000),
+    salesYoyByMonth: budgetSeries(0, 0, 0, 391200, 703694, 688521, 838547, 652449, 659518, 658337, 579870, 642716),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(316.75, 267.75, 356.25),
+    roleRates: [
+      { label: 'リフト', billingRate: 2100, payRate: 1500, profit: 600, marginRate: 28.6 },
+      { label: '一般', billingRate: 1800, payRate: 1300, profit: 500, marginRate: 27.8 },
+    ],
   },
   '830-1': {
     active: true,
     id: '830-1', name: 'エヌエス物流 関西［軽作業］', areaId: 'kansai', prefecture: null,
-    sales: { actual: 309295, budget: 270000 },
+    sales: { actual: 327793, budget: 270000 },
     cost: { actual: 216506 },
     monthlyBudget: budgetSeries(270000, 270000, 270000, 270000, 270000, 270000),
+    salesYoyByMonth: budgetSeries(0, 0, 0, 67550, 402248, 403213, 388894, 395837, 439843, 419646, 353507, 295549),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(187.18, 182.12, 148.60),
+    roleRates: [{ label: null, billingRate: 1800, payRate: 1260, profit: 540, marginRate: 30.0 }],
   },
   '831-1': {
     active: true,
     id: '831-1', name: 'エヌエス物流 滋賀［軽作業］', areaId: 'kansai', prefecture: '滋賀県',
-    sales: { actual: 231675, budget: 850000 },
+    sales: { actual: 236140, budget: 850000 },
     cost: { actual: 162835 },
     monthlyBudget: budgetSeries(850000, 850000, 850000, 850000, 850000, 850000),
+    salesYoyByMonth: budgetSeries(0, 0, 0, 0, 0, 73150, 511449, 646424, 644245, 285423, 433653, 635813),
     staffCountByMonth: monthSeries3(3, 3, 2),
     totalHoursByMonth: monthSeries3(343.28, 262.87, 171.05),
+    roleRates: [{ label: null, billingRate: 1800, payRate: 1250, profit: 550, marginRate: 30.6 }],
   },
   '832-1': {
     active: true,
@@ -848,11 +1187,16 @@ export const SITES: Record<string, SiteData> = {
       role('832-1', '軽作業'), role('832-2', '事務'), role('832-3', 'リフト'),
       role('832-4a', 'ドライバー', true), role('832-4b', '短期作業員', true),
     ],
-    sales: { actual: 713188, budget: 750000 },
+    sales: { actual: 594586, budget: 750000 },
     cost: { actual: 516665 },
     monthlyBudget: budgetSeries(750000, 750000, 750000, 750000, 750000, 750000),
+    salesYoyByMonth: budgetSeries(0, 0, 0, 0, 0, 0, 0, 119700, 290664, 487725, 452250, 0),
     staffCountByMonth: monthSeries3(2, 3, 1),
     totalHoursByMonth: monthSeries3(207.42, 334.88, 120.92),
+    roleRates: [
+      { label: '作業員', billingRate: 1800, payRate: 1300, profit: 500, marginRate: 27.8 },
+      { label: 'フォークリフト', billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 },
+    ],
   },
   '836-1': {
     active: true,
@@ -860,6 +1204,10 @@ export const SITES: Record<string, SiteData> = {
     lifecycle: '新規現場', roles: [role('836-1', '軽作業', true), role('836-2', 'リフト', true)],
     staffCountByMonth: monthSeries3(null, null, 2),
     totalHoursByMonth: monthSeries3(null, null, 203.00),
+    roleRates: [
+      { label: '作業員　短期（RW・GLP共通）', billingRate: 1750, payRate: 1300, profit: 450, marginRate: 25.7 },
+      { label: 'リフト　短期（RW・GLP共通）', billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 },
+    ],
   },
   '836-3': {
     active: true,
@@ -867,6 +1215,10 @@ export const SITES: Record<string, SiteData> = {
     lifecycle: '新規現場', roles: [role('836-3', 'リフト', true), role('836-4', '軽作業（短期）', true)],
     staffCountByMonth: monthSeries3(null, null, 1),
     totalHoursByMonth: monthSeries3(null, null, 70.00),
+    roleRates: [
+      { label: '作業員　短期（RW・GLP共通）', billingRate: 1750, payRate: 1300, profit: 450, marginRate: 25.7 },
+      { label: 'リフト　短期（RW・GLP共通）', billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 },
+    ],
   },
   '837-1': placeholderSite('837-1', 'SHUUEI物流株式会社 尼崎センター（ロジポート尼崎）［軽作業］', 'kansai', { lifecycle: '新規現場' }),
   // 阪菱企業の配送センター/倉庫は損益書が個別に分かれているため、茨木(723-1)とは別現場として管理。
@@ -878,39 +1230,43 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 0 },
     opProfit: { actual: 49235 },
     monthlyBudget: budgetSeries(400000, 400000, 600000, 600000, 600000, 600000),
+    salesYoyByMonth: budgetSeries(228901, 204574, 243282, 256040, 187598, 242200, 257122, 217548, 237297, 185120, 201697, 249757),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(122.50, 82.00, 145.00),
   },
   '285-1': {
     active: true,
     id: '285-1', name: '阪菱企業 第一 1号配送センター', areaId: 'kansai', prefecture: null,
-    sales: { actual: 246419, budget: 200000 },
+    sales: { actual: 239299, budget: 200000 },
     cost: { actual: 177200 },
     paidLeave: { actual: 17920 },
     opProfit: { actual: 24939 },
     monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
+    salesYoyByMonth: budgetSeries(0, 0, 0, 0, 157430, 217980, 226523, 205870, 199360, 204478, 209595, 240189),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(129.00, 126.00, 125.50),
   },
   '287-1': {
     active: true,
     id: '287-1', name: '阪菱企業 第一 2号配送センター', areaId: 'kansai', prefecture: null,
-    sales: { actual: 249200, budget: 200000 },
+    sales: { actual: 244750, budget: 200000 },
     cost: { actual: 179200 },
     paidLeave: { actual: 17920 },
     opProfit: { actual: 25663 },
     monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
+    salesYoyByMonth: budgetSeries(438556, 388603, 458883, 395848, 191708, 466455, 511542, 246743, 210708, 241747, 225283, 232958),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(141.75, 115.25, 147.00),
   },
   '288-1': {
     active: true,
     id: '288-1', name: '阪菱企業 第一 11号倉庫', areaId: 'kansai', prefecture: null,
-    sales: { actual: 262550, budget: 200000 },
+    sales: { actual: 266667, budget: 200000 },
     cost: { actual: 188800 },
     paidLeave: { actual: 8960 },
     opProfit: { actual: 28845 },
     monthlyBudget: budgetSeries(200000, 200000, 200000, 200000, 200000, 200000),
+    salesYoyByMonth: budgetSeries(227930, 220792, 245337, 258529, 192141, 0, 0, 148457, 227507, 230288, 222724, 249868),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(142.00, 113.25, 137.75),
   },
@@ -922,6 +1278,7 @@ export const SITES: Record<string, SiteData> = {
     paidLeave: { actual: 11400 },
     opProfit: { actual: 40827 },
     monthlyBudget: budgetSeries(250000, 250000, 250000, 250000, 250000, 250000),
+    salesYoyByMonth: budgetSeries(328130, 307500, 322875, 322875, 233573, 246000, 341325, 261375, 275100, 299775, 285863, 330750),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(150.00, 127.50, 166.25),
   },
@@ -932,11 +1289,19 @@ export const SITES: Record<string, SiteData> = {
     id: '133-1', name: '福山通運 大阪支店', areaId: 'osaka', prefecture: '大阪府',
     roles: [role('133-1', '日勤'), role('133-2', '夜勤')],
     // 7月実績は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西内の大阪支店行）より反映。
-    sales: { actual: 17669531, budget: 21570000 },
+    sales: { actual: 22013346, budget: 21570000 },
     cost: { actual: 12288918 },
     paidLeave: { actual: 0 },
     opProfit: { actual: 2883072 },
     monthlyBudget: budgetSeries(21060000, 20040000, 20550000, 21570000, 19530000, 20550000),
+    salesYoyByMonth: budgetSeries(23097206, 21615148, 21429849, 23434610, 21100851, 22510499, 23730715, 21052315, 23427926, 20522802, 19298448, 22238269),
+    roleRates: [
+      { label: '日勤', billingRate: 1950, payRate: 1338, profit: 612, marginRate: 31.4 },
+      { label: '夜勤', billingRate: 2020, payRate: 1344, profit: 676, marginRate: 33.5 },
+      { label: 'リーダー日勤', billingRate: 2200, payRate: 1720, profit: 480, marginRate: 21.8 },
+      { label: 'リーダー夜勤', billingRate: 2200, payRate: 1647, profit: 553, marginRate: 25.1 },
+      { label: 'フォークリフト', billingRate: 2100, payRate: 1447, profit: 653, marginRate: 31.1 },
+    ],
     staffCountByMonth: monthSeries3(78, 74, 79),
     totalHoursByMonth: monthSeries3(10741.43, 9365.45, 10180.95),
     staffCount: 67, totalHours: 6944, avgHours: 103.64,

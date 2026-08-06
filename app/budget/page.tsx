@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, ProgressBar, AGVLine, AGV_PASTEL, WeatherBadge, BackLink } from './_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, PROJECTS, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, sumSitesActual, sumAreaStaff } from './_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, COMPANY_MONTHLY, AREA_MONTHLY, ANNUAL_SCHEDULE, ANNUAL_GOAL, AREAS, ASSIGNEES, PROJECTS, PROJECT_LINK_FIELDS, SITES, yen, BACKLOG_STACKUP_MONTHLY_TARGET, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, currentCalendarMonthKey, sumSitesActual, sumAreaStaff, DEFAULT_SCHEDULE_TASKS } from './_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -12,9 +12,17 @@ interface ScheduleTask { id: string; title: string; period: string; status: stri
 
 const QUARTER_MONTHS = [[4, 5, 6], [7, 8, 9], [10, 11, 12], [1, 2, 3]];
 
+const taskQuarterIndex = (period: string): number | null => {
+  const m = period.match(/(\d{1,2})\s*月/);
+  if (!m) return null;
+  const month = Number(m[1]);
+  const idx = QUARTER_MONTHS.findIndex((months) => months.includes(month));
+  return idx === -1 ? null : idx;
+};
+
 export default function GlobalDashboard() {
   const router = useRouter();
-  const [activeMonth, setActiveMonth] = useState<MonthKey>(CURRENT_ACTUAL_MONTH);
+  const [activeMonth, setActiveMonth] = useState<MonthKey>(currentCalendarMonthKey());
   const monthIndex = MONTHS.indexOf(activeMonth);
   const activeQuarter = Math.floor(monthIndex / 3);
   const siteList = Object.values(SITES).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
@@ -42,10 +50,11 @@ export default function GlobalDashboard() {
     { sum: 0, filled: 0, total: 0, hoursSum: 0, hoursFilled: 0 }
   );
 
-  // ── トピックス・プロジェクトの参照URL（Sheets連携） ──
-  const [projectData, setProjectData] = useState<Record<string, { url?: string; note?: string }>>({});
+  // ── トピックス・プロジェクトの参照URL（ドライブ・Asana・NotebookLM、Sheets連携） ──
+  type ProjectLinks = { driveUrl?: string; asanaUrl?: string; notebookLmUrl?: string };
+  const [projectData, setProjectData] = useState<Record<string, ProjectLinks>>({});
   const [projectApiStatus, setProjectApiStatus] = useState<'loading' | 'ready' | 'unconfigured' | 'error'>('loading');
-  const [projectEdits, setProjectEdits] = useState<Record<string, string>>({});
+  const [projectEdits, setProjectEdits] = useState<Record<string, ProjectLinks>>({});
   const [projectSaving, setProjectSaving] = useState<string | null>(null);
   const loadProjects = () => {
     fetch('/api/projects').then((r) => r.json()).then((data) => {
@@ -56,13 +65,13 @@ export default function GlobalDashboard() {
   };
   useEffect(() => { loadProjects(); }, []);
   const handleSaveProject = async (projectId: string) => {
-    const url = projectEdits[projectId] ?? projectData[projectId]?.url ?? '';
+    const merged: ProjectLinks = { ...projectData[projectId], ...projectEdits[projectId] };
     setProjectSaving(projectId);
     try {
       await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, url }),
+        body: JSON.stringify({ projectId, ...merged }),
       });
       loadProjects();
     } finally {
@@ -219,13 +228,14 @@ export default function GlobalDashboard() {
   const [newTask, setNewTask] = useState({ title: '', period: '', note: '', area: '', site: '', assignee: '' });
   const [adding, setAdding] = useState(false);
   const newTaskSites = newTask.area ? sitesOfArea(newTask.area) : [];
+  const [taskQuarterTab, setTaskQuarterTab] = useState<number | 'other' | 'all'>(activeQuarter);
 
   const loadTasks = () => {
     fetch('/api/schedule').then((r) => r.json()).then((data) => {
-      if (data?.error) { setTaskApiStatus('unconfigured'); return; }
-      setTasks(Array.isArray(data) ? data : []);
+      if (data?.error) { setTaskApiStatus('unconfigured'); setTasks(DEFAULT_SCHEDULE_TASKS); return; }
+      setTasks([...DEFAULT_SCHEDULE_TASKS, ...(Array.isArray(data) ? data : [])]);
       setTaskApiStatus('ready');
-    }).catch(() => setTaskApiStatus('error'));
+    }).catch(() => setTasks(DEFAULT_SCHEDULE_TASKS));
   };
   useEffect(() => { loadTasks(); }, []);
 
@@ -254,6 +264,18 @@ export default function GlobalDashboard() {
       body: JSON.stringify({ ...t, status: next }),
     });
   };
+
+  const taskQuarterGroups = QUARTER_MONTHS.map((months, idx) => {
+    const items = tasks.filter((t) => taskQuarterIndex(t.period) === idx);
+    return { idx, months, items, done: items.filter((t) => t.status === '完了').length, total: items.length };
+  });
+  const otherTasks = tasks.filter((t) => taskQuarterIndex(t.period) === null);
+  const otherDone = otherTasks.filter((t) => t.status === '完了').length;
+  const allDone = tasks.filter((t) => t.status === '完了').length;
+  const visibleTasks =
+    taskQuarterTab === 'all' ? tasks
+    : taskQuarterTab === 'other' ? otherTasks
+    : taskQuarterGroups[taskQuarterTab].items;
 
   return (
     <Shell agvColor={AGV_PASTEL.company}>
@@ -665,11 +687,54 @@ export default function GlobalDashboard() {
               </button>
             </div>
           </div>
-          {tasks.length === 0 ? (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {taskQuarterGroups.map((g) => (
+              <button
+                key={g.idx}
+                onClick={() => setTaskQuarterTab(g.idx)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
+                  taskQuarterTab === g.idx ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-blue-300'
+                }`}
+              >
+                Q{g.idx + 1}（{g.months[0]}-{g.months[2]}月） {g.done}/{g.total}
+              </button>
+            ))}
+            {otherTasks.length > 0 && (
+              <button
+                onClick={() => setTaskQuarterTab('other')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
+                  taskQuarterTab === 'other' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-blue-300'
+                }`}
+              >
+                その他 {otherDone}/{otherTasks.length}
+              </button>
+            )}
+            <button
+              onClick={() => setTaskQuarterTab('all')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
+                taskQuarterTab === 'all' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-blue-300'
+              }`}
+            >
+              すべて {allDone}/{tasks.length}
+            </button>
+          </div>
+          {visibleTasks.length > 0 && (
+            <div className="flex items-center gap-3 mb-3 p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
+              <div className="flex-1">
+                <ProgressBar rate={(visibleTasks.filter((t) => t.status === '完了').length / visibleTasks.length) * 100} />
+              </div>
+              <div className="flex gap-3 text-[10px] font-bold shrink-0">
+                <span className="text-zinc-500">未着手 {visibleTasks.filter((t) => t.status !== '進行中' && t.status !== '完了').length}</span>
+                <span className="text-amber-600">進行中 {visibleTasks.filter((t) => t.status === '進行中').length}</span>
+                <span className="text-emerald-600">完了 {visibleTasks.filter((t) => t.status === '完了').length}</span>
+              </div>
+            </div>
+          )}
+          {visibleTasks.length === 0 ? (
             <p className="text-xs text-zinc-400">登録されているタスクはありません</p>
           ) : (
             <ul className="space-y-2">
-              {tasks.map((t) => {
+              {visibleTasks.map((t) => {
                 const taskArea = AREAS.find((a) => a.id === t.area);
                 const taskSite = t.site ? sitesOfArea(t.area).find((s) => s.id === t.site) : null;
                 const createdLabel = t.createdAt ? new Date(t.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
@@ -709,33 +774,50 @@ export default function GlobalDashboard() {
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {PROJECTS.map((p, i) => {
-              const saved = projectData[p.id]?.url ?? '';
-              const value = projectEdits[p.id] ?? saved;
+            {PROJECTS.map((p) => {
+              const saved = projectData[p.id] ?? {};
+              const edits = projectEdits[p.id] ?? {};
               return (
-                <div key={p.id} className="p-3 rounded-xl bg-zinc-50 border border-zinc-100">
-                  <p className="text-xs font-bold text-zinc-700">{`①②③④`[i] ?? ''} {p.name}</p>
-                  {p.note && <p className="text-[10px] text-zinc-400 mt-0.5">{p.note}</p>}
-                  <div className="flex items-center gap-2 mt-2">
-                    <input
-                      value={value}
-                      onChange={(e) => setProjectEdits((f) => ({ ...f, [p.id]: e.target.value }))}
-                      placeholder="Googleドライブ・AIツールなどのURL"
-                      className="flex-1 px-2 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
-                    />
-                    <button
-                      onClick={() => handleSaveProject(p.id)}
-                      disabled={projectApiStatus !== 'ready' || projectSaving === p.id}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition shrink-0"
-                    >
-                      {projectSaving === p.id ? '保存中…' : '保存'}
-                    </button>
+                <div
+                  key={p.id}
+                  className="p-3 rounded-xl border"
+                  style={{ background: `${p.color}0d`, borderColor: `${p.color}33` }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg leading-none">{p.icon}</span>
+                    <p className="text-xs font-bold text-zinc-700">{p.name}</p>
                   </div>
-                  {saved && (
-                    <a href={saved} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded px-2 py-0.5 hover:bg-blue-100">
-                      開く ↗
-                    </a>
-                  )}
+                  {p.note && <p className="text-[10px] text-zinc-400 mt-0.5 ml-7">{p.note}</p>}
+                  <div className="mt-2 space-y-1.5">
+                    {PROJECT_LINK_FIELDS.map((f) => {
+                      const savedUrl = saved[f.key] ?? '';
+                      const value = edits[f.key] ?? savedUrl;
+                      return (
+                        <div key={f.key} className="flex items-center gap-1.5">
+                          <span className="text-xs w-5 text-center shrink-0" title={f.label}>{f.icon}</span>
+                          <input
+                            value={value}
+                            onChange={(e) => setProjectEdits((prev) => ({ ...prev, [p.id]: { ...prev[p.id], [f.key]: e.target.value } }))}
+                            placeholder={`${f.label} URL`}
+                            className="flex-1 px-2 py-1 text-[11px] bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+                          />
+                          {savedUrl && (
+                            <a href={savedUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold shrink-0 hover:underline" style={{ color: p.color }}>
+                              開く↗
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => handleSaveProject(p.id)}
+                    disabled={projectApiStatus !== 'ready' || projectSaving === p.id}
+                    className="mt-2 px-3 py-1 rounded-lg text-[11px] font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    style={{ background: p.color }}
+                  >
+                    {projectSaving === p.id ? '保存中…' : '保存'}
+                  </button>
                 </div>
               );
             })}

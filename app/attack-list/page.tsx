@@ -105,9 +105,9 @@ const SEED_ENTRIES: SeedEntry[] = [
   { company: 'トランコムEX西日本株式会社 茨木北ロジスティクスセンター', area: '関西', salesRep: '岩田', repContact: '吉村さん', notes: '0726-48-7871・茨木市彩都あかね2-1 プロロジスパーク茨木2F', updatedAt: '2026-07-23' },
   { company: '福山通運株式会社東海支店', area: '中部', salesRep: '谷口', status: '初商談', nextVisitDate: '2026-07-23', notes: '7/23アポ', updatedAt: '2026-07-21' },
   { company: '西鉄運輸枚方', area: '関西', salesRep: '谷口', linkedSiteId: '808-1', status: '初商談', nextVisitDate: '2026-07-21', notes: '7/21アポ', updatedAt: '2026-07-21' },
-  { company: '西鉄運輸加古川', area: '関西', salesRep: '谷口', linkedSiteId: '832-1', status: '初商談', nextVisitDate: '2026-07-22', notes: '7/22アポ', updatedAt: '2026-07-21' },
+  { company: '西鉄運輸加古川', area: '関西', salesRep: '谷口', linkedSiteId: '832-1', status: '初商談', nextVisitDate: '2026-07-22', notes: '7/22アポ・7月商談実績で見積提示あり', updatedAt: '2026-07-21' },
   { company: '福山通運株式会社北名古屋センター', area: '中部', salesRep: '谷口', status: '初商談', notes: '日程調整中', updatedAt: '2026-07-21' },
-  { company: 'AFS中部センター', area: '中部', salesRep: '谷口', linkedSiteId: '675-1', status: '初商談', notes: '日程調整中', updatedAt: '2026-07-21' },
+  { company: 'AFS中部センター', area: '中部', salesRep: '谷口', linkedSiteId: '675-1', status: '初商談', notes: '日程調整中・7月商談実績で見積提示あり', updatedAt: '2026-07-21' },
   { company: '昭和冷蔵小牧センター', area: '中部', salesRep: '谷口', linkedSiteId: '790-1', status: '初商談', nextVisitDate: '2026-07-23', notes: '7/23アポ', updatedAt: '2026-07-21' },
   { company: '日本通運 名古屋港コンテナ', area: '中部', salesRep: '谷口', status: '初商談', notes: '担当者確認中', updatedAt: '2026-07-21' },
   { company: '尾家産業', area: '関西', salesRep: '谷口', status: '初商談', notes: '日程調整中', updatedAt: '2026-07-21' },
@@ -127,6 +127,16 @@ const SEED_ENTRIES: SeedEntry[] = [
   { company: '株式会社iGrus', area: '関東', salesRep: '谷口', notes: '渋谷区円山町・倉庫内仕分け・ピッキング', updatedAt: '2026-07-24' },
   { company: 'テイケイネクスト株式会社', area: '関東', salesRep: '谷口', notes: '草加市草加駅・ピッキング（アーティストグッズ出荷）', updatedAt: '2026-07-24' },
   { company: '株式会社LIXIL', area: '中部', salesRep: '谷口', notes: '知多市北浜町・プラスチック成形（射出成形）', updatedAt: '2026-07-24' },
+  // ── 2026年8月時点の職種別レート表・価格交渉状況シートより（現場カルテと連動）──
+  { company: '福山通運 藤沢支店', area: '関東', salesRep: '谷口', linkedSiteId: 'fujisawa-1', status: '非稼働中', quoteUrl: 'https://docs.google.com/presentation/d/1t8AtQY9zGac-9cOte0PF_YcLRDf6eGuDOVX20X_DF70/edit?slide=id.p#slide=id.p', notes: '同労賃対象・交渉決裂。資料提示10/27（作成済）、回答期限12/04（済）', updatedAt: '2026-08-01' },
+  { company: 'タキザキロジスティクス 板橋HUBセンター', area: '関東', salesRep: '谷口', linkedSiteId: 'takizaki-1', status: '非稼働中', notes: '同労賃対象・交渉前。アスクルのランサムウェア問題で今後の展開が見えない。現状スタッフも0名', updatedAt: '2026-08-01' },
+  { company: 'ジェイロジ イオン関東RDCセンター', area: '関東', salesRep: '谷口', linkedSiteId: 'jaylog-1', status: '非稼働中', notes: '対象外・交渉決裂。￥450円回答なし。11月中に返答・基本合意なし。12/3訪問→3月現場終了予定', updatedAt: '2026-08-01' },
+  { company: '名鉄運輸 埼玉支店', area: '関東', salesRep: '谷口', linkedSiteId: 'meitetsu-saitama-1', status: '非稼働中', notes: '対象外。撤退対象。9月末撤退完了予定、有給3カ月で按分', updatedAt: '2026-08-01' },
+  { company: '三井物産流通グループ 常温鶴見センター（旧物産ロジ）', area: '関東', salesRep: '谷口', linkedSiteId: 'mitsui-tsurumi-1', status: '非稼働中', notes: '対象外・交渉決裂。200円単価交渉決裂で撤退予定、今期中。12/4訪問→3月終了予定', updatedAt: '2026-08-01' },
+  { company: '三和水産加工センター 本社', area: '関東', salesRep: '谷口', linkedSiteId: 'sanwa-suisan-1', notes: '対象外。詳細情報なし', updatedAt: '2026-08-01' },
+  { company: 'LX PANTOS Japan株式会社', area: '関東', salesRep: '谷口', linkedSiteId: 'lxpantos-1', status: '稼働中', notes: '請求単価¥2,970/支給単価¥2,070/利益¥900/利益率30.3%（2026/8/1時点）', updatedAt: '2026-08-01' },
+  { company: 'ロジメディカル 大府営業所', area: '中部', salesRep: '谷口', linkedSiteId: 'logimedical-obu-1', status: '非稼働中', notes: '対象外。撤退対象。請求単価¥1,850/支給単価¥1,350/利益¥500/利益率27.0%（2026/8/1時点）', updatedAt: '2026-08-01' },
+  { company: '東海漬物株式会社 中京物流センター', area: '中部', salesRep: '谷口', linkedSiteId: 'tokaizukemono-1', status: '非稼働中', notes: '対象外。撤退対象。請求単価¥1,750/支給単価¥1,270/利益¥480/利益率27.4%（2026/8/1時点）', updatedAt: '2026-08-01' },
 ];
 function buildSeedEntries(): AttackEntry[] {
   return SEED_ENTRIES.map((e, i) => ({
@@ -150,6 +160,14 @@ function buildSeedEntries(): AttackEntry[] {
     updatedAt: e.updatedAt || todayStr(),
   }));
 }
+// ── 月次商談実績数（担当者からの報告を集計、手入力・当面はローカル固定値）──
+interface MonthlyActivity { rep: string; month: string; newMeetings: number; existingMeetings: number; quoteCount?: number; note?: string }
+const MONTHLY_ACTIVITY: MonthlyActivity[] = [
+  { rep: '谷口', month: '2026-07', newMeetings: 1, existingMeetings: 15, quoteCount: 3, note: '既存は職場見学除くと10件／見積提示3件（西鉄運輸加古川支店・摂津倉庫（京田辺）・AFS中部センター）' },
+  { rep: '岩田', month: '2026-07', newMeetings: 10, existingMeetings: 2, note: '既存は職場見学含む' },
+  { rep: '田中', month: '2026-07', newMeetings: 4, existingMeetings: 2 },
+];
+
 function readLocalEntries(): AttackEntry[] {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -329,16 +347,17 @@ export default function AttackListPage() {
   const stackupRate = stackupProgress != null ? (stackupProgress / BACKLOG_STACKUP_MONTHLY_TARGET) * 100 : null;
 
   // ── 営業KPI（アプローチ→受注ファネル、一般的な人材派遣・人材紹介営業のKPI水準を参考値として併記） ──
-  const QUOTE_OR_LATER = ['見積提示', '成約', '稼働中'];
+  // 商談数・見積数は「担当者からの月次商談実績報告（MONTHLY_ACTIVITY）」の当月実数を使う。
+  // リスト内で一度でも接触した累計件数（旧ロジック）とは別物のため、実績報告の値に差し替えている。
   const funnelApproach = entries.length;
-  const funnelMeeting = entries.filter((e) => !isUntouched(e)).length;
-  const funnelQuote = entries.filter((e) => QUOTE_OR_LATER.includes(e.status)).length;
+  const funnelMeeting = MONTHLY_ACTIVITY.reduce((sum, m) => sum + m.newMeetings + m.existingMeetings, 0);
+  const funnelQuote = MONTHLY_ACTIVITY.reduce((sum, m) => sum + (m.quoteCount ?? 0), 0);
   const funnelOrder = entries.filter((e) => WON_STATUSES.includes(e.status)).length;
   const pct = (n: number, d: number) => (d > 0 ? (n / d) * 100 : 0);
   const FUNNEL_STAGES: { label: string; count: number; rateFromPrev: number | null; benchmarkLabel: string; benchmarkRange: string }[] = [
     { label: 'アプローチ数', count: funnelApproach, rateFromPrev: null, benchmarkLabel: '', benchmarkRange: '' },
-    { label: '商談化（商談数）', count: funnelMeeting, rateFromPrev: pct(funnelMeeting, funnelApproach), benchmarkLabel: '商談化率', benchmarkRange: '10〜20%' },
-    { label: '見積提示（見積数）', count: funnelQuote, rateFromPrev: pct(funnelQuote, funnelMeeting), benchmarkLabel: '見積提示率', benchmarkRange: '40〜60%' },
+    { label: '商談化（商談数・7月実績）', count: funnelMeeting, rateFromPrev: pct(funnelMeeting, funnelApproach), benchmarkLabel: '商談化率', benchmarkRange: '10〜20%' },
+    { label: '見積提示（見積数・7月実績）', count: funnelQuote, rateFromPrev: pct(funnelQuote, funnelMeeting), benchmarkLabel: '見積提示率', benchmarkRange: '40〜60%' },
     { label: '受注（受注数）', count: funnelOrder, rateFromPrev: pct(funnelOrder, funnelQuote), benchmarkLabel: '受注率', benchmarkRange: '20〜40%' },
   ];
   const overallFunnelConversion = pct(funnelOrder, funnelApproach);
@@ -408,6 +427,27 @@ export default function AttackListPage() {
             <div className="flex justify-between items-center px-3 py-2 rounded-xl bg-orange-50 border border-orange-100">
               <span className="text-xs font-bold text-orange-900">総合コンバージョン（アプローチ→受注）</span>
               <span className="text-sm font-black text-orange-800 font-mono">{overallFunnelConversion.toFixed(1)}%<span className="text-[10px] font-normal text-orange-600 ml-1">（参考 2〜5%）</span></span>
+            </div>
+          </Card>
+        )}
+
+        {MONTHLY_ACTIVITY.length > 0 && (
+          <Card eyebrow="Meetings" eyebrowColor="text-orange-600" title={`🗓️ ${MONTHLY_ACTIVITY[0].month.slice(5, 7)}月 商談実績数（担当者別）`}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {MONTHLY_ACTIVITY.map((m) => (
+                <div key={m.rep} className="p-3 rounded-xl bg-zinc-50 border border-zinc-100">
+                  <p className="text-xs font-bold text-zinc-700">{m.rep}</p>
+                  <div className="flex justify-between text-xs mt-1.5">
+                    <span className="text-zinc-400">新規</span>
+                    <span className="font-mono font-bold">{m.newMeetings}件</span>
+                  </div>
+                  <div className="flex justify-between text-xs mt-0.5">
+                    <span className="text-zinc-400">既存</span>
+                    <span className="font-mono font-bold">{m.existingMeetings}件</span>
+                  </div>
+                  {m.note && <p className="text-[10px] text-zinc-400 mt-1.5">{m.note}</p>}
+                </div>
+              ))}
             </div>
           </Card>
         )}
