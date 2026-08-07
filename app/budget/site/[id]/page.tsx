@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, BackLink, Breadcrumb, AREA_THEME, AGVLine, AGV_PASTEL, niceTicks } from '../../_ui';
 import { SITES, AREAS, MONTHS, MonthKey, monthCalendar, yen, ActionType, NegotiationStatus, POSTING_PERIOD_OPTIONS, PL_ACCOUNTS, getPLRow, hasAnyPLData, PLAccountDef, ratesUpdatedLabel, effectiveMinimumWage, MINIMUM_WAGE_SOURCE_LABEL, effectiveMarketHourlyWage, MARKET_HOURLY_WAGE_SOURCE_LABEL, deriveUnitPrices } from '../../_data';
 
@@ -133,11 +133,14 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
   const hasFinancials = hasAnyPLData(site);
   // 縦軸=各指標の金額、横軸=4月〜3月の通期。売上高は月次予算表の実データ(4-9月)を予算線として使える一方、
   // 売上総利益・営業利益は月次予算の内訳が無いため、当月実績の単点のみ表示する（憶測で埋めない）。
+  // 前年は現場ごとのsalesYoyByMonth（26期実績）があれば表示。未登録の現場（新規現場など）は線を出さない。
+  // 先月実績は現場単位では月次履歴を保持していないため表示不可（会社・エリア単位のみ対応）。
   const metricTrend = (account: PLAccountDef) => {
     const row = getPLRow(site, account);
     return MONTHS.map((mk) => ({
       name: `${monthCalendar(mk).month}月`,
       予算: account.label === '売上高' ? (site.monthlyBudget?.[mk] ?? null) : null,
+      前年: account.label === '売上高' ? (site.salesYoyByMonth?.[mk] ?? null) : null,
       当月実績: mk === CURRENT_ACTUAL_MONTH ? (row?.actual ?? null) : null,
     }));
   };
@@ -201,7 +204,7 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
         {/* ── 当月現場KPI ──────────────────────────── */}
         <div className="bg-gradient-to-br from-blue-900 to-blue-950 rounded-2xl p-5 text-white shadow-lg shadow-blue-900/20">
           <p className="text-[11px] font-bold text-blue-200 font-montserrat tracking-[0.15em] uppercase mb-3">当月現場KPI 稼働密度</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <p className="text-[10px] text-blue-300">配置人数</p>
               <p className="text-2xl font-black mt-0.5 font-mono">{displayStaffCount || '—'}<span className="text-xs font-normal ml-1">名</span></p>
@@ -215,6 +218,18 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
               <p className="text-2xl font-black mt-0.5 font-mono">
                 {displayStaffCount && displayTotalHours ? (Number(displayTotalHours) / Number(displayStaffCount)).toFixed(2) : '—'}
                 <span className="text-xs font-normal ml-1">h</span>
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-blue-300">1人当たり売上</p>
+              <p className="text-xl font-black mt-0.5 font-mono">
+                {displayStaffCount && site.sales?.actual != null ? yen(Math.round(site.sales.actual / Number(displayStaffCount))) : '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-blue-300">1人当たり粗利②</p>
+              <p className="text-xl font-black mt-0.5 font-mono">
+                {displayStaffCount && site.opProfit?.actual != null ? yen(Math.round(site.opProfit.actual / Number(displayStaffCount))) : '—'}
               </p>
             </div>
           </div>
@@ -307,7 +322,8 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                 const row = getPLRow(site, m.account);
                 const trend = metricTrend(m.account);
                 const hasBudgetSeries = m.account.label === '売上高' && !!site.monthlyBudget;
-                const metricMax = Math.max(0, ...trend.flatMap((r) => [r.予算, r.当月実績].filter((v): v is number => v != null)));
+                const hasYoySeries = m.account.label === '売上高' && !!site.salesYoyByMonth;
+                const metricMax = Math.max(0, ...trend.flatMap((r) => [r.予算, r.前年, r.当月実績].filter((v): v is number => v != null)));
                 const metricTicks = niceTicks(metricMax);
                 return (
                   <div key={m.account.label} className="p-3 rounded-xl bg-zinc-50 border border-zinc-100">
@@ -316,13 +332,15 @@ export default function SiteKarte({ params }: { params: Promise<{ id: string }> 
                       {row?.actual != null ? yen(row.actual) : '—'}
                     </p>
                     <p className="text-[10px] text-zinc-400 text-center mb-1">当月実績</p>
-                    <ResponsiveContainer width="100%" height={140}>
+                    <ResponsiveContainer width="100%" height={160}>
                       <LineChart data={trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
                         <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#a1a1aa" />
                         <YAxis tick={{ fontSize: 9 }} stroke="#a1a1aa" width={48} ticks={metricTicks} interval={0} domain={[0, metricTicks[metricTicks.length - 1]]} tickFormatter={(v) => `${(Number(v) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`} />
                         <Tooltip formatter={(v) => (v == null ? '—' : yen(typeof v === 'number' ? v : Number(v)))} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
                         {hasBudgetSeries && <Line type="monotone" dataKey="予算" stroke="#a1a1aa" strokeDasharray="4 3" strokeWidth={2} connectNulls dot={{ r: 2 }} />}
+                        {hasYoySeries && <Line type="monotone" dataKey="前年" stroke="#a855f7" strokeDasharray="4 3" strokeWidth={2} connectNulls dot={{ r: 2 }} />}
                         <Line type="monotone" dataKey="当月実績" stroke={m.color} strokeWidth={3} connectNulls dot={{ r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>

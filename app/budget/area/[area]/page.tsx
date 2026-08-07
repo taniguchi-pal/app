@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shell, Eyebrow, Card, HeroStat, TabRow, MiniStat, AchieveBadge, BackLink, Breadcrumb, WeatherBadge, AREA_THEME, AGVLine, AGV_PASTEL, niceTicks } from '../../_ui';
-import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, currentCalendarMonthKey, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, effectiveStaffCount, effectiveTotalHours, SITE_SALES_TARGET, RECRUITING_LAST_YEAR, yen } from '../../_data';
+import { MONTHS, MonthKey, VISIBLE_MONTHS, monthLabel, monthLabels, monthCalendar, AREA_MONTHLY, AREAS, sitesOfArea, sitesChangingInMonth, ratesUpdatedLabel, CURRENT_ACTUAL_MONTH, currentCalendarMonthKey, AUTO_AGGREGATE_AREAS, BUDGET_AGGREGATE_MONTHS, sumSitesActual, sumSiteBudgetForMonth, sumAreaStaff, effectiveStaffCount, effectiveTotalHours, SITE_SALES_TARGET, STAFF_HOURS_TARGET, yen } from '../../_data';
 
 const numOrNull = (v: unknown): number | null => (v === '' || v == null ? null : Number(v));
 
@@ -86,6 +86,32 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   const sites = sitesOfArea(areaId);
   const endedSites = sites.filter((s) => !s.active);
 
+  // ── 現場別 稼働・売上KPI分析（1人あたり工数の基準120h・1現場あたり売上目標150万との比較）──
+  // 配置人数・総工数はSO週次入力（override）優先、無ければ現場カルテの月次実績履歴にフォールバック。
+  const staffFor = (s: (typeof sites)[number]) =>
+    effectiveStaffCount(s, siteOverrides) ?? s.staffCountByMonth?.[CURRENT_ACTUAL_MONTH] ?? s.staffCountByMonth?.['6月進捗'] ?? s.staffCountByMonth?.['5月実績'] ?? s.staffCountByMonth?.['4月実績'] ?? null;
+  const hoursFor = (s: (typeof sites)[number]) =>
+    effectiveTotalHours(s, siteOverrides) ?? s.totalHoursByMonth?.[CURRENT_ACTUAL_MONTH] ?? s.totalHoursByMonth?.['6月進捗'] ?? s.totalHoursByMonth?.['5月実績'] ?? s.totalHoursByMonth?.['4月実績'] ?? null;
+  const kpiRows = sites
+    .filter((s) => s.active)
+    .map((s) => {
+      const staff = staffFor(s);
+      const hours = hoursFor(s);
+      const perHeadHours = staff && hours != null ? hours / staff : null;
+      const utilization = perHeadHours != null ? (perHeadHours / STAFF_HOURS_TARGET) * 100 : null;
+      const sales = s.sales?.actual ?? null;
+      const perHeadSales = staff && sales != null ? sales / staff : null;
+      const salesRate = sales != null ? (sales / SITE_SALES_TARGET) * 100 : null;
+      return { site: s, staff, hours, perHeadHours, utilization, sales, perHeadSales, salesRate };
+    })
+    .filter((r) => r.staff != null || r.sales != null)
+    .sort((a, b) => (a.utilization ?? 999) - (b.utilization ?? 999));
+  const kpiSiteCount = kpiRows.filter((r) => r.sales != null).length;
+  const kpiTotalHours = kpiRows.reduce((sum, r) => sum + (r.hours ?? 0), 0);
+  const kpiTotalStaff = kpiRows.reduce((sum, r) => sum + (r.staff ?? 0), 0);
+  const kpiSalesPerHead = current.salesActual != null && kpiTotalStaff > 0 ? current.salesActual / kpiTotalStaff : null;
+  const kpiSalesPerSite = current.salesActual != null && kpiSiteCount > 0 ? current.salesActual / kpiSiteCount : null;
+
   const rate = current.salesActual != null ? (current.salesActual / current.salesBudget) * 100 : null;
   const gap = current.salesActual != null ? current.salesActual - current.salesBudget : null;
   const yoyPct = current.salesActual != null && current.yoyLastYear != null ? ((current.salesActual - current.yoyLastYear) / current.yoyLastYear) * 100 : null;
@@ -106,6 +132,7 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
   const salesTrendTicks = niceTicks(salesTrendMax);
 
   const topics: { text: string; tone: 'default' | 'alert' | 'notice' }[] = [];
+  (current.topics ?? []).forEach((text) => topics.push({ text, tone: 'notice' }));
   if (rate != null && gap != null) topics.push({ text: `売上 予算比 ${rate.toFixed(1)}%（GAP ${gap > 0 ? '+' : ''}¥${gap.toLocaleString()}）`, tone: 'default' });
   if (yoyPct != null) topics.push({ text: `前年同月比 ${yoyPct >= 0 ? '+' : ''}${yoyPct.toFixed(1)}%`, tone: 'default' });
   if (current.joined != null) topics.push({ text: `当月 採用動態: 入職 ${current.joined}名 / 退職 ${current.resigned}名`, tone: 'default' });
@@ -190,6 +217,57 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
           />
         </div>
 
+        {/* ── 現場運営KPI（稼働現場数・総工数・1人/1現場あたり売上）── */}
+        <Card eyebrow="Operations" title="🔍 現場運営KPI">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <MiniStat label="稼働現場数" value={kpiSiteCount || '—'} unit="件" />
+            <MiniStat label="総工数" value={kpiTotalHours ? kpiTotalHours.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—'} unit="h" />
+            <MiniStat label="1人当たり売上" value={kpiSalesPerHead != null ? yen(Math.round(kpiSalesPerHead)) : '—'} />
+            <MiniStat label="1現場当たり売上" value={kpiSalesPerSite != null ? yen(Math.round(kpiSalesPerSite)) : '—'} sub={`目標 ${yen(SITE_SALES_TARGET)}`} />
+          </div>
+          {kpiRows.length > 0 && (
+            <>
+              <p className="text-[10px] text-zinc-400 mb-2">1人当たり工数の基準{STAFF_HOURS_TARGET}h・1現場あたり売上目標{yen(SITE_SALES_TARGET)}に対する達成度が低い順。稼働率が低い現場ほど伸びしろあり。</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs whitespace-nowrap">
+                  <thead>
+                    <tr className="text-zinc-400 text-[10px] border-b border-zinc-100">
+                      <th className="text-left font-bold pb-1.5 pr-2">現場</th>
+                      <th className="text-right font-bold pb-1.5 px-2">配置人数</th>
+                      <th className="text-right font-bold pb-1.5 px-2">総工数</th>
+                      <th className="text-right font-bold pb-1.5 px-2">1人当たり工数</th>
+                      <th className="text-right font-bold pb-1.5 px-2">稼働率</th>
+                      <th className="text-right font-bold pb-1.5 px-2">売上</th>
+                      <th className="text-right font-bold pb-1.5 px-2">1人当たり売上</th>
+                      <th className="text-right font-bold pb-1.5 pl-2">対150万</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {kpiRows.map((r) => (
+                      <tr key={r.site.id} className="border-b border-zinc-50">
+                        <td className="py-1.5 pr-2 font-bold text-zinc-700">
+                          <Link href={`/budget/site/${r.site.id}`} className="hover:text-blue-600 hover:underline">{r.site.name}</Link>
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono">{r.staff ?? '—'}</td>
+                        <td className="py-1.5 px-2 text-right font-mono">{r.hours != null ? r.hours.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '—'}</td>
+                        <td className="py-1.5 px-2 text-right font-mono">{r.perHeadHours != null ? r.perHeadHours.toFixed(1) : '—'}</td>
+                        <td className={`py-1.5 px-2 text-right font-mono font-bold ${r.utilization == null ? 'text-zinc-300' : r.utilization >= 100 ? 'text-emerald-600' : r.utilization >= 80 ? 'text-amber-600' : 'text-rose-600'}`}>
+                          {r.utilization != null ? `${r.utilization.toFixed(0)}%` : '—'}
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono">{r.sales != null ? yen(r.sales) : '—'}</td>
+                        <td className="py-1.5 px-2 text-right font-mono">{r.perHeadSales != null ? yen(Math.round(r.perHeadSales)) : '—'}</td>
+                        <td className={`py-1.5 pl-2 text-right font-mono font-bold ${r.salesRate == null ? 'text-zinc-300' : r.salesRate >= 100 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {r.salesRate != null ? `${r.salesRate.toFixed(0)}%` : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </Card>
+
         <Card eyebrow="Timeline" title="月次フィルター">
           <TabRow items={VISIBLE_MONTHS} active={activeMonth} onSelect={(m) => setActiveMonth(m as MonthKey)} labels={monthLabels(VISIBLE_MONTHS)} />
         </Card>
@@ -261,44 +339,6 @@ export default function AreaDashboard({ params }: { params: Promise<{ area: stri
             </ResponsiveContainer>
           </Card>
         </div>
-
-        {/* ── SO管理KPI（採用・稼働管理） ─────────── */}
-        {(() => {
-          const so = current.soMetrics;
-          const rate = (a?: number, b?: number) => (a != null && b) ? `${((a / b) * 100).toFixed(1)}%` : '—';
-          const num = (v?: number, unit = '') => (v != null ? `${v.toLocaleString()}${unit}` : 'データ未登録');
-          const yenv = (v?: number) => (v != null ? yen(v) : 'データ未登録');
-          const yoy = RECRUITING_LAST_YEAR[areaId]?.[activeMonth];
-          const yoyLabel = (current?: number, last?: number | null, unit = '名') => {
-            if (last == null) return '前年同月データ未登録';
-            if (current == null) return `前年同月 ${last.toLocaleString()}${unit}`;
-            const diff = current - last;
-            const sign = diff > 0 ? '+' : '';
-            return `前年同月 ${last.toLocaleString()}${unit}（${sign}${diff}）`;
-          };
-          return (
-            <Card eyebrow="SO Management" title="🐣 SO管理KPI（採用・稼働管理）">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MiniStat label="残業超過人数" value={num(so?.overtimeExcessCount, '名')} />
-                <MiniStat label="当日欠勤率" value={so?.dailyAbsenceRate != null ? `${so.dailyAbsenceRate.toFixed(1)}%` : 'データ未登録'} />
-                <MiniStat label="募集費" value={yenv(so?.recruitingCost)} />
-                <MiniStat label="応募単価" value={yenv(so?.applicantUnitCost)} />
-                <MiniStat label="有効リソース単価" value={yenv(so?.validResourceUnitCost)} />
-                <MiniStat label="入職単価" value={yenv(so?.hireUnitCost)} />
-                <MiniStat label="総応募者数" value={num(so?.totalApplicants, '名')} sub={yoyLabel(so?.totalApplicants, yoy?.totalApplicants)} />
-                <MiniStat label="有効応募数" value={num(so?.validApplicants, '名')} sub={`有効応募率 ${rate(so?.validApplicants, so?.totalApplicants)}`} />
-                <MiniStat label="有効リソース数" value={num(so?.validResources, '名')} sub={`有効リソース率 ${rate(so?.validResources, so?.validApplicants)}`} />
-                <MiniStat label="候補者数" value={num(so?.candidates, '名')} />
-                <MiniStat label="入職者数" value={num(so?.hires, '名')} sub={yoyLabel(so?.hires, yoy?.hires)} />
-                <MiniStat label="月内退職者数" value={num(so?.midMonthResignations, '名')} sub={yoyLabel(so?.midMonthResignations, yoy?.midMonthResignations)} />
-                <MiniStat label="月末退職者数" value={num(so?.endMonthResignations, '名')} />
-              </div>
-              {yoy?.hireRate != null && (
-                <p className="text-[10px] text-zinc-400 mt-2">前年同月 入職率 {yoy.hireRate.toFixed(1)}%（{monthLabel(activeMonth)}時点比較）</p>
-              )}
-            </Card>
-          );
-        })()}
 
         {/* ── トピックス ───────────────────────────── */}
         <Card eyebrow="Topics" title={`${monthLabel(activeMonth)} ${area.title}エリア トピックス`}>

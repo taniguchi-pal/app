@@ -115,18 +115,23 @@ export const DEFAULT_SCHEDULE_TASKS: DefaultScheduleTask[] = [
   dTask('sched-eigyo-13', '衛生委員会', '8月', '営業'),
   dTask('sched-eigyo-14', '同労賃情報収集', '8月', '営業'),
   dTask('sched-eigyo-15', '任天堂<短期>掲載・採用', '8月', '営業'),
+  dTask('sched-eigyo-13b', '8月分 価格交渉棚卸し・同労賃マスタシート更新', '8月', '営業'),
   dTask('sched-eigyo-16', '上期振り返り・下期見通し資料作成', '9月', '営業'),
   dTask('sched-eigyo-17', '衛生委員会', '9月', '営業'),
   dTask('sched-eigyo-18', '同労賃・地域指数マスタ シス部にコア取り込み依頼', '9月', '営業', '「2 該当職種の平均的な賃金」「3 〜地域の指数」「4 〜算出した金額」など同労賃地域マスタ取り込み依頼。地域指数などの情報（同労賃マスタのシート）を坂中さん・まさしさんに共有'),
+  dTask('sched-eigyo-18b', '同労賃マスタ価格交渉・資料作成スタート', '9月', '営業', '資料内容と上げ幅について社内で検討・共有予定'),
   dTask('sched-eigyo-19', '同労賃一発目 資料提示', '10月', '営業'),
   dTask('sched-eigyo-20', '衛生委員会', '10月', '営業'),
   dTask('sched-eigyo-21', 'HMK<短期> 稼働', '10月', '営業'),
   dTask('sched-eigyo-22', '任天堂<短期> 稼働（10月上旬〜1月上旬まで）', '10月', '営業'),
+  dTask('sched-eigyo-22b', 'お歳暮案件準備：HMK西神戸・IH（アイエイチロジ尼崎）採用・掘り起こし開始', '10月', '営業', 'IHは2026年11月2日〜12月26日稼働予定、初日13名スタート・ストック作成後は1.5倍人員に増員。貴子さん担当、SO＋五十嵐さんが全面バックアップ。任天堂の短期案件があれば同様に対応'),
   dTask('sched-eigyo-23', '同労賃見積書ご提示', '11月', '営業'),
   dTask('sched-eigyo-24', '来期予算作成', '11月', '営業'),
   dTask('sched-eigyo-25', '衛生委員会', '11月', '営業'),
-  dTask('sched-eigyo-26', '同労賃回答〆切', '12月', '営業'),
+  dTask('sched-eigyo-23b', 'HMK西神戸・IH（アイエイチロジ尼崎）始動', '11月', '営業'),
+  dTask('sched-eigyo-26', '同労賃回答〆切', '12月', '営業', '12月末を価格交渉の合意期限とする'),
   dTask('sched-eigyo-27', '衛生委員会', '12月', '営業'),
+  dTask('sched-eigyo-26b', 'セリア（東海支店）終了対応：リフトマンのみ稼働継続', '12月', '営業', '10月以降の物量減少により最大12月末で現場終了の可能性。お盆明けにスタッフへ告知済み'),
   dTask('sched-eigyo-28', 'お年賀周り', '1月', '営業'),
   dTask('sched-eigyo-29', '来期予算・修正①', '1月', '営業'),
   dTask('sched-eigyo-30', '労働者代表選出', '2月', '営業'),
@@ -146,18 +151,22 @@ export const DEFAULT_SCHEDULE_TASKS: DefaultScheduleTask[] = [
   dTask('sched-so-10', '衛生委員会', '7月', 'SO'),
   dTask('sched-so-11', 'PALMEE全現場導入', '7月', 'SO'),
   dTask('sched-so-12', '衛生委員会', '8月', 'SO'),
-  dTask('sched-so-13', 'PALMEE試験運用', '8月', 'SO'),
+  dTask('sched-so-13', 'PALMEE速払いフェーズ取りまとめ・イレギュラー対応の承認フロー確定', '8月', 'SO', '労務・芦田さんと連携。固まり次第、中部から試験運用スタート。予定マニュアル・速払い手順書・口座開設マニュアル・社内業務フローマニュアルを同時進行で作成'),
   dTask('sched-so-14', '今年定年迎えるスタッフ確認（定年再雇用手続き準備）', '9月', 'SO'),
   dTask('sched-so-15', '雇用契約書類発送（20日過ぎ頃）', '9月', 'SO'),
   dTask('sched-so-16', '衛生委員会', '9月', 'SO'),
+  dTask('sched-so-15b', 'PALMEE追加機能・速払い移行を全スタッフへ告知', '9月', 'SO', '上旬に告知。口座・手数料について通知し、口座開設希望確認アンケートを実施。追加機能: ①雇用契約書発行・確認 ②シフト回収 ③有給申請 ④給与明細 ⑤（将来）源泉徴収票まで一括管理'),
+  dTask('sched-so-15c', '中部 PALMEE試験運用・速払いスタート', '9月', 'SO', '9月後半〜10月にかけて実施'),
   dTask('sched-so-17', '交通費運賃改正', '10月', 'SO'),
   dTask('sched-so-18', '事業所抵触日更新', '10月', 'SO'),
+  dTask('sched-so-17b', '中部・関東 PALMEE速払い移行', '10月', 'SO', 'みずほ銀行口座開設を中部・関東・大阪支店で同時進行'),
   dTask('sched-so-19', '冬季休業期間についてお知らせメール', '11月', 'SO'),
   dTask('sched-so-20', '衛生委員会', '11月', 'SO'),
+  dTask('sched-so-19b', '大阪支店 PALMEE速払い移行', '11月', 'SO', '関西の口座開設を同時進行'),
   dTask('sched-so-21', '雇用契約書類発送（20日過ぎ頃）', '12月', 'SO'),
   dTask('sched-so-22', '衛生委員会', '12月', 'SO'),
+  dTask('sched-so-21b', '全現場 PALMEE速払いフェーズ完了・追加機能実装', '12月', 'SO'),
   dTask('sched-so-23', '衛生委員会', '1月', 'SO'),
-  dTask('sched-so-24', 'PALMEE速払い切り替えスタート', '1月', 'SO'),
   dTask('sched-so-25', '労働者代表選出・任命', '2月', 'SO'),
   dTask('sched-so-26', '衛生委員会', '2月', 'SO'),
   dTask('sched-so-27', '障害者手帳所持者調査', '2月', 'SO'),
@@ -215,6 +224,9 @@ export const BACKLOG_STACKUP_MONTHLY_TARGET = 5000000;
 
 // KPI: 現場あたり月次売上の目標ライン
 export const SITE_SALES_TARGET = 1500000;
+
+// KPI: 1人あたり月次工数の基準値
+export const STAFF_HOURS_TARGET = 120;
 
 // SO（採用オペレーション）管理KPI。件数は入力値、率は件数から自動計算。
 export interface SOMetrics {
@@ -293,6 +305,7 @@ export interface AreaMonth {
   gpForecast?: number | null;
   paidLeaveForecast?: number | null; // 有給金額の見通し
   paidLeaveForecastNote?: string | null; // 補足（例: 仮の退職有給を含む、など）
+  topics?: string[]; // 手入力の補足トピックス（スケジュール・PJ由来の連絡事項など）。数値から自動生成されるトピックスに追加表示する
 }
 
 function plannedCompany(budget: number, quarterDesc: string, backlog?: { orderBacklog: number; stackupPotential: number }): CompanyMonth {
@@ -364,7 +377,8 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
       '■ 7月末: 稼働235名水準への回復',
     ],
   },
-  // 稼働人数・平均工数・受注残・salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新
+  // 稼働人数・平均工数は「実績一覧_2026年度」（自社システム現場一覧、7月末確定値）の現場積み上げに更新（旧193名/117.04hは7/21時点MTGアジェンダの速報値）。
+  // 受注残・salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新
   // （全体=関東+中部+関西+大阪支店）。見通しは予算とは別枠の着地見込みとして並記。
   // 入職・退職・応募状況は7/28 10:15時点の実績より。入職12名の内訳（6月応募→7月入職も含め全て7月分として計上）:
   // 西鉄運輸加古川(二橋・葉石)、福山通運東海支店セリア(伊藤・杉江)、昭和冷蔵小牧(長尾・国部)、
@@ -372,7 +386,7 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
   // 応募93件＝直接投稿82件+Q-mate11件。
   '7月進捗': {
     ...plannedCompany(50000000, ANNUAL_SCHEDULE[1].desc, { orderBacklog: 16, stackupPotential: 2410700 }),
-    activeStaff: 193, avgHours: 117.04, joined: 12, resigned: 2,
+    activeStaff: 208, avgHours: 115.06, joined: 12, resigned: 2,
     salesForecast: 49226862, gpForecast: 6819522,
     topics: [
       '7/28 10:15時点 応募93件（内訳: 直接投稿82件・Q-mate11件）、入職12名・退職2名',
@@ -380,7 +394,14 @@ export const COMPANY_MONTHLY: Record<MonthKey, CompanyMonth> = {
     ],
   },
   // 入職・退職は8/6時点の速報値（月末まで変動あり）。
-  '8月予定': { ...plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc), joined: 3, resigned: 2, salesForecast: 41053925 },
+  '8月予定': {
+    ...plannedCompany(51000000, ANNUAL_SCHEDULE[1].desc), joined: 3, resigned: 2, salesForecast: 41053925,
+    topics: [
+      'PALMEE速払いフェーズ取りまとめ・イレギュラー対応の承認フロー確定（労務・芦田さん連携）。固まり次第、中部から試験運用スタート',
+      '8月分 価格交渉棚卸し・同労賃マスタシート更新',
+      'セリア（東海支店）10月以降物量減少、最大12月末で現場終了の可能性（お盆明けにスタッフへ告知済み）',
+    ],
+  },
   '9月予定': { ...plannedCompany(53000000, ANNUAL_SCHEDULE[1].desc), salesForecast: 42095120 },
   '10月予定': plannedCompany(54000000, ANNUAL_SCHEDULE[2].desc),
   '11月予定': plannedCompany(55000000, ANNUAL_SCHEDULE[2].desc),
@@ -403,16 +424,19 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '5月実績': { salesBudget: 7100000, salesActual: 6878370, yoyLastYear: 13848000, gpBudget: 1174255, gpActual: 1015258, activeStaff: 36, avgHours: 94.42, joined: 0, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 2, proposals: 1, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7490000, salesActual: 7500000, yoyLastYear: 13701000, gpBudget: 1232684, gpActual: 1079448, activeStaff: 36, avgHours: 101.71, joined: 3, resigned: 0, heat: null, siteCount: 6, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
     // 7月実績は7/28 10:15時点のP&L実績（現場積み上げ）より反映。
-    // 稼働人数・総工数、salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
+    // 稼働人数・総工数は「実績一覧_2026年度」（自社システム現場一覧、7月末確定値）に更新。salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
     '7月進捗': {
       salesBudget: 7632000, salesActual: 7425450, yoyLastYear: null,
       gpBudget: 1244779, gpActual: 1193199,
-      activeStaff: 34, avgHours: 113.88, joined: null, resigned: null,
+      activeStaff: 34, avgHours: 112.22, joined: null, resigned: null,
       heat: null, siteCount: 5, funnel: null,
       salesForecast: 7684658, gpForecast: 1342521,
     },
     // 8-9月の予算は月次予算表（現場積み上げ）を自動集計。見通しは2Q見通しレポートより。
-    '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.kanto) / 1000) * 1000), salesForecast: 5635000 },
+    '8月予定': {
+      ...plannedArea(6860000), gpBudget: 1139229, salesForecast: 5800143, gpForecast: 917723, paidLeaveForecast: 200000,
+      topics: ['2026年8月3日付でPCS豊洲からBloomberg丸の内案件へ切替'],
+    },
     '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.kanto) / 1000) * 1000), salesForecast: 5780000 },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kanto) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
@@ -422,16 +446,22 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '5月実績': { salesBudget: 6354000, salesActual: 6972000, yoyLastYear: 8706000, gpBudget: 1071695, gpActual: 1157937, activeStaff: 33, avgHours: 98.43, joined: 2, resigned: 3, heat: null, siteCount: 7, funnel: { meetings: 2, proposals: 2, estimates: 1, orders: 1 } },
     '6月進捗': { salesBudget: 7740000, salesActual: 7116000, yoyLastYear: 8589000, gpBudget: 1220940, gpActual: 1173160, activeStaff: 33, avgHours: 100.22, joined: 3, resigned: 0, heat: '注意 31℃', siteCount: 7, funnel: { meetings: 3, proposals: 2, estimates: 1, orders: 0 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 所属部署: 人ソ（中部））より反映。
-    // gpActualは粗利益2（社保・雇保・有給等控除後）の部門合計。稼働人数・総工数、salesForecast/gpForecastは
-    // 7/21時点の人ソ予算進捗MTGアジェンダより更新。
+    // gpActualは粗利益2（社保・雇保・有給等控除後）の部門合計。稼働人数・総工数は「実績一覧_2026年度」（現場一覧、7月末確定値）に更新（旧37名/101.97hから訂正）。
+    // salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
     '7月進捗': {
       salesBudget: 7620000, salesActual: 7986636, yoyLastYear: null,
       gpBudget: 1303020, gpActual: 1401755,
-      activeStaff: 37, avgHours: 101.97, joined: null, resigned: null,
+      activeStaff: 38, avgHours: 98.96, joined: null, resigned: null,
       heat: null, siteCount: 7, funnel: null,
       salesForecast: 7980000, gpForecast: 1364580,
     },
-    '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.chubu) / 1000) * 1000), salesForecast: 7600000 },
+    '8月予定': {
+      ...plannedArea(7544000), gpBudget: 1290024, salesForecast: 8000000, gpForecast: 1368000, paidLeaveForecast: 200000,
+      topics: [
+        '固まり次第、PALMEE速払いの試験運用を中部からスタート予定',
+        'セリア（東海支店）10月以降物量減少、最大12月末で現場終了の可能性（お盆明けにスタッフへ告知済み）',
+      ],
+    },
     '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.chubu) / 1000) * 1000), salesForecast: 7700000 },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.chubu) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
@@ -444,16 +474,20 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '6月進捗': { salesBudget: 49616000, salesActual: 32475000, yoyLastYear: 38577000, gpBudget: 7047000, gpActual: 2855000, activeStaff: 56, avgHours: 96.02, joined: 6, resigned: 1, heat: '厳重警戒', siteCount: 27, funnel: { meetings: 5, proposals: 3, estimates: 1, orders: 1 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西）の部門合計から
     // 大阪支店（福山通運大阪支店、osakaエリアで別管理）の分を差し引いた関西のみの実数値。
-    // 稼働人数・総工数、salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
+    // 稼働人数・総工数は「実績一覧_2026年度」（現場一覧、7月末確定値）に更新（旧47名/139.53hは7/21時点MTGアジェンダの速報値で、大阪支店分の切り分け誤りにより過小計上だったため訂正）。
+    // salesForecast/gpForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
     '7月進捗': {
       salesBudget: 17720000, salesActual: 12293534, yoyLastYear: null,
       gpBudget: 2541026, gpActual: 2013358,
-      activeStaff: 47, avgHours: 139.53, joined: null, resigned: null,
+      activeStaff: 60, avgHours: 104.29, joined: null, resigned: null,
       heat: null, siteCount: 26, funnel: null,
       salesForecast: 14386426, gpForecast: 2015538,
     },
     // 8-9月の予算は現場積み上げ(現場マスタ登録分)＋関西新規枠(月次6,500,000、未登録の新規現場分)の合計。
-    '8月予定': { ...plannedArea(17290000), salesForecast: 9308883, paidLeaveForecast: 308160 },
+    '8月予定': {
+      ...plannedArea(17290000), gpBudget: 2461801, salesForecast: 11690783, gpForecast: 1637879, paidLeaveForecast: 308160,
+      topics: ['お歳暮案件準備：10月よりHMK西神戸・IH（アイエイチロジ尼崎）の採用・掘り起こし開始予定（貴子さん担当）'],
+    },
     '9月予定': { ...plannedArea(17720000), salesForecast: 9620000, paidLeaveForecast: 300000 },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.kansai) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
@@ -463,15 +497,15 @@ export const AREA_MONTHLY: Record<string, Record<MonthKey, AreaMonth>> = {
     '5月実績': { salesBudget: 20500000, salesActual: 20329795, yoyLastYear: 18700000, gpBudget: 2557300, gpActual: 2478432, activeStaff: 74, avgHours: 126.56, joined: 0, resigned: 0, heat: null, funnel: { meetings: 4, proposals: 3, estimates: 2, orders: 1 } },
     '6月進捗': { salesBudget: 20550000, salesActual: 20220000, yoyLastYear: 18400000, gpBudget: 2543060, gpActual: 2459806, activeStaff: 79, avgHours: 128.87, joined: 3, resigned: 1, heat: '厳重警戒', funnel: { meetings: 5, proposals: 4, estimates: 2, orders: 1 } },
     // 7月は自社システム「LogI P Core」実績一覧（対象年月: 2026年07月, 人ソ関西内の福山通運大阪支店行）より反映。
-    // 稼働人数・総工数、salesForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
+    // 稼働人数・総工数は「実績一覧_2026年度」（現場一覧、7月末確定値）に更新（76名/10,100.08h）。salesForecastは7/21時点の人ソ予算進捗MTGアジェンダより更新。
     '7月進捗': {
       salesBudget: 21570000, salesActual: 17669531, yoyLastYear: null,
       gpBudget: 2838044, gpActual: 2883072,
-      activeStaff: 75, avgHours: 111.30, joined: null, resigned: null,
+      activeStaff: 76, avgHours: 132.90, joined: null, resigned: null,
       heat: null, siteCount: 1, funnel: null,
       salesForecast: 19175778, gpForecast: 2096883,
     },
-    '8月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['8月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 17308925, paidLeaveForecast: 1050000, paidLeaveForecastNote: '仮の退職有給18万円を含む' },
+    '8月予定': { ...plannedArea(19530000), gpBudget: 2244170, salesForecast: 17396250, gpForecast: 1602280, paidLeaveForecast: 1050000, paidLeaveForecastNote: '仮の退職有給18万円を含む' },
     '9月予定': { ...plannedArea(Math.round((PLANNED_BUDGETS['9月予定'] * AREA_WEIGHT.osaka) / 1000) * 1000), salesForecast: 18325120, paidLeaveForecast: 880000, paidLeaveForecastNote: '仮の退職有給18万円を含む' },
     ...Object.fromEntries(Object.entries(PLANNED_BUDGETS).filter(([m]) => !['7月進捗', '8月予定', '9月予定'].includes(m)).map(([m, b]) => [m, plannedArea(Math.round((b * AREA_WEIGHT.osaka) / 1000) * 1000)])),
   } as Record<MonthKey, AreaMonth>,
@@ -673,6 +707,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(2923422, 2852963, 2740535, 2565959, 3011561, 3409905, 4087594, 3860975, 4609539, 3972974, 3874528, 4609974),
     staffCountByMonth: monthSeries3(26, 26, 26),
     totalHoursByMonth: monthSeries3(2138.75, 2030.50, 2083.75),
+    staffCount: 25, totalHours: 2259.25, avgHours: 90.37,
     roleRates: [{ label: null, billingRate: 1790, payRate: 1310, profit: 480, marginRate: 26.8 }],
   },
   '116-1': {
@@ -686,6 +721,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(527904, 513240, 571896, 586560, 454584, 542568, 600308, 489411, 542568, 557232, 527904, 601224),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(306.00, 271.50, 320.00),
+    staffCount: 2, totalHours: 328.00, avgHours: 164.00,
     roleRates: [{ label: null, billingRate: 2033, payRate: 1330, profit: 703, marginRate: 34.6 }],
   },
   '115-1': {
@@ -712,6 +748,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(539340, 484160, 555360, 555360, 398720, 526880, 598080, 441440, 541120, 469920, 498400, 541120),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(304.00, 256.00, 320.00),
+    staffCount: 2, totalHours: 320.00, avgHours: 160.00,
     roleRates: [{ label: null, billingRate: 2030, payRate: 1340, profit: 690, marginRate: 34.0 }],
   },
   '715-1': {
@@ -725,6 +762,8 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(1249113, 1135716, 1212101, 1193724, 1232991, 1393451, 1277206, 1106832, 1296240, 991885, 1039084, 1254645),
     staffCountByMonth: monthSeries3(3, 3, 3),
     totalHoursByMonth: monthSeries3(474.75, 396.58, 506.83),
+    staffCount: 3, totalHours: 513.00, avgHours: 171.00,
+    actionLog: [{ date: '2026-08', type: '横展開', text: '2026年8月3日付でBloomberg丸の内案件へ切替（案件コード未確定・暫定ID: bloomberg-marunouchi-1）' }],
   },
   '648-1': {
     active: true,
@@ -737,12 +776,16 @@ export const SITES: Record<string, SiteData> = {
     opProfit: { actual: 159214 },
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(399.90, 332.42, 414.93),
+    staffCount: 2, totalHours: 395.13, avgHours: 197.57,
     roleRates: [
       { label: '作業員', billingRate: 1850, payRate: 1350, profit: 500, marginRate: 27.0 },
       { label: 'リフト', billingRate: 2050, payRate: 1450, profit: 600, marginRate: 29.3 },
     ],
   },
   '835-1': placeholderSite('835-1', '有限会社黒岩運輸', 'kanto', { active: false, lifecycle: '失注（先方充足により契約に至らず）' }),
+  'bloomberg-marunouchi-1': placeholderSite('bloomberg-marunouchi-1', 'Bloomberg 丸の内', 'kanto', {
+    lifecycle: '案件コード未確定（暫定ID）。新規現場・2026年8月3日よりPCS豊洲（715-1）から切替で稼働開始',
+  }),
 
   // ── 関東（2026年8月時点の職種別レート表・価格交渉状況シートで新たに判明した現場。案件コード未確定のため暫定ID） ──
   'fujisawa-1': {
@@ -814,11 +857,13 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(350939, 350939, 336938, 371504, 289568, 312651, 373038, 313198, 337155, 317683, 306523, 349516),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(177.50, 146.75, 165.50),
+    staffCount: 1, totalHours: 178.25, avgHours: 178.25,
     roleRates: [{ label: null, billingRate: 1750, payRate: 1270, profit: 480, marginRate: 27.4 }],
   },
   '548-1': {
     active: true,
     id: '548-1', name: '福山通運 東海支店（セリア）', areaId: 'chubu', prefecture: '愛知県',
+    lifecycle: '2026年10月以降物量減少、最大12月末で現場終了の可能性（お盆明けにスタッフへ告知済み）。終了後もリフトマンのみ稼働継続予定',
     sales: { actual: 2216417, budget: 2200000 },
     cost: { actual: 1570455 },
     paidLeave: { actual: 94965 },
@@ -827,10 +872,12 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(2720895, 2676926, 2436321, 2654557, 2255189, 2485878, 2295839, 2102241, 2394320, 2125118, 2072738, 2364164),
     staffCountByMonth: monthSeries3(17, 15, 15),
     totalHoursByMonth: monthSeries3(1212.75, 1226.75, 1137.50),
+    staffCount: 16, totalHours: 1225.25, avgHours: 76.58,
     roleRates: [
       { label: 'セリア便①', billingRate: 1780, payRate: 1230, profit: 550, marginRate: 30.9 },
       { label: 'セリア便②', billingRate: 1900, payRate: 1300, profit: 600, marginRate: 31.6 },
     ],
+    actionLog: [{ date: '2026-08', type: '課題', text: '10月以降物量減少により最大12月末で現場終了の可能性。12月末を価格交渉の合意期限とする。終了後もリフトマンのみ稼働継続予定' }],
   },
   '505-1': {
     active: true,
@@ -843,12 +890,13 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(420560, 457408, 447132, 348677, 394842, 391909, 472254, 472254, 439721, 403460, 351984, 326515),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(226.85, 221.75, 219.30),
+    staffCount: 2, totalHours: 231.87, avgHours: 115.94,
     roleRates: [
       { label: '加工課①', billingRate: 1740, payRate: 1220, profit: 520, marginRate: 29.9 },
       { label: '加工課②', billingRate: 1720, payRate: 1220, profit: 500, marginRate: 29.1 },
     ],
   },
-  '675-1': { ...placeholderSite('675-1', 'AFS中部センター', 'chubu'), sales: { actual: 69600 } },
+  '675-1': { ...placeholderSite('675-1', 'AFS中部センター', 'chubu'), sales: { actual: 69600 }, staffCount: 1, totalHours: 35.60, avgHours: 35.60 },
   '510-2': {
     active: true,
     id: '510-2', name: 'afs 中部XD（派遣）', areaId: 'chubu', prefecture: '愛知県',
@@ -860,6 +908,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(663135, 615368, 637794, 654918, 426422, 354223, 363022, 374645, 371621, 320547, 328693, 278673),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(193.58, 170.02, 187.05),
+    staffCount: 1, totalHours: 200.60, avgHours: 200.60,
     roleRates: [{ label: null, billingRate: 1880, payRate: 1300, profit: 580, marginRate: 30.9 }],
   },
   '790-1': {
@@ -874,6 +923,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(2321484, 2332881, 2767859, 2461779, 2882392, 2832738, 3074571, 3005007, 3187568, 2919888, 2569444, 3098243),
     staffCountByMonth: monthSeries3(10, 11, 11),
     totalHoursByMonth: monthSeries3(1136.08, 969.08, 1188.00),
+    staffCount: 13, totalHours: 1206.75, avgHours: 92.83,
     roleRates: [
       { label: '冷凍リーダー', billingRate: 2660, payRate: 1900, profit: 760, marginRate: 28.6 },
       { label: '冷凍サブリーダー', billingRate: 2580, payRate: 1850, profit: 730, marginRate: 28.3 },
@@ -896,6 +946,7 @@ export const SITES: Record<string, SiteData> = {
     monthlyBudget: budgetSeries(null, null, 1200000, 1200000, 1200000, 1200000),
     staffCountByMonth: monthSeries3(1, 1, 2),
     totalHoursByMonth: monthSeries3(233.50, 235.00, 196.00),
+    staffCount: 3, totalHours: 444.75, avgHours: 148.25,
     roleRates: [{ label: null, billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 }],
   },
   '038-1': {
@@ -921,6 +972,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(0, 0, 0, 0, 0, 0, 0, 0, 0, 483754, 423441, 474066),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(202.75, 219.75, 214.00),
+    staffCount: 1, totalHours: 237.25, avgHours: 237.25,
     roleRates: [{ label: null, billingRate: 2500, payRate: 1800, profit: 700, marginRate: 28.0 }],
   },
   // ↓ 2026年8月時点の職種別レート表・価格交渉状況シートで新たに判明した現場（案件コード未確定のため暫定ID）
@@ -957,6 +1009,7 @@ export const SITES: Record<string, SiteData> = {
     roleRates: [{ label: '選別作業', billingRate: 1840, payRate: 1240, profit: 600, marginRate: 32.6 }],
     staffCountByMonth: monthSeries3(22, 20, 19),
     totalHoursByMonth: monthSeries3(1610.00, 1222.50, 1429.50),
+    staffCount: 18, totalHours: 1479.25, avgHours: 82.18,
   },
   '543-4': {
     active: true,
@@ -1000,6 +1053,7 @@ export const SITES: Record<string, SiteData> = {
     roleRates: [{ label: null, billingRate: 1820, payRate: 1220, profit: 600, marginRate: 33.0 }],
     staffCountByMonth: monthSeries3(3, 3, 3),
     totalHoursByMonth: monthSeries3(157.50, 169.00, 186.00),
+    staffCount: 3, totalHours: 188.50, avgHours: 62.83,
   },
   '533-1': {
     active: true,
@@ -1017,6 +1071,7 @@ export const SITES: Record<string, SiteData> = {
     ],
     staffCountByMonth: monthSeries3(3, 2, 3),
     totalHoursByMonth: monthSeries3(249.75, 188.00, 347.75),
+    staffCount: 4, totalHours: 482.25, avgHours: 120.56,
   },
   '570-1': {
     active: true,
@@ -1030,6 +1085,7 @@ export const SITES: Record<string, SiteData> = {
     roleRates: [{ label: null, billingRate: 1880, payRate: 1350, profit: 530, marginRate: 28.2 }],
     staffCountByMonth: monthSeries3(2, 2, 0),
     totalHoursByMonth: monthSeries3(374.00, 307.42, 0),
+    staffCount: 2, totalHours: 316.50, avgHours: 158.25,
   },
   // budgetは「PCS関西（神戸富士ゼロックス）」、実績システムでは「PCS関西（BPOソリューション事業本部）」表記。同一現場として突合。
   '530-1': {
@@ -1043,6 +1099,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(293400, 288000, 245400, 341400, 240000, 309400, 256000, 261400, 309400, 288000, 245400, 341400),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(144.00, 128.00, 176.00),
+    staffCount: 1, totalHours: 168.00, avgHours: 168.00,
     roleRates: [{ label: null, billingRate: 2100, payRate: 1280, profit: 820, marginRate: 39.0 }],
   },
   '723-1': {
@@ -1099,6 +1156,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(354593, 307210, 328942, 359697, 299845, 355540, 323598, 327754, 386653, 311365, 314811, 361835),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(194.25, 166.75, 178.25),
+    staffCount: 1, totalHours: 165.25, avgHours: 165.25,
     roleRates: [{ label: null, billingRate: 2000, payRate: 1480, profit: 520, marginRate: 26.0 }],
   },
   '782-1': placeholderSite('782-1', 'SHUUEI物流 高槻センター［リフト］', 'kansai'),
@@ -1115,12 +1173,14 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(882662, 764188, 745450, 656789, 640747, 575902, 600136, 853054, 1083884, 602636, 580467, 678154),
     staffCountByMonth: monthSeries3(2, 3, 5),
     totalHoursByMonth: monthSeries3(337.42, 403.50, 565.50),
+    staffCount: 5, totalHours: 792.67, avgHours: 158.53,
     roleRates: [
       { label: 'リーダー（フォークリフト兼務）', billingRate: 2130, payRate: 1550, profit: 580, marginRate: 27.2 },
       { label: 'サブリーダー', billingRate: 1850, payRate: 1330, profit: 520, marginRate: 28.1 },
       { label: '作業員', billingRate: 1800, payRate: 1300, profit: 500, marginRate: 27.8 },
       { label: '作業員（短期）', billingRate: 1980, payRate: 1400, profit: 580, marginRate: 29.3 },
     ],
+    actionLog: [{ date: '2026-08', type: '課題', text: '作業員（短期）区分は2026年8月15日で稼働終了予定' }],
   },
   '805-1': {
     active: true,
@@ -1133,6 +1193,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(447000, 409250, 478775, 536525, 464475, 444400, 435050, 401500, 451275, 388850, 374000, 377025),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(211.50, 193.50, 184.50),
+    staffCount: 1, totalHours: 211.00, avgHours: 211.00,
     roleRates: [{ label: 'フォークリフト', billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 }],
   },
   '720-1': {
@@ -1140,8 +1201,10 @@ export const SITES: Record<string, SiteData> = {
     id: '720-1', name: 'HMKロジサービス 西神戸センター［軽作業］', areaId: 'kansai', prefecture: null,
     staffCountByMonth: monthSeries3(0, 0, 7),
     totalHoursByMonth: monthSeries3(0, 0, 214.00),
+    staffCount: 7, totalHours: 408.50, avgHours: 58.36,
     salesYoyByMonth: budgetSeries(0, 0, 328440, 435120, 0, 0, 0, 549360, 726180, 0, 0, 0),
     roleRates: [{ label: '短期', billingRate: 1710, payRate: 1260, profit: 450, marginRate: 26.3 }],
+    actionLog: [{ date: '2026-10', type: '横展開', text: 'お歳暮案件に向け採用・掘り起こし開始、11月始動予定（貴子さん担当、SO＋五十嵐さんが全面バックアップ）' }],
   },
   '828-1': {
     active: true,
@@ -1153,6 +1216,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(0, 0, 0, 391200, 703694, 688521, 838547, 652449, 659518, 658337, 579870, 642716),
     staffCountByMonth: monthSeries3(2, 2, 2),
     totalHoursByMonth: monthSeries3(316.75, 267.75, 356.25),
+    staffCount: 2, totalHours: 367.75, avgHours: 183.88,
     roleRates: [
       { label: 'リフト', billingRate: 2100, payRate: 1500, profit: 600, marginRate: 28.6 },
       { label: '一般', billingRate: 1800, payRate: 1300, profit: 500, marginRate: 27.8 },
@@ -1167,6 +1231,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(0, 0, 0, 67550, 402248, 403213, 388894, 395837, 439843, 419646, 353507, 295549),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(187.18, 182.12, 148.60),
+    staffCount: 1, totalHours: 180.40, avgHours: 180.40,
     roleRates: [{ label: null, billingRate: 1800, payRate: 1260, profit: 540, marginRate: 30.0 }],
   },
   '831-1': {
@@ -1178,6 +1243,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(0, 0, 0, 0, 0, 73150, 511449, 646424, 644245, 285423, 433653, 635813),
     staffCountByMonth: monthSeries3(3, 3, 2),
     totalHoursByMonth: monthSeries3(343.28, 262.87, 171.05),
+    staffCount: 2, totalHours: 127.63, avgHours: 63.82,
     roleRates: [{ label: null, billingRate: 1800, payRate: 1250, profit: 550, marginRate: 30.6 }],
   },
   '832-1': {
@@ -1193,6 +1259,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(0, 0, 0, 0, 0, 0, 0, 119700, 290664, 487725, 452250, 0),
     staffCountByMonth: monthSeries3(2, 3, 1),
     totalHoursByMonth: monthSeries3(207.42, 334.88, 120.92),
+    staffCount: 3, totalHours: 293.42, avgHours: 97.81,
     roleRates: [
       { label: '作業員', billingRate: 1800, payRate: 1300, profit: 500, marginRate: 27.8 },
       { label: 'フォークリフト', billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 },
@@ -1204,6 +1271,7 @@ export const SITES: Record<string, SiteData> = {
     lifecycle: '新規現場', roles: [role('836-1', '軽作業', true), role('836-2', 'リフト', true)],
     staffCountByMonth: monthSeries3(null, null, 2),
     totalHoursByMonth: monthSeries3(null, null, 203.00),
+    staffCount: 3, totalHours: 213.50, avgHours: 71.17,
     roleRates: [
       { label: '作業員　短期（RW・GLP共通）', billingRate: 1750, payRate: 1300, profit: 450, marginRate: 25.7 },
       { label: 'リフト　短期（RW・GLP共通）', billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 },
@@ -1215,12 +1283,20 @@ export const SITES: Record<string, SiteData> = {
     lifecycle: '新規現場', roles: [role('836-3', 'リフト', true), role('836-4', '軽作業（短期）', true)],
     staffCountByMonth: monthSeries3(null, null, 1),
     totalHoursByMonth: monthSeries3(null, null, 70.00),
+    staffCount: 2, totalHours: 130.50, avgHours: 65.25,
     roleRates: [
       { label: '作業員　短期（RW・GLP共通）', billingRate: 1750, payRate: 1300, profit: 450, marginRate: 25.7 },
       { label: 'リフト　短期（RW・GLP共通）', billingRate: 2200, payRate: 1600, profit: 600, marginRate: 27.3 },
     ],
   },
   '837-1': placeholderSite('837-1', 'SHUUEI物流株式会社 尼崎センター（ロジポート尼崎）［軽作業］', 'kansai', { lifecycle: '新規現場' }),
+  'ih-amagasaki-1': {
+    ...placeholderSite('ih-amagasaki-1', 'IH（アイエイチロジ 尼崎）', 'kansai', { lifecycle: '案件コード未確定（暫定ID）。新規現場・お歳暮案件' }),
+    actionLog: [
+      { date: '2026-10', type: '横展開', text: 'お歳暮案件に向け採用・掘り起こし開始。貴子さん担当、SO＋五十嵐さんが全面バックアップ' },
+      { date: '2026-11', type: '横展開', text: '2026年11月2日〜12月26日稼働予定。初日13名スタート、ストック作成後は1.5倍人員に増員予定' },
+    ],
+  },
   // 阪菱企業の配送センター/倉庫は損益書が個別に分かれているため、茨木(723-1)とは別現場として管理。
   '246-1': {
     active: true,
@@ -1233,6 +1309,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(228901, 204574, 243282, 256040, 187598, 242200, 257122, 217548, 237297, 185120, 201697, 249757),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(122.50, 82.00, 145.00),
+    staffCount: 1, totalHours: 154.00, avgHours: 154.00,
   },
   '285-1': {
     active: true,
@@ -1245,6 +1322,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(0, 0, 0, 0, 157430, 217980, 226523, 205870, 199360, 204478, 209595, 240189),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(129.00, 126.00, 125.50),
+    staffCount: 1, totalHours: 133.75, avgHours: 133.75,
   },
   '287-1': {
     active: true,
@@ -1257,6 +1335,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(438556, 388603, 458883, 395848, 191708, 466455, 511542, 246743, 210708, 241747, 225283, 232958),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(141.75, 115.25, 147.00),
+    staffCount: 1, totalHours: 137.50, avgHours: 137.50,
   },
   '288-1': {
     active: true,
@@ -1269,6 +1348,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(227930, 220792, 245337, 258529, 192141, 0, 0, 148457, 227507, 230288, 222724, 249868),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(142.00, 113.25, 137.75),
+    staffCount: 1, totalHours: 149.75, avgHours: 149.75,
   },
   '229-1': {
     active: true,
@@ -1281,6 +1361,7 @@ export const SITES: Record<string, SiteData> = {
     salesYoyByMonth: budgetSeries(328130, 307500, 322875, 322875, 233573, 246000, 341325, 261375, 275100, 299775, 285863, 330750),
     staffCountByMonth: monthSeries3(1, 1, 1),
     totalHoursByMonth: monthSeries3(150.00, 127.50, 166.25),
+    staffCount: 1, totalHours: 157.50, avgHours: 157.50,
   },
 
   // ── 大阪支店 ──────────────────────────────────────────
@@ -1304,7 +1385,7 @@ export const SITES: Record<string, SiteData> = {
     ],
     staffCountByMonth: monthSeries3(78, 74, 79),
     totalHoursByMonth: monthSeries3(10741.43, 9365.45, 10180.95),
-    staffCount: 67, totalHours: 6944, avgHours: 103.64,
+    staffCount: 76, totalHours: 10100.08, avgHours: 132.90,
     liftUnitPrice: 1550, workerUnitPrice: 1320, minimumWage: 1177, marketHourlyWage: 1280,
     backlogCount: 4, expectedImpact: 2100000, negotiationStatus: '交渉中',
     salesRep: null, soRep: null, recruiting: { active: true, costSpent: 320000, costBudget: 400000, postingPeriod: '3ヶ月以上' },

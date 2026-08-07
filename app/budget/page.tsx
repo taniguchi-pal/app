@@ -228,14 +228,29 @@ export default function GlobalDashboard() {
   const [newTask, setNewTask] = useState({ title: '', period: '', note: '', area: '', site: '', assignee: '' });
   const [adding, setAdding] = useState(false);
   const newTaskSites = newTask.area ? sitesOfArea(newTask.area) : [];
-  const [taskQuarterTab, setTaskQuarterTab] = useState<number | 'other' | 'all'>(activeQuarter);
+  // 大元ダッシュボードでは既定でタスク一覧を表示せず、Qタブを選ぶか検索した時だけ詳細を出す（一覧が常時表示だと情報過多になるため）
+  const [taskQuarterTab, setTaskQuarterTab] = useState<number | 'other' | 'all' | null>(null);
+  const [taskSearchText, setTaskSearchText] = useState('');
 
+  // 既定タスク（sched-*）はSheets側に行が無いため、ステータス変更はこのブラウザのlocalStorageに保存する
+  // （Attack Listのローカル一時保存と同じ考え方）。Sheets連携済みのタスクは引き続きAPI経由で共有保存される。
+  const TASK_STATUS_OVERRIDES_KEY = 'scheduleTaskStatusOverrides_v1';
+  const readTaskStatusOverrides = (): Record<string, string> => {
+    try { return JSON.parse(localStorage.getItem(TASK_STATUS_OVERRIDES_KEY) || '{}'); } catch { return {}; }
+  };
+  const writeTaskStatusOverrides = (overrides: Record<string, string>) => {
+    try { localStorage.setItem(TASK_STATUS_OVERRIDES_KEY, JSON.stringify(overrides)); } catch {}
+  };
+  const defaultTasksWithOverrides = () => {
+    const overrides = readTaskStatusOverrides();
+    return DEFAULT_SCHEDULE_TASKS.map((t) => (overrides[t.id] ? { ...t, status: overrides[t.id] } : t));
+  };
   const loadTasks = () => {
     fetch('/api/schedule').then((r) => r.json()).then((data) => {
-      if (data?.error) { setTaskApiStatus('unconfigured'); setTasks(DEFAULT_SCHEDULE_TASKS); return; }
-      setTasks([...DEFAULT_SCHEDULE_TASKS, ...(Array.isArray(data) ? data : [])]);
+      if (data?.error) { setTaskApiStatus('unconfigured'); setTasks(defaultTasksWithOverrides()); return; }
+      setTasks([...defaultTasksWithOverrides(), ...(Array.isArray(data) ? data : [])]);
       setTaskApiStatus('ready');
-    }).catch(() => setTasks(DEFAULT_SCHEDULE_TASKS));
+    }).catch(() => setTasks(defaultTasksWithOverrides()));
   };
   useEffect(() => { loadTasks(); }, []);
 
@@ -258,6 +273,13 @@ export default function GlobalDashboard() {
   const cycleStatus = async (t: ScheduleTask) => {
     const next = t.status === '未着手' ? '進行中' : t.status === '進行中' ? '完了' : '未着手';
     setTasks((prev) => prev.map((x) => (x.id === t.id ? { ...x, status: next } : x)));
+    if (t.id.startsWith('sched-')) {
+      // 既定タスクはSheetsに行が無いためAPI保存の対象外。ローカル保存のみで完結させる
+      const overrides = readTaskStatusOverrides();
+      overrides[t.id] = next;
+      writeTaskStatusOverrides(overrides);
+      return;
+    }
     await fetch('/api/schedule', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -272,8 +294,14 @@ export default function GlobalDashboard() {
   const otherTasks = tasks.filter((t) => taskQuarterIndex(t.period) === null);
   const otherDone = otherTasks.filter((t) => t.status === '完了').length;
   const allDone = tasks.filter((t) => t.status === '完了').length;
-  const visibleTasks =
-    taskQuarterTab === 'all' ? tasks
+  const taskSearchQuery = taskSearchText.trim().toLowerCase();
+  const searchedTasks = taskSearchQuery
+    ? tasks.filter((t) => t.title.toLowerCase().includes(taskSearchQuery) || (t.note || '').toLowerCase().includes(taskSearchQuery))
+    : null;
+  const visibleTasks = searchedTasks !== null
+    ? searchedTasks
+    : taskQuarterTab === null ? []
+    : taskQuarterTab === 'all' ? tasks
     : taskQuarterTab === 'other' ? otherTasks
     : taskQuarterGroups[taskQuarterTab].items;
 
@@ -687,13 +715,19 @@ export default function GlobalDashboard() {
               </button>
             </div>
           </div>
+          <input
+            value={taskSearchText}
+            onChange={(e) => setTaskSearchText(e.target.value)}
+            placeholder="🔎 タスク名で検索"
+            className="w-full mb-3 px-2.5 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg outline-none focus:border-blue-400"
+          />
           <div className="flex flex-wrap gap-1.5 mb-3">
             {taskQuarterGroups.map((g) => (
               <button
                 key={g.idx}
-                onClick={() => setTaskQuarterTab(g.idx)}
+                onClick={() => { setTaskQuarterTab(g.idx); setTaskSearchText(''); }}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
-                  taskQuarterTab === g.idx ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-blue-300'
+                  searchedTasks === null && taskQuarterTab === g.idx ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-blue-300'
                 }`}
               >
                 Q{g.idx + 1}（{g.months[0]}-{g.months[2]}月） {g.done}/{g.total}
@@ -701,18 +735,18 @@ export default function GlobalDashboard() {
             ))}
             {otherTasks.length > 0 && (
               <button
-                onClick={() => setTaskQuarterTab('other')}
+                onClick={() => { setTaskQuarterTab('other'); setTaskSearchText(''); }}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
-                  taskQuarterTab === 'other' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-blue-300'
+                  searchedTasks === null && taskQuarterTab === 'other' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-blue-300'
                 }`}
               >
                 その他 {otherDone}/{otherTasks.length}
               </button>
             )}
             <button
-              onClick={() => setTaskQuarterTab('all')}
+              onClick={() => { setTaskQuarterTab('all'); setTaskSearchText(''); }}
               className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
-                taskQuarterTab === 'all' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-blue-300'
+                searchedTasks === null && taskQuarterTab === 'all' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-blue-300'
               }`}
             >
               すべて {allDone}/{tasks.length}
@@ -731,7 +765,9 @@ export default function GlobalDashboard() {
             </div>
           )}
           {visibleTasks.length === 0 ? (
-            <p className="text-xs text-zinc-400">登録されているタスクはありません</p>
+            <p className="text-xs text-zinc-400">
+              {searchedTasks !== null ? '該当するタスクが見つかりません' : taskQuarterTab === null ? '検索するか、上のQタブを選ぶとタスク一覧が表示されます' : '登録されているタスクはありません'}
+            </p>
           ) : (
             <ul className="space-y-2">
               {visibleTasks.map((t) => {

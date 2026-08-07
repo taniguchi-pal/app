@@ -20,6 +20,15 @@ const STATUS_STYLE: Record<string, string> = {
 const STATUS_ICON: Record<string, string> = {
   初商談: '🤝', ニーズなし定期タッチ: '🌙', 見積提示: '📝', 成約: '🎉', 稼働中: '🔥', 非稼働中: '💤',
 };
+// 一覧カードの左端に付ける状態カラーバー（一目でステータスを判別しやすくする）
+const STATUS_BORDER: Record<string, string> = {
+  初商談: 'border-l-4 border-l-blue-400',
+  ニーズなし定期タッチ: 'border-l-4 border-l-zinc-300',
+  見積提示: 'border-l-4 border-l-amber-400',
+  成約: 'border-l-4 border-l-emerald-400',
+  稼働中: 'border-l-4 border-l-emerald-500',
+  非稼働中: 'border-l-4 border-l-rose-300',
+};
 
 const PROBABILITY_OPTIONS = ['A', 'B', 'C', 'D'] as const;
 type Probability = typeof PROBABILITY_OPTIONS[number];
@@ -193,6 +202,8 @@ export default function AttackListPage() {
   const [apiStatus, setApiStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [statusFilter, setStatusFilter] = useState('');
   const [repFilter, setRepFilter] = useState('');
+  const [areaFilter, setAreaFilter] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [detailForm, setDetailForm] = useState<Partial<AttackEntry>>({});
   const [detailSaving, setDetailSaving] = useState(false);
@@ -318,8 +329,13 @@ export default function AttackListPage() {
 
   // 営業3名（田中・谷口・岩田）以外の担当が入っているデータも一応表示できるよう、実データにある担当も拾っておく
   const repOptions = Array.from(new Set([...SALES_REPS, ...entries.map((e) => e.salesRep).filter(Boolean)]));
+  const areaOptions = Array.from(new Set(entries.map((e) => e.area).filter(Boolean)));
+  const searchQuery = searchText.trim().toLowerCase();
   const filtered = entries.filter((e) =>
-    (!statusFilter || e.status === statusFilter) && (!repFilter || e.salesRep === repFilter)
+    (!statusFilter || e.status === statusFilter)
+    && (!repFilter || e.salesRep === repFilter)
+    && (!areaFilter || e.area === areaFilter)
+    && (!searchQuery || e.company.toLowerCase().includes(searchQuery) || (e.repContact || '').toLowerCase().includes(searchQuery))
   );
 
   // 「未対応（サラピン）」＝ ステータス未設定・連絡先未取得・TEL実績なし・コンタクト履歴なしの、まだ何も手を付けていない先
@@ -577,17 +593,38 @@ export default function AttackListPage() {
         <>
         <Card eyebrow="Filter" eyebrowColor="text-orange-600" title="🔍 絞り込み">
           <div className="flex flex-wrap gap-2">
+            <input
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="🔎 企業名・担当者名で検索"
+              className="text-xs px-2.5 py-1.5 bg-white border border-zinc-200 rounded-lg outline-none focus:border-orange-400 min-w-[200px] flex-1"
+            />
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="text-xs font-bold px-2 py-1.5 bg-white border border-zinc-200 rounded-lg">
               <option value="">ステータス（すべて）</option>
               {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_ICON[s]} {s}</option>)}
             </select>
+            {areaOptions.length > 0 && (
+              <select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} className="text-xs font-bold px-2 py-1.5 bg-white border border-zinc-200 rounded-lg">
+                <option value="">エリア（すべて）</option>
+                {areaOptions.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+            )}
             {repOptions.length > 0 && (
               <select value={repFilter} onChange={(e) => setRepFilter(e.target.value)} className="text-xs font-bold px-2 py-1.5 bg-white border border-zinc-200 rounded-lg">
                 <option value="">担当Sales（すべて）</option>
                 {repOptions.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             )}
+            {(statusFilter || areaFilter || repFilter || searchText) && (
+              <button
+                onClick={() => { setStatusFilter(''); setAreaFilter(''); setRepFilter(''); setSearchText(''); }}
+                className="text-xs font-bold px-2.5 py-1.5 text-zinc-400 hover:text-zinc-600"
+              >
+                ✕ クリア
+              </button>
+            )}
           </div>
+          <p className="text-[10px] text-zinc-400 mt-2">{filtered.length}件表示中（全{entries.length}件）</p>
         </Card>
 
         <div className="space-y-3">
@@ -608,7 +645,7 @@ export default function AttackListPage() {
               {showUntouchedHeader && (
                 <p className="text-xs font-black text-zinc-500 flex items-center gap-1.5 pt-3">🆕 未対応・サラピン（{untouchedList.length}件）</p>
               )}
-              <Card>
+              <Card className={STATUS_BORDER[entry.status] || STATUS_BORDER['初商談']}>
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -642,9 +679,9 @@ export default function AttackListPage() {
                       {entry.repContact && <> ・ 先方: {entry.repContact}</>}
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-zinc-500">
-                      <span>次回訪問: <span className="font-bold text-zinc-700">{entry.nextVisitDate || '—'}</span></span>
-                      <span>最終接触: <span className="font-bold text-zinc-700">{entry.lastContactDate || '—'}</span></span>
-                      <span>TEL回数: <span className="font-bold text-zinc-700">{entry.telAppoCount}回</span></span>
+                      {entry.nextVisitDate && <span>次回訪問: <span className="font-bold text-orange-700">{entry.nextVisitDate}</span></span>}
+                      {entry.lastContactDate && <span>最終接触: <span className="font-bold text-zinc-700">{entry.lastContactDate}</span></span>}
+                      {entry.telAppoCount > 0 && <span>TEL回数: <span className="font-bold text-zinc-700">{entry.telAppoCount}回</span></span>}
                       <span>更新日: <span className="font-bold text-zinc-700">{(entry.updatedAt || '').slice(0, 10) || '—'}</span></span>
                     </div>
                     {(entry.quoteUrl || entry.notebookLmUrl || entry.asanaUrl || entry.minutesUrl) && (
